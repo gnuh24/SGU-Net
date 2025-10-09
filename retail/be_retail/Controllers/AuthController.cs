@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace be_retail.Controllers
 {
     [ApiController]
-    [Route("api/auth")]
+    [Route("api/v1/auth")]
     public class AuthController : ControllerBase
     {
         private readonly AuthService _authService;
@@ -19,7 +19,7 @@ namespace be_retail.Controllers
             _authService = authService;
         }
 
-        [HttpPost("v1/staff-login")]
+        [HttpPost("staff-login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             var user = await _authService.LoginAsync(request);
