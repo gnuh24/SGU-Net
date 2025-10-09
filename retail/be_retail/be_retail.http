@@ -1,4 +1,4 @@
-@be_retail_HostAddress = http://localhost:5133
+@be_retail_HostAddress = http://localhost:5260
 
 GET {{be_retail_HostAddress}}/weatherforecast/
 Accept: application/json
