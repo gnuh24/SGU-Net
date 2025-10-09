@@ -108,9 +108,9 @@ CREATE TABLE payments (
 
 -- DATA USERS
 INSERT INTO users (username,password,full_name,role) VALUES
-('admin','123456','Quản trị viên','admin'),
-('staff01','123456','Nguyễn Văn A','staff'),
-('staff02','123456','Lê Thị B','staff');
+('admin','jZae727K08KaOmKSgOaGzww/XVqGr/PKEgIMkjrcbJI=','Quản trị viên','admin'),
+('staff01','jZae727K08KaOmKSgOaGzww/XVqGr/PKEgIMkjrcbJI=','Nguyễn Văn A','staff'),
+('staff02','jZae727K08KaOmKSgOaGzww/XVqGr/PKEgIMkjrcbJI=','Lê Thị B','staff');
 
 -- DATA CUSTOMERS
 INSERT INTO customers (name,phone,email,address) VALUES

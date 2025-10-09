@@ -1,4 +1,6 @@
 namespace be_retail.Data;
+using be_retail.Models;
+
 using Microsoft.EntityFrameworkCore;
 
 public class AppDbContext : DbContext
@@ -7,5 +9,8 @@ public class AppDbContext : DbContext
         : base(options)
     {
     }
+
+    public DbSet<User> Users { get; set; }
+
 
 }
