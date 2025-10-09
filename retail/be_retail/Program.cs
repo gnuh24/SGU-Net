@@ -10,6 +10,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<UserRepository>();
 
 builder.Services.AddScoped<CustomerService>();
 builder.Services.AddScoped<CustomerRepository>();

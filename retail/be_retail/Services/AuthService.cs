@@ -1,7 +1,6 @@
-using be_retail.Data;
 using be_retail.DTOs;
 using be_retail.Models;
-using Microsoft.EntityFrameworkCore;
+using be_retail.Repositories;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -9,11 +8,11 @@ namespace be_retail.Services
 {
     public class AuthService
     {
-        private readonly AppDbContext _context;
+        private readonly UserRepository _userRepository;
 
-        public AuthService(AppDbContext context)
+        public AuthService(UserRepository userRepository)
         {
-            _context = context;
+            _userRepository = userRepository;
         }
 
         private string HashPassword(string password)
@@ -23,29 +22,33 @@ namespace be_retail.Services
             return Convert.ToBase64String(bytes);
         }
 
-        public async Task<User?> RegisterAsync(RegisterRequest request)
-        {
-            if (await _context.Users.AnyAsync(u => u.Username == request.Username))
-                return null;
+        // // 🔹 Đăng ký user
+        // public async Task<User?> RegisterAsync(RegisterRequest request)
+        // {
+        //     // Kiểm tra username đã tồn tại
+        //     if (await _userRepository.GetByUsernameAsync(request.Username) != null)
+        //         return null;
 
-            var user = new User
-            {
-                Username = request.Username,
-                Password = HashPassword(request.Password),
-                FullName = request.FullName,
-                Role = "staff"
-            };
+        //     var user = new User
+        //     {
+        //         Username = request.Username,
+        //         Password = HashPassword(request.Password),
+        //         FullName = request.FullName,
+        //         Role = "staff"
+        //     };
 
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-            return user;
-        }
+        //     return await _userRepository.CreateAsync(user);
+        // }
 
+        // 🔹 Đăng nhập
         public async Task<User?> LoginAsync(LoginRequest request)
         {
             var hash = HashPassword(request.Password);
-            return await _context.Users
-                .FirstOrDefaultAsync(u => u.Username == request.Username && u.Password == hash);
+            var user = await _userRepository.GetByUsernameAsync(request.Username);
+
+            if (user == null) return null;
+
+            return user.Password == hash ? user : null;
         }
     }
 }
