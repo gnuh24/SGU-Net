@@ -22,23 +22,23 @@ namespace be_retail.Services
             return Convert.ToBase64String(bytes);
         }
 
-        // // 🔹 Đăng ký user
-        // public async Task<User?> RegisterAsync(RegisterRequest request)
-        // {
-        //     // Kiểm tra username đã tồn tại
-        //     if (await _userRepository.GetByUsernameAsync(request.Username) != null)
-        //         return null;
+        // 🔹 Đăng ký user
+        public async Task<User?> RegisterAsync(RegisterRequest request)
+        {
+            // Kiểm tra username đã tồn tại
+            if (await _userRepository.GetByUsernameAsync(request.Username) != null)
+                return null;
 
-        //     var user = new User
-        //     {
-        //         Username = request.Username,
-        //         Password = HashPassword(request.Password),
-        //         FullName = request.FullName,
-        //         Role = "staff"
-        //     };
+            var user = new User
+            {
+                Username = request.Username,
+                Password = HashPassword(request.Password),
+                FullName = request.FullName,
+                Role = "staff" // Luôn là staff, không cho phép đăng ký admin
+            };
 
-        //     return await _userRepository.CreateAsync(user);
-        // }
+            return await _userRepository.CreateAsync(user);
+        }
 
         // 🔹 Đăng nhập
         public async Task<User?> LoginAsync(LoginRequest request)
