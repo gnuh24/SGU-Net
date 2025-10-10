@@ -28,7 +28,8 @@ CREATE TABLE customers (
 -- Bảng loại sản phẩm
 CREATE TABLE categories (
     category_id INT AUTO_INCREMENT PRIMARY KEY,
-    category_name VARCHAR(100) NOT NULL
+    category_name VARCHAR(100) NOT NULL,
+    is_deleted BOOLEAN DEFAULT FALSE -- Cột is_deleted đã được thêm
 );
 
 -- Bảng nhà cung cấp
@@ -37,7 +38,8 @@ CREATE TABLE suppliers (
     name VARCHAR(100) NOT NULL,
     phone VARCHAR(20),
     email VARCHAR(100),
-    address TEXT
+    address TEXT,
+    is_deleted BOOLEAN DEFAULT FALSE -- Cột is_deleted đã được thêm
 );
 
 -- Bảng sản phẩm
