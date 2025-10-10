@@ -16,6 +16,9 @@ builder.Services.AddScoped<CustomerService>();
 builder.Services.AddScoped<CustomerRepository>();
 builder.Services.AddScoped<CustomerService>();
 
+builder.Services.AddScoped<ProductService>();
+builder.Services.AddScoped<ProductRepository>();
+
 // Add DbContext
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>
