@@ -14,7 +14,12 @@ builder.Services.AddScoped<UserRepository>();
 
 builder.Services.AddScoped<CustomerService>();
 builder.Services.AddScoped<CustomerRepository>();
-builder.Services.AddScoped<CustomerService>();
+
+builder.Services.AddScoped<SupplierService>();
+builder.Services.AddScoped<SupplierRepository>();
+
+builder.Services.AddScoped<CategoryService>();
+builder.Services.AddScoped<CategoryRepository>();
 
 builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<ProductRepository>();
@@ -25,6 +30,13 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
     
 var app = builder.Build();
+
+// Seed data
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await be_retail.Data.DbSeeder.SeedAsync(context);
+}
 
 // Configure middleware
 if (app.Environment.IsDevelopment())
