@@ -16,8 +16,5 @@ namespace be_retail.Models
 
         [Column("is_deleted")]
         public bool IsDeleted { get; set; } = true;
-
-        // Navigation property
-        public virtual ICollection<Product> Products { get; set; } = new List<Product>();
     }
 }
