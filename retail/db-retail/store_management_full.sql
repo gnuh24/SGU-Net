@@ -121,10 +121,11 @@ INSERT INTO customers (name,phone,email,address) VALUES
 
 -- DATA CATEGORIES
 INSERT INTO categories (category_name) VALUES
-('Đồ uống'),('Bánh kẹo'),('Gia vị'),('Đồ gia dụng'),('Mỹ phẩm');
+("Chưa phân loại"),('Đồ uống'),('Bánh kẹo'),('Gia vị'),('Đồ gia dụng'),('Mỹ phẩm');
 
 -- DATA SUPPLIERS
 INSERT INTO suppliers (name,phone,email,address) VALUES
+("Các nhà cung cấp khác","","",""),
 ('Công ty ABC','0909123456','abc@gmail.com','Hà Nội'),
 ('Công ty XYZ','0912123456','xyz@gmail.com','TP HCM'),
 ('Công ty 123','0933123456','123@gmail.com','Đà Nẵng');

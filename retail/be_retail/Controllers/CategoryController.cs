@@ -17,22 +17,53 @@ namespace be_retail.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] string? search)
+        public async Task<IActionResult> GetAll(
+            [FromQuery] string? search,
+            [FromQuery] int? page,
+            [FromQuery] int pageSize = 10)
         {
-            var categories = await _categoryService.GetAllAsync(search);
-
-            var data = categories.Select(c => new CategoryResponseDTO
+            if (page.HasValue)
             {
-                CategoryId = c.CategoryId,
-                Name = c.Name
-            }).ToList();
+                var (categories, total) = await _categoryService.GetPagedAsync(search, page.Value, pageSize);
 
-            return Ok(new ApiResponse<object>
+                var data = categories.Select(c => new CategoryResponseDTO
+                {
+                    CategoryId = c.CategoryId,
+                    Name = c.Name
+                }).ToList();
+
+                var response = new PagedResponse<CategoryResponseDTO>
+                {
+                    Data = data,
+                    Total = total,
+                    Page = page.Value,
+                    PageSize = pageSize
+                };
+
+                return Ok(new ApiResponse<PagedResponse<CategoryResponseDTO>>
+                {
+                    Status = 200,
+                    Message = "Get categories with pagination successfully.",
+                    Data = response
+                });
+            }
+            else
             {
-                Status = 200,
-                Message = "Get categories successfully.",
-                Data = data
-            });
+                var categories = await _categoryService.GetAllAsync(search);
+
+                var data = categories.Select(c => new CategoryResponseDTO
+                {
+                    CategoryId = c.CategoryId,
+                    Name = c.Name
+                }).ToList();
+
+                return Ok(new ApiResponse<object>
+                {
+                    Status = 200,
+                    Message = "Get all categories successfully.",
+                    Data = data
+                });
+            }
         }
 
         [HttpGet("{id}")]
