@@ -13,6 +13,11 @@ namespace be_retail.Services
             _supplierRepository = supplierRepository;
         }
 
+        public async Task<(IEnumerable<Supplier> items, int total)> GetPagedAsync(string? search = null, int page = 1, int pageSize = 10)
+        {
+            return await _supplierRepository.GetPagedAsync(search, page, pageSize);
+        }
+
         public async Task<IEnumerable<Supplier>> GetAllAsync(string? search = null)
         {
             return await _supplierRepository.GetAllAsync(search);

@@ -17,25 +17,59 @@ namespace be_retail.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] string? search)
+        public async Task<IActionResult> GetAll(
+            [FromQuery] string? search,
+            [FromQuery] int? page,
+            [FromQuery] int pageSize = 10)
         {
-            var suppliers = await _supplierService.GetAllAsync(search);
-
-            var data = suppliers.Select(s => new SupplierResponseDTO
+            if (page.HasValue)
             {
-                SupplierId = s.SupplierId,
-                Name = s.Name,
-                Phone = s.Phone,
-                Email = s.Email,
-                Address = s.Address
-            }).ToList();
+                var (suppliers, total) = await _supplierService.GetPagedAsync(search, page.Value, pageSize);
 
-            return Ok(new ApiResponse<object>
+                var data = suppliers.Select(s => new SupplierResponseDTO
+                {
+                    SupplierId = s.SupplierId,
+                    Name = s.Name,
+                    Phone = s.Phone,
+                    Email = s.Email,
+                    Address = s.Address
+                }).ToList();
+
+                var response = new PagedResponse<SupplierResponseDTO>
+                {
+                    Data = data,
+                    Total = total,
+                    Page = page.Value,
+                    PageSize = pageSize
+                };
+
+                return Ok(new ApiResponse<PagedResponse<SupplierResponseDTO>>
+                {
+                    Status = 200,
+                    Message = "Get suppliers with pagination successfully.",
+                    Data = response
+                });
+            }
+            else
             {
-                Status = 200,
-                Message = "Get suppliers successfully.",
-                Data = data
-            });
+                var suppliers = await _supplierService.GetAllAsync(search);
+
+                var data = suppliers.Select(s => new SupplierResponseDTO
+                {
+                    SupplierId = s.SupplierId,
+                    Name = s.Name,
+                    Phone = s.Phone,
+                    Email = s.Email,
+                    Address = s.Address
+                }).ToList();
+
+                return Ok(new ApiResponse<object>
+                {
+                    Status = 200,
+                    Message = "Get all suppliers successfully.",
+                    Data = data
+                });
+            }
         }
 
         [HttpGet("{id}")]
