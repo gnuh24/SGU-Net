@@ -1,3 +1,4 @@
+using be_retail.Api;
 using be_retail.DTOs;
 using be_retail.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -14,9 +15,9 @@ namespace be_retail.Controllers
         }
 
         [HttpGet("{id}")]
-        public Task<IActionResult> GetOrderById(int id)
+        public async Task<IActionResult> GetOrderById(int id)
         {
-            var result = _service.GetByIdAsync(id);
+            var result = await _service.GetByIdAsync(id);
             return StatusCode(result.Status, result);
         }
 
