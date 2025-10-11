@@ -13,7 +13,7 @@ namespace be_retail.Repositories
         }
         public async Task<Payment?> GetByIdAsync(int id)
         {
-            return await _context.Payments.FindAsync(id);
+            return await _context.Payments.FirstOrDefaultAsync(o => o.PaymentId == id);
         }
         public async Task<List<Payment>> GetAllAsync()
         {
@@ -35,6 +35,24 @@ namespace be_retail.Repositories
             _context.Payments.Update(payment);
             await _context.SaveChangesAsync();
 
+        }
+        public async Task UpsertAsync(Payment payment)
+        {
+            var existingPayment = await _context.Payments
+                .FirstOrDefaultAsync(p => p.OrderId == payment.OrderId);
+
+            if (existingPayment == null)
+            {
+                _context.Payments.Add(payment);
+            }
+            else
+            {
+                existingPayment.Amount = payment.Amount;
+                existingPayment.PaymentDate = payment.PaymentDate;
+                existingPayment.PaymentMethod = payment.PaymentMethod;
+                _context.Payments.Update(existingPayment);
+            }
+            await _context.SaveChangesAsync();
         }
         public async Task DeleteAsync(int id)
         {

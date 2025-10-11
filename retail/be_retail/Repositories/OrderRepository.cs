@@ -30,12 +30,13 @@ namespace be_retail.Repositories
                 .ToListAsync();
         }
 
-        public async Task<PagedResult<Order>> SearchAsync(string? keyword, int pageNumber, int pageSize)
+        public async Task<PagedResponse<Order>> SearchAsync(string? keyword, int pageNumber, int pageSize)
         {
             var query = _context.Orders.AsQueryable();
 
             if (!string.IsNullOrEmpty(keyword))
                 query = query.Where(o => o.Status.Contains(keyword) ||
+                                        o.User.FullName.Contains(keyword) ||
                                         o.Customer.Name.Contains(keyword));
 
             int totalCount = await query.CountAsync();
@@ -46,11 +47,11 @@ namespace be_retail.Repositories
                 .Take(pageSize)
                 .ToListAsync();
 
-            return new PagedResult<Order>
+            return new PagedResponse<Order>
             {
                 Data = data,
-                TotalCount = totalCount,
-                PageNumber = pageNumber,
+                Total = totalCount,
+                Page = pageNumber,
                 PageSize = pageSize
             };
         }

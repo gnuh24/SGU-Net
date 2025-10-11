@@ -69,7 +69,7 @@ namespace be_retail.Services
                     }
                 };
 
-                return new ApiResponse<OrderResponseDTO>(200, "Lấy đơn hàng thành công", orderDto); 
+                return new ApiResponse<OrderResponseDTO>(200, "Lấy đơn hàng thành công", orderDto);
             }
             catch (Exception ex)
             {
@@ -118,14 +118,18 @@ namespace be_retail.Services
                     if (promo != null && promo.Status == "active"
                         && promo.StartDate <= DateTime.Now
                         && promo.EndDate >= DateTime.Now
-                        && totalAmount >= promo.MinOrderValue
-                        && promo.UserCount < promo.UsageLimit)
+                        && totalAmount >= promo.MinOrderAmount
+                        && promo.UsedCount < promo.UsageLimit)
                     {
                         discountAmount = promo.DiscountType == "percent" ?
                                          totalAmount * (promo.DiscountValue / 100) :
                                          promo.DiscountValue;
-                        promo.UserCount += 1;
+                        promo.UsedCount += 1;
                         await _promoRepo.UpdateAsync(promo);
+                    }
+                    else
+                    {
+                        return new ApiResponse<bool>(400, "Mã khuyến mãi không hợp lệ hoặc không thể áp dụng", false);
                     }
                 }
 
@@ -147,13 +151,20 @@ namespace be_retail.Services
                 }
                 await _orderItemRepo.AddRangeAsync(orderItems);
 
-                var payment = new Payment
+                Payment payment = new Payment
                 {
                     OrderId = order.OrderId,
                     Amount = totalAmount - discountAmount,
                     PaymentMethod = form.PaymentMethod,
-                    PaymentDate = DateTime.Now
                 };
+                if (form.Status == "pending")
+                {
+                    payment.PaymentDate = DateTime.MinValue;
+                }
+                else if (form.Status == "paid")
+                {
+                    payment.PaymentDate = DateTime.Now;
+                }
 
                 await _paymentRepo.CreateAsync(payment);
 
@@ -167,5 +178,140 @@ namespace be_retail.Services
                 return new ApiResponse<bool>(500, "Lỗi khi tạo đơn hàng", false);
             }
         }
+
+        public async Task<ApiResponse<bool>> UpdateAsync(int id, OrderUpdateForm form)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var order = await _orderRepo.GetByIdAsync(id);
+                if (order == null)
+                    return new ApiResponse<bool>(404, "Không tìm thấy đơn hàng", false);
+
+                if (order.Status == "canceled")
+                    return new ApiResponse<bool>(400, "Đơn hàng đã bị hủy, không thể chỉnh sửa", false);
+
+                if (order.Status == "paid")
+                    return new ApiResponse<bool>(400, "Đơn hàng đã thanh toán, không thể chỉnh sửa", false);
+
+                // Cập nhật thông tin cơ bản
+                order.UserId = form.UserId ?? order.UserId;
+                order.Status = form.Status ?? order.Status;
+
+                // Nếu có thay đổi mã khuyến mãi
+                if (form.PromoId != null && order.PromoId != form.PromoId)
+                {
+                    var promo = await _promoRepo.GetByIdAsync(form.PromoId);
+                    // Tính lại giảm giá
+                    if (promo != null && promo.Status == "active"
+                        && promo.StartDate <= DateTime.Now
+                        && promo.EndDate >= DateTime.Now
+                        && order.TotalAmount >= promo.MinOrderAmount
+                        && promo.UsedCount < promo.UsageLimit
+                        )
+                    {
+                        var oldPromo = await _promoRepo.GetByIdAsync(order.PromoId);
+                        if (oldPromo != null && oldPromo.UsedCount > 0)
+                        {
+                            oldPromo.UsedCount -= 1;
+                            await _promoRepo.UpdateAsync(oldPromo);
+                        }
+                        order.PromoId = promo.PromoId;
+                        order.DiscountAmount = promo.DiscountType == "percent"
+                            ? order.TotalAmount * promo.DiscountValue / 100
+                            : promo.DiscountValue;
+
+                        // Cập nhật lượt sử dụng
+                        promo.UsedCount += 1;
+                        await _promoRepo.UpdateAsync(promo);
+                    }
+                    else
+                    {
+                        return new ApiResponse<bool>(400, "Mã khuyến mãi không hợp lệ hoặc không thể áp dụng", false);
+                    }
+                }
+
+                // Lưu đơn hàng
+                await _orderRepo.UpdateAsync(order);
+                Payment payment = new Payment
+                {
+                    OrderId = order.OrderId,
+                    Amount = order.TotalAmount - order.DiscountAmount,
+                    PaymentMethod = form.PaymentMethod ?? "cash",
+                };
+                if (order.Status == "pending")
+                {
+                    payment.PaymentDate = DateTime.MinValue;
+                }
+                else if (order.Status == "paid")
+                {
+                    payment.PaymentDate = DateTime.Now;
+
+                }
+                await _paymentRepo.UpsertAsync(payment);
+
+                await transaction.CommitAsync();
+
+                return new ApiResponse<bool>(200, "Cập nhật đơn hàng thành công", true);
+            }
+            catch (Exception ex)
+            {
+                return new ApiResponse<bool>(500, $"Lỗi hệ thống", false);
+            }
+        }
+
+        public async Task<ApiResponse<bool>> CancelAsync(int id)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var order = await _orderRepo.GetByIdAsync(id);
+                if (order == null)
+                    return new ApiResponse<bool>(404, "Không tìm thấy đơn hàng", false);
+
+                if (order.Status == "canceled")
+                    return new ApiResponse<bool>(400, "Đơn hàng đã bị hủy, không thể hủy lại", false);
+
+                if (order.Status == "paid")
+                    return new ApiResponse<bool>(400, "Đơn hàng đã thanh toán, không thể hủy", false);
+
+                // Cập nhật trạng thái đơn hàng
+                order.Status = "canceled";
+                await _orderRepo.UpdateAsync(order);
+
+                // Hoàn trả tồn kho
+                var orderItems = await _orderItemRepo.GetByOrderIdAsync(order.OrderId);
+                foreach (var item in orderItems)
+                {
+                    var inventory = await _inventoryRepo.GetByProductIdAsync(item.ProductId);
+                    if (inventory != null)
+                    {
+                        inventory.Quantity += item.Quantity;
+                        await _inventoryRepo.UpdateAsync(inventory);
+                    }
+                }
+
+                // Cập nhật khuyến mãi (nếu có)
+                if (order.PromoId != null)
+                {
+                    var promo = await _promoRepo.GetByIdAsync(order.PromoId);
+                    if (promo != null && promo.UsedCount > 0)
+                    {
+                        promo.UsedCount -= 1;
+                        await _promoRepo.UpdateAsync(promo);
+                    }
+                }
+
+                await transaction.CommitAsync();
+
+                return new ApiResponse<bool>(200, "Hủy đơn hàng thành công", true);
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return new ApiResponse<bool>(500, "Lỗi khi hủy đơn hàng", false);
+            }
+        }
+
     }
 }

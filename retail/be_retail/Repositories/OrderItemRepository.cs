@@ -20,7 +20,7 @@ namespace be_retail.Repositories
         {
             return await _context.OrderItems
                 .Where(oi => oi.OrderId == orderId)
-                .Include(oi => oi.ProductId)
+                .Include(oi => oi.Product)
                 .ToListAsync();
         }
         public async Task CreateAsync(OrderItem orderItem)
