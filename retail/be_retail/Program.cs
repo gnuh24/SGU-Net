@@ -21,6 +21,9 @@ builder.Services.AddScoped<SupplierRepository>();
 builder.Services.AddScoped<CategoryService>();
 builder.Services.AddScoped<CategoryRepository>();
 
+builder.Services.AddScoped<PromotionService>();
+builder.Services.AddScoped<PromotionRepository>();
+
 // Add DbContext
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>
