@@ -3,6 +3,7 @@ using be_retail.Data;
 using be_retail.DTOs;
 using be_retail.Models;
 using be_retail.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 namespace be_retail.Services
 {
@@ -74,6 +75,58 @@ namespace be_retail.Services
             catch (Exception ex)
             {
                 return new ApiResponse<OrderResponseDTO>(500, "Lỗi khi lấy đơn hàng", new OrderResponseDTO());
+            }
+        }
+
+        public async Task<ApiResponse<PagedResponse<Order>>> SearchAsync(OrderSearchForm form)
+        {
+            try
+            {
+                var query = _orderRepo.Query();
+
+                if (form.CustomerId.HasValue)
+                    query = query.Where(o => o.CustomerId == form.CustomerId);
+
+                if (form.UserId.HasValue)
+                    query = query.Where(o => o.UserId == form.UserId);
+
+                if (!string.IsNullOrEmpty(form.Status))
+                    query = query.Where(o => o.Status == form.Status);
+
+                if (form.PromoId.HasValue)
+                    query = query.Where(o => o.PromoId == form.PromoId);
+
+                if (form.FromDate.HasValue)
+                    query = query.Where(o => o.OrderDate >= form.FromDate.Value);
+
+                if (form.ToDate.HasValue)
+                    query = query.Where(o => o.OrderDate <= form.ToDate.Value);
+
+                var total = await query.CountAsync();
+
+                int pageSize = form.PageSize > 0 ? form.PageSize : 10;
+                int page = form.Page > 0 ? form.Page : 1;
+
+                query = (form.SortBy?.ToLower(), form.SortDirection?.ToLower()) switch
+                {
+                    ("total_amount", "asc") => query.OrderBy(o => o.TotalAmount),
+                    ("total_amount", "desc") => query.OrderByDescending(o => o.TotalAmount),
+                    ("order_date", "asc") => query.OrderBy(o => o.OrderDate),
+                    _ => query.OrderByDescending(o => o.OrderDate),
+                };
+
+                var data = await query
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                var result = new PagedResponse<Order>(data, total, page, pageSize);
+
+                return new ApiResponse<PagedResponse<Order>>(200, "Lấy danh sách đơn hàng thành công", result);
+            }
+            catch (Exception ex)
+            {
+                return new ApiResponse<PagedResponse<Order>>(500, "Lỗi khi tìm kiếm đơn hàng", new PagedResponse<Order>(new List<Order>(), 0, form.Page, form.PageSize));
             }
         }
 
@@ -197,6 +250,86 @@ namespace be_retail.Services
                 // Cập nhật thông tin cơ bản
                 order.UserId = form.UserId ?? order.UserId;
                 order.Status = form.Status ?? order.Status;
+
+                decimal totalAmount = 0;
+
+                // --- Cập nhật chi tiết đơn hàng nếu có ---
+                if (form.OrderItems != null && form.OrderItems.Any())
+                {
+                    var existingItems = await _orderItemRepo.GetByOrderIdAsync(order.OrderId);
+                    var existingItemIds = existingItems.Select(i => i.OrderItemId).ToList();
+
+                    foreach (var itemForm in form.OrderItems)
+                    {
+                        var product = await _productRepo.GetByIdAsync(itemForm.ProductId);
+                        if (product == null)
+                            return new ApiResponse<bool>(400, $"Sản phẩm ID {itemForm.ProductId} không tồn tại", false);
+
+                        var inventory = await _inventoryRepo.GetByProductIdAsync(itemForm.ProductId);
+                        if (inventory == null || inventory.Quantity < itemForm.Quantity)
+                            return new ApiResponse<bool>(400, $"Sản phẩm {product.ProductName} không đủ hàng trong kho", false);
+
+                        if (itemForm.OrderItemId != null)
+                        {
+                            // --- Cập nhật item cũ ---
+                            var existingItem = existingItems.FirstOrDefault(i => i.OrderItemId == itemForm.OrderItemId);
+                            if (existingItem != null)
+                            {
+                                int quantityDiff = itemForm.Quantity - existingItem.Quantity;
+
+                                // Cập nhật tồn kho
+                                inventory.Quantity -= quantityDiff;
+                                await _inventoryRepo.UpdateAsync(inventory);
+
+                                existingItem.Quantity = itemForm.Quantity;
+                                existingItem.Price = product.Price;
+                                existingItem.Subtotal = product.Price * itemForm.Quantity;
+
+                                await _orderItemRepo.UpdateAsync(existingItem);
+                                totalAmount += existingItem.Subtotal;
+                            }
+                        }
+                        else
+                        {
+                            // --- Thêm item mới ---
+                            var newItem = new OrderItem
+                            {
+                                OrderId = order.OrderId,
+                                ProductId = itemForm.ProductId,
+                                Quantity = itemForm.Quantity,
+                                Price = product.Price,
+                                Subtotal = product.Price * itemForm.Quantity
+                            };
+
+                            inventory.Quantity -= itemForm.Quantity;
+                            await _inventoryRepo.UpdateAsync(inventory);
+
+                            await _orderItemRepo.CreateAsync(newItem);
+                            totalAmount += newItem.Subtotal;
+                        }
+                    }
+
+                    // --- Xóa item không còn trong form ---
+                    var removedItems = existingItems.Where(i => !form.OrderItems.Any(f => f.OrderItemId == i.OrderItemId)).ToList();
+                    foreach (var removed in removedItems)
+                    {
+                        var inventory = await _inventoryRepo.GetByProductIdAsync(removed.ProductId);
+                        if (inventory != null)
+                        {
+                            inventory.Quantity += removed.Quantity; // hoàn lại tồn kho
+                            await _inventoryRepo.UpdateAsync(inventory);
+                        }
+                        await _orderItemRepo.DeleteAsync(removed.OrderItemId);
+                        totalAmount -= removed.Subtotal;
+                    }
+                }
+                else
+                {
+                    // Không truyền items → giữ nguyên tổng tiền cũ
+                    totalAmount = order.TotalAmount;
+                }
+
+                order.TotalAmount = totalAmount;
 
                 // Nếu có thay đổi mã khuyến mãi
                 if (form.PromoId != null && order.PromoId != form.PromoId)

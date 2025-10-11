@@ -21,39 +21,19 @@ namespace be_retail.Repositories
                     .ThenInclude(oi => oi.Product)
                 .FirstOrDefaultAsync(o => o.OrderId == id);
         }
-
+        public IQueryable<Order> Query()
+        {
+            return _context.Orders
+                .Include(o => o.OrderItems)
+                .Include(o => o.Payment)
+                .AsQueryable();
+        }
         public async Task<List<Order>> GetAllAsync()
         {
             return await _context.Orders
                 .Include(o => o.OrderItems)
                 .Include(o => o.Payment)
                 .ToListAsync();
-        }
-
-        public async Task<PagedResponse<Order>> SearchAsync(string? keyword, int pageNumber, int pageSize)
-        {
-            var query = _context.Orders.AsQueryable();
-
-            if (!string.IsNullOrEmpty(keyword))
-                query = query.Where(o => o.Status.Contains(keyword) ||
-                                        o.User.FullName.Contains(keyword) ||
-                                        o.Customer.Name.Contains(keyword));
-
-            int totalCount = await query.CountAsync();
-
-            var data = await query
-                .OrderByDescending(o => o.OrderDate)
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-
-            return new PagedResponse<Order>
-            {
-                Data = data,
-                Total = totalCount,
-                Page = pageNumber,
-                PageSize = pageSize
-            };
         }
         public async Task CreateAsync(Order order)
         {

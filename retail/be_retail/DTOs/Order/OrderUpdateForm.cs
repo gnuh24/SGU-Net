@@ -1,5 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-
 namespace be_retail.DTOs
 {
     public class OrderUpdateForm
@@ -8,5 +6,7 @@ namespace be_retail.DTOs
         public int? PromoId { get; set; }
         public string? Status { get; set; }
         public string? PaymentMethod { get; set; }
+
+        public List<OrderItemUpdateForm>? OrderItems { get; set; }
     }
 }
