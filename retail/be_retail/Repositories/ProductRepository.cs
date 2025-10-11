@@ -99,6 +99,21 @@ namespace be_retail.Repositories
             var existing = await GetByIdAsync(id);
             if (existing == null) return null;
 
+            if (updated.CategoryId != null)
+            {
+                var categoryExists = await _context.Categories.AnyAsync(c => c.CategoryId == updated.CategoryId);
+                if (!categoryExists)
+                    throw new Exception("Loại sản phẩm không tồn tại.");
+            }
+
+            // Kiểm tra SupplierId
+            if (updated.SupplierId != null)
+            {
+                var supplierExists = await _context.Suppliers.AnyAsync(s => s.SupplierId == updated.SupplierId);
+                if (!supplierExists)
+                    throw new Exception("Nhà cung cấp không tồn tại.");
+            }
+    
             existing.Name = updated.Name;
             existing.Barcode = updated.Barcode;
             existing.Price = updated.Price;
