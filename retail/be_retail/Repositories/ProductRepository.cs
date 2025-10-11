@@ -27,7 +27,7 @@ namespace be_retail.Repositories
             if (!string.IsNullOrEmpty(search))
             {
                 query = query.Where(p =>
-                    p.ProductName.Contains(search) ||
+                    p.Name.Contains(search) ||
                     (p.Barcode != null && p.Barcode.Contains(search)) ||
                     p.Price.ToString().Contains(search));
             }
@@ -36,7 +36,7 @@ namespace be_retail.Repositories
             sortBy = sortBy?.ToLower() ?? "created_at";
             Expression<Func<Product, object>> sortExpr = sortBy switch
             {
-                "product_name" => p => p.ProductName,
+                "product_name" => p => p.Name,
                 "barcode" => p => p.Barcode!,
                 "price" => p => p.Price,
                 "created_at" => p => p.CreatedAt,
@@ -60,7 +60,7 @@ namespace be_retail.Repositories
             if (!string.IsNullOrEmpty(search))
             {
                 query = query.Where(p =>
-                    p.ProductName.Contains(search) ||
+                    p.Name.Contains(search) ||
                     (p.Barcode != null && p.Barcode.Contains(search)) ||
                     p.Price.ToString().Contains(search));
             }
@@ -75,6 +75,20 @@ namespace be_retail.Repositories
 
         public async Task<Product> CreateAsync(Product product)
         {
+            if (product.CategoryId != null)
+            {
+                var categoryExists = await _context.Categories.AnyAsync(c => c.CategoryId == product.CategoryId);
+                if (!categoryExists)
+                    throw new Exception("Loại sản phẩm không tồn tại.");
+            }
+
+            // Kiểm tra SupplierId
+            if (product.SupplierId != null)
+            {
+                var supplierExists = await _context.Suppliers.AnyAsync(s => s.SupplierId == product.SupplierId);
+                if (!supplierExists)
+                    throw new Exception("Nhà cung cấp không tồn tại.");
+            }
             _context.Products.Add(product);
             await _context.SaveChangesAsync();
             return product;
@@ -82,10 +96,10 @@ namespace be_retail.Repositories
 
         public async Task<Product?> UpdateAsync(int id, Product updated)
         {
-            var existing = await _context.Products.FindAsync(id);
+            var existing = await GetByIdAsync(id);
             if (existing == null) return null;
 
-            existing.ProductName = updated.ProductName;
+            existing.Name = updated.Name;
             existing.Barcode = updated.Barcode;
             existing.Price = updated.Price;
             existing.Unit = updated.Unit;
@@ -99,10 +113,10 @@ namespace be_retail.Repositories
 
         public async Task<Product?> DeleteAsync(int id)
         {
-            var existing = await _context.Products.FindAsync(id);
+            var existing = await GetByIdAsync(id);
             if (existing == null) return null;
 
-            existing.IsDeleted = "1";
+            existing.IsDeleted = true;
             await _context.SaveChangesAsync();
             return existing;
         }

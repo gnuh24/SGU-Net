@@ -5,7 +5,7 @@ namespace be_retail.DTOs
     public class ProductCreateForm
     {
         [Required, MaxLength(100)]
-        public string ProductName { get; set; } = null!;
+        public string Name { get; set; } = null!;
 
         [Required]
         [StringLength(13, MinimumLength = 13, ErrorMessage = "Barcode phải có đúng 13 ký tự.")]
@@ -21,6 +21,6 @@ namespace be_retail.DTOs
 
         public int? SupplierId { get; set; }
 
-        public string IsDeleted { get; set; } = "0";
+        public bool IsDeleted { get; set; } = false;
     }
 }

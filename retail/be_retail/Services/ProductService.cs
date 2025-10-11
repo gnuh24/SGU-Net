@@ -36,10 +36,10 @@ namespace be_retail.Services
             // Map DTO → Entity ở Service
             var product = new Product
             {
-                ProductName = form.ProductName,
+                Name = form.Name,
                 Barcode = form.Barcode,
                 Price = form.Price,
-                Unit = form.Unit,
+                Unit = form.Unit ?? "pcs",
                 CategoryId = form.CategoryId,
                 SupplierId = form.SupplierId
             };
@@ -54,10 +54,10 @@ namespace be_retail.Services
              // Map DTO → Entity ở Service
             var product = new Product
             {
-                ProductName = form.ProductName,
+                Name = form.Name,
                 Barcode = form.Barcode,
                 Price = form.Price,
-                Unit = form.Unit,
+                Unit = form.Unit ?? "pcs",
                 IsDeleted = form.IsDeleted,
                 CategoryId = form.CategoryId,
                 SupplierId = form.SupplierId

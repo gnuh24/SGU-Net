@@ -20,6 +20,6 @@ namespace be_retail.DTOs
 
         public DateTime CreatedAt { get; set; }
 
-        public string IsDeleted { get; set; } = "0";
+        public bool IsDeleted { get; set; } = false;
     }
 }
