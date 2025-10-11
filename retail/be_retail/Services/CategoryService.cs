@@ -13,6 +13,11 @@ namespace be_retail.Services
             _categoryRepository = categoryRepository;
         }
 
+        public async Task<(IEnumerable<Category> items, int total)> GetPagedAsync(string? search = null, int page = 1, int pageSize = 10)
+        {
+            return await _categoryRepository.GetPagedAsync(search, page, pageSize);
+        }
+
         public async Task<IEnumerable<Category>> GetAllAsync(string? search = null)
         {
             return await _categoryRepository.GetAllAsync(search);

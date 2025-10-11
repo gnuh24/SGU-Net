@@ -13,6 +13,30 @@ namespace be_retail.Repositories
             _context = context;
         }
 
+        public async Task<(IEnumerable<Supplier> items, int total)> GetPagedAsync(string? search = null, int page = 1, int pageSize = 10)
+        {
+            var query = _context.Suppliers.Where(s => s.IsDeleted == true);
+
+            if (!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(s => 
+                    s.Name.Contains(search) ||
+                    (s.Phone != null && s.Phone.Contains(search)) ||
+                    (s.Email != null && s.Email.Contains(search)) ||
+                    (s.Address != null && s.Address.Contains(search))
+                );
+            }
+
+            var total = await query.CountAsync();
+            var items = await query
+                .OrderBy(s => s.Name)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, total);
+        }
+
         public async Task<IEnumerable<Supplier>> GetAllAsync(string? search = null)
         {
             var query = _context.Suppliers.Where(s => s.IsDeleted == true);
@@ -62,6 +86,15 @@ namespace be_retail.Repositories
         {
             var supplier = await GetByIdAsync(id);
             if (supplier == null) return false;
+
+            var productsToUpdate = await _context.Products
+                .Where(p => p.SupplierId == id)
+                .ToListAsync();
+
+            foreach (var product in productsToUpdate)
+            {
+                product.SupplierId = 1;
+            }
 
             supplier.IsDeleted = false;
             await _context.SaveChangesAsync();
