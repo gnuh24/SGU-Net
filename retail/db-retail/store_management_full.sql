@@ -28,7 +28,8 @@ CREATE TABLE customers (
 -- Bảng loại sản phẩm
 CREATE TABLE categories (
     category_id INT AUTO_INCREMENT PRIMARY KEY,
-    category_name VARCHAR(100) NOT NULL
+    category_name VARCHAR(100) NOT NULL,
+    is_deleted BOOLEAN DEFAULT FALSE -- Cột is_deleted đã được thêm
 );
 
 -- Bảng nhà cung cấp
@@ -37,7 +38,8 @@ CREATE TABLE suppliers (
     name VARCHAR(100) NOT NULL,
     phone VARCHAR(20),
     email VARCHAR(100),
-    address TEXT
+    address TEXT,
+    is_deleted BOOLEAN DEFAULT FALSE -- Cột is_deleted đã được thêm
 );
 
 -- Bảng sản phẩm
@@ -118,10 +120,11 @@ INSERT INTO customers (name,phone,email,address) VALUES
 
 -- DATA CATEGORIES
 INSERT INTO categories (category_name) VALUES
-('Đồ uống'),('Bánh kẹo'),('Gia vị'),('Đồ gia dụng'),('Mỹ phẩm');
+("Chưa phân loại"),('Đồ uống'),('Bánh kẹo'),('Gia vị'),('Đồ gia dụng'),('Mỹ phẩm');
 
 -- DATA SUPPLIERS
 INSERT INTO suppliers (name,phone,email,address) VALUES
+("Các nhà cung cấp khác","","",""),
 ('Công ty ABC','0909123456','abc@gmail.com','Hà Nội'),
 ('Công ty XYZ','0912123456','xyz@gmail.com','TP HCM'),
 ('Công ty 123','0933123456','123@gmail.com','Đà Nẵng');
