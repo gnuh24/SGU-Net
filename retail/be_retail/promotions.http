@@ -1,0 +1,79 @@
+### Promotion CRUD API Tests
+
+### Get all promotions
+GET {{host}}/api/v1/promotions
+
+### Get promotions with pagination
+GET {{host}}/api/v1/promotions?page=1&pageSize=5
+
+### Search promotions
+GET {{host}}/api/v1/promotions?search=SUMMER
+
+### Get promotion by ID
+GET {{host}}/api/v1/promotions/1
+
+### Get promotion by promo code
+GET {{host}}/api/v1/promotions/code/SUMMER2024
+
+### Get active promotions
+GET {{host}}/api/v1/promotions/active
+
+### Create new promotion
+POST {{host}}/api/v1/promotions
+Content-Type: application/json
+
+{
+  "promoCode": "SUMMER2024",
+  "description": "Summer sale promotion",
+  "discountType": "percent",
+  "discountValue": 20.00,
+  "startDate": "2024-06-01T00:00:00Z",
+  "endDate": "2024-08-31T23:59:59Z",
+  "minOrderAmount": 100.00,
+  "usageLimit": 100,
+  "status": "active"
+}
+
+### Create fixed discount promotion
+POST {{host}}/api/v1/promotions
+Content-Type: application/json
+
+{
+  "promoCode": "SAVE50",
+  "description": "Save $50 on orders over $200",
+  "discountType": "fixed",
+  "discountValue": 50.00,
+  "startDate": "2024-01-01T00:00:00Z",
+  "endDate": "2024-12-31T23:59:59Z",
+  "minOrderAmount": 200.00,
+  "usageLimit": 0,
+  "status": "active"
+}
+
+### Update promotion
+PUT {{host}}/api/v1/promotions/1
+Content-Type: application/json
+
+{
+  "promoCode": "SUMMER2024",
+  "description": "Updated summer sale promotion",
+  "discountType": "percent",
+  "discountValue": 25.00,
+  "startDate": "2024-06-01T00:00:00Z",
+  "endDate": "2024-08-31T23:59:59Z",
+  "minOrderAmount": 150.00,
+  "usageLimit": 200,
+  "status": "active"
+}
+
+### Validate promotion
+POST {{host}}/api/v1/promotions/validate
+Content-Type: application/json
+
+{
+  "promoCode": "SUMMER2024",
+  "orderAmount": 250.00
+}
+
+### Delete promotion
+DELETE {{host}}/api/v1/promotions/1
