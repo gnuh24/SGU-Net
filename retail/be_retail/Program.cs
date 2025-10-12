@@ -24,6 +24,9 @@ builder.Services.AddScoped<CategoryRepository>();
 builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<ProductRepository>();
 
+builder.Services.AddScoped<InventoryService>();
+builder.Services.AddScoped<InventoryRepository>();
+
 // Add DbContext
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>
