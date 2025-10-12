@@ -62,7 +62,7 @@ namespace be_retail.Repositories
         public async Task<Inventory> CreateOrUpdateInventoryAsync(int productId, int quantityChange)
         {
             var inventory = await GetInventoryByProductIdAsync(productId);
-            
+
             if (inventory == null)
             {
                 inventory = new Inventory

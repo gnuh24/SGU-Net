@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace be_retail.Controllers
 {
-    
+
     [ApiController]
     [Route("api/v1/inventories")] // Đổi route cho nhất quán với Product
     public class InventoryController : ControllerBase
@@ -77,7 +77,7 @@ namespace be_retail.Controllers
             }
 
             var result = await _inventoryService.StockInAsync(form);
-            
+
             if (result.Status == 1) // Logic StockIn của Service trả về Status=1 cho thành công
             {
                 return Ok(new ApiResponse<InventoryResponseDTO>

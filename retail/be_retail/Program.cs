@@ -26,8 +26,6 @@ builder.Services.AddScoped<ProductRepository>();
 
 builder.Services.AddScoped<InventoryService>();
 builder.Services.AddScoped<InventoryRepository>();
-builder.Services.AddScoped<PromotionService>();
-builder.Services.AddScoped<PromotionRepository>();
 
 // Add DbContext
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
