@@ -15,7 +15,7 @@ namespace be_retail.Repositories
 
         public async Task<(IEnumerable<Supplier> items, int total)> GetPagedAsync(string? search = null, int page = 1, int pageSize = 10)
         {
-            var query = _context.Suppliers.Where(s => s.IsDeleted == true);
+            var query = _context.Suppliers.Where(s => s.IsDeleted == false);
 
             if (!string.IsNullOrEmpty(search))
             {
@@ -39,7 +39,7 @@ namespace be_retail.Repositories
 
         public async Task<IEnumerable<Supplier>> GetAllAsync(string? search = null)
         {
-            var query = _context.Suppliers.Where(s => s.IsDeleted == true);
+            var query = _context.Suppliers.Where(s => s.IsDeleted == false);
 
             if (!string.IsNullOrEmpty(search))
             {
@@ -57,7 +57,7 @@ namespace be_retail.Repositories
         public async Task<Supplier?> GetByIdAsync(int id)
         {
             return await _context.Suppliers
-                .Where(s => s.SupplierId == id && s.IsDeleted == true)
+                .Where(s => s.SupplierId == id && s.IsDeleted == false)
                 .FirstOrDefaultAsync();
         }
 
@@ -96,7 +96,7 @@ namespace be_retail.Repositories
                 product.SupplierId = 1;
             }
 
-            supplier.IsDeleted = false;
+            supplier.IsDeleted = true;
             await _context.SaveChangesAsync();
             return true;
         }
@@ -104,7 +104,7 @@ namespace be_retail.Repositories
         public async Task<bool> ExistsAsync(int id)
         {
             return await _context.Suppliers
-                .Where(s => s.SupplierId == id && s.IsDeleted == true)
+                .Where(s => s.SupplierId == id && s.IsDeleted == false)
                 .AnyAsync();
         }
     }

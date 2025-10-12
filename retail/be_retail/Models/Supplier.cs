@@ -26,6 +26,6 @@ namespace be_retail.Models
         public string? Address { get; set; }
 
         [Column("is_deleted")]
-        public bool IsDeleted { get; set; } = true;
+        public bool IsDeleted { get; set; } = false;
     }
 }

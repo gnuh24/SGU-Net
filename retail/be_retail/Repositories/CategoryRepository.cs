@@ -15,7 +15,7 @@ namespace be_retail.Repositories
 
         public async Task<(IEnumerable<Category> items, int total)> GetPagedAsync(string? search = null, int page = 1, int pageSize = 10)
         {
-            var query = _context.Categories.Where(c => c.IsDeleted == true);
+            var query = _context.Categories.Where(c => c.IsDeleted == false);
 
             if (!string.IsNullOrEmpty(search))
             {
@@ -34,7 +34,7 @@ namespace be_retail.Repositories
 
         public async Task<IEnumerable<Category>> GetAllAsync(string? search = null)
         {
-            var query = _context.Categories.Where(c => c.IsDeleted == true);
+            var query = _context.Categories.Where(c => c.IsDeleted == false);
 
             if (!string.IsNullOrEmpty(search))
             {
@@ -47,7 +47,7 @@ namespace be_retail.Repositories
         public async Task<Category?> GetByIdAsync(int id)
         {
             return await _context.Categories
-                .Where(c => c.CategoryId == id && c.IsDeleted == true)
+                .Where(c => c.CategoryId == id && c.IsDeleted == false)
                 .FirstOrDefaultAsync();
         }
 
@@ -83,7 +83,7 @@ namespace be_retail.Repositories
                 product.CategoryId = 1;
             }
 
-            category.IsDeleted = false;
+            category.IsDeleted = true;
             await _context.SaveChangesAsync();
             return true;
         }
@@ -91,7 +91,7 @@ namespace be_retail.Repositories
         public async Task<bool> ExistsAsync(int id)
         {
             return await _context.Categories
-                .Where(c => c.CategoryId == id && c.IsDeleted == true)
+                .Where(c => c.CategoryId == id && c.IsDeleted == false)
                 .AnyAsync();
         }
     }
