@@ -167,7 +167,7 @@ namespace be_retail.Services
 
                 if (form.PromoId != null)
                 {
-                    var promo = await _promoRepo.GetByIdAsync(form.PromoId.Value);
+                    var promo = await _promoRepo.GetByIdAsync(form.PromoId ?? -1);
                     if (promo != null && promo.Status == "active"
                         && promo.StartDate <= DateTime.Now
                         && promo.EndDate >= DateTime.Now
@@ -334,7 +334,7 @@ namespace be_retail.Services
                 // Nếu có thay đổi mã khuyến mãi
                 if (form.PromoId != null && order.PromoId != form.PromoId)
                 {
-                    var promo = await _promoRepo.GetByIdAsync(form.PromoId.Value);
+                    var promo = await _promoRepo.GetByIdAsync(form.PromoId ?? -1);
                     // Tính lại giảm giá
                     if (promo != null && promo.Status == "active"
                         && promo.StartDate <= DateTime.Now
@@ -343,7 +343,7 @@ namespace be_retail.Services
                         && promo.UsedCount < promo.UsageLimit
                         )
                     {
-                        var oldPromo = await _promoRepo.GetByIdAsync(order.PromoId.Value);
+                        var oldPromo = await _promoRepo.GetByIdAsync(order.PromoId ?? -1);
                         if (oldPromo != null && oldPromo.UsedCount > 0)
                         {
                             oldPromo.UsedCount -= 1;
@@ -427,7 +427,7 @@ namespace be_retail.Services
                 // Cập nhật khuyến mãi (nếu có)
                 if (order.PromoId != null)
                 {
-                    var promo = await _promoRepo.GetByIdAsync(order.PromoId.Value);
+                    var promo = await _promoRepo.GetByIdAsync(order.PromoId ?? -1);
                     if (promo != null && promo.UsedCount > 0)
                     {
                         promo.UsedCount -= 1;
