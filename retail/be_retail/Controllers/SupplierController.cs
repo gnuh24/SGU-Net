@@ -35,13 +35,7 @@ namespace be_retail.Controllers
                     Address = s.Address
                 }).ToList();
 
-                var response = new PagedResponse<SupplierResponseDTO>
-                {
-                    Data = data,
-                    Total = total,
-                    Page = page.Value,
-                    PageSize = pageSize
-                };
+                var response = new PagedResponse<SupplierResponseDTO>(data, total, page.Value, pageSize);
 
                 return Ok(new ApiResponse<PagedResponse<SupplierResponseDTO>>
                 {
