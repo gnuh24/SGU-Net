@@ -15,6 +15,6 @@ namespace be_retail.Models
         public string Name { get; set; } = null!;
 
         [Column("is_deleted")]
-        public bool IsDeleted { get; set; } = true;
+        public bool IsDeleted { get; set; } = false;
     }
 }

@@ -13,7 +13,7 @@ namespace be_retail.Data
                 var defaultSupplier = new Supplier
                 {
                     Name = "Các nhà cung cấp khác",
-                    IsDeleted = true
+                    IsDeleted = false
                 };
                 context.Suppliers.Add(defaultSupplier);
             }
@@ -23,7 +23,7 @@ namespace be_retail.Data
                 var defaultCategory = new Category
                 {
                     Name = "Chưa phân loại",
-                    IsDeleted = true
+                    IsDeleted = false
                 };
                 context.Categories.Add(defaultCategory);
             }
