@@ -267,7 +267,7 @@ namespace be_retail.Services
 
                         var inventory = await _inventoryRepo.GetByProductIdAsync(itemForm.ProductId);
                         if (inventory == null || inventory.Quantity < itemForm.Quantity)
-                            return new ApiResponse<bool>(400, $"Sản phẩm {product.ProductName} không đủ hàng trong kho", false);
+                            return new ApiResponse<bool>(400, $"Sản phẩm {product.Name} không đủ hàng trong kho", false);
 
                         if (itemForm.OrderItemId != null)
                         {

@@ -51,7 +51,8 @@ CREATE TABLE products (
     barcode VARCHAR(50) UNIQUE,
     price DECIMAL(10,2) NOT NULL,
     unit VARCHAR(20) DEFAULT 'pcs',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN DEFAULT FALSE
 );
 
 -- Bảng tồn kho

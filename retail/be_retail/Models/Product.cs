@@ -34,6 +34,9 @@ namespace be_retail.Models
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        [Column("is_deleted")]
+        public bool IsDeleted { get; set; } = false;
+        
         [ForeignKey("CategoryId")]
         public virtual Category? Category { get; set; }
 
