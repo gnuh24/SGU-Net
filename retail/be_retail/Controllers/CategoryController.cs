@@ -32,13 +32,7 @@ namespace be_retail.Controllers
                     Name = c.Name
                 }).ToList();
 
-                var response = new PagedResponse<CategoryResponseDTO>
-                {
-                    Data = data,
-                    Total = total,
-                    Page = page.Value,
-                    PageSize = pageSize
-                };
+                var response = new PagedResponse<CategoryResponseDTO>(data, total, page.Value, pageSize);
 
                 return Ok(new ApiResponse<PagedResponse<CategoryResponseDTO>>
                 {

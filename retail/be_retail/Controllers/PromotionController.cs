@@ -44,13 +44,7 @@ namespace be_retail.Controllers
                         Status = p.Status
                     }).ToList();
 
-                    var response = new PagedResponse<PromotionResponseDTO>
-                    {
-                        Data = data,
-                        Total = total,
-                        Page = page.Value,
-                        PageSize = pageSize
-                    };
+                    var response = new PagedResponse<PromotionResponseDTO>(data, total, page.Value, pageSize);
 
                     return Ok(new ApiResponse<PagedResponse<PromotionResponseDTO>>
                     {
