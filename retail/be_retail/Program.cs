@@ -21,6 +21,11 @@ builder.Services.AddScoped<SupplierRepository>();
 builder.Services.AddScoped<CategoryService>();
 builder.Services.AddScoped<CategoryRepository>();
 
+builder.Services.AddScoped<ProductService>();
+builder.Services.AddScoped<ProductRepository>();
+
+builder.Services.AddScoped<InventoryService>();
+builder.Services.AddScoped<InventoryRepository>();
 builder.Services.AddScoped<PromotionService>();
 builder.Services.AddScoped<PromotionRepository>();
 
