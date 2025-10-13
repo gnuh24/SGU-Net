@@ -8,10 +8,10 @@ namespace be_retail.Controllers
 {
     
     [ApiController]
-    [Route("api/v1/inventories")] // Đổi route cho nhất quán với Product
+    [Route("api/v1/inventories")]
     public class InventoryController : ControllerBase
     {
-        private readonly InventoryService _inventoryService; // Sử dụng interface
+        private readonly InventoryService _inventoryService; 
 
         public InventoryController(InventoryService inventoryService)
         {
@@ -109,6 +109,33 @@ namespace be_retail.Controllers
                 Message = "Inventory summary fetched successfully.",
                 Data = result.Data
             });
+        }
+
+        // 🟢 Cập nhật số lượng tồn kho theo InventoryId (giá trị tuyệt đối)
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateInventory(int id, [FromBody] InventoryUpdateForm form)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new ApiResponse<object>
+                {
+                    Status = 400,
+                    Message = "Dữ liệu cập nhật không hợp lệ"
+                });
+            }
+
+            var result = await _inventoryService.UpdateQuantityAsync(id, form);
+            if (result.Status == 200)
+            {
+                return Ok(result);
+            }
+
+            if (result.Status == 404)
+            {
+                return NotFound(result);
+            }
+
+            return StatusCode(result.Status, result);
         }
     }
 }

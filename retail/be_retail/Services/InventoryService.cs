@@ -3,6 +3,7 @@ using be_retail.DTOs.Inventory;
 using be_retail.Models;
 using be_retail.Repositories;
 using be_retail.DTOs;
+using System.ComponentModel.DataAnnotations;
 
 namespace be_retail.Services
 {
@@ -72,6 +73,54 @@ namespace be_retail.Services
                 return new ApiResponse<InventoryResponseDTO>
                 {
                     Status = 0,
+                    Message = "Có lỗi xảy ra khi xử lý: " + ex.Message
+                };
+            }
+        }
+
+        public async Task<ApiResponse<InventoryResponseDTO>> UpdateQuantityAsync(int inventoryId, InventoryUpdateForm form)
+        {
+            try
+            {
+                if (form == null)
+                {
+                    return new ApiResponse<InventoryResponseDTO>
+                    {
+                        Status = 400,
+                        Message = "Dữ liệu cập nhật không hợp lệ"
+                    };
+                }
+
+                var updated = await _inventoryRepository.UpdateQuantityAsync(inventoryId, form.Quantity);
+                if (updated == null)
+                {
+                    return new ApiResponse<InventoryResponseDTO>
+                    {
+                        Status = 404,
+                        Message = "Inventory record not found."
+                    };
+                }
+
+                var dto = new InventoryResponseDTO
+                {
+                    InventoryId = updated.InventoryId,
+                    ProductId = updated.ProductId,
+                    Quantity = updated.Quantity,
+                    UpdatedAt = updated.UpdatedAt
+                };
+
+                return new ApiResponse<InventoryResponseDTO>
+                {
+                    Status = 200,
+                    Message = "Inventory updated successfully.",
+                    Data = dto
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ApiResponse<InventoryResponseDTO>
+                {
+                    Status = 500,
                     Message = "Có lỗi xảy ra khi xử lý: " + ex.Message
                 };
             }

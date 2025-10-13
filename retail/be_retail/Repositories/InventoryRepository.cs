@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace be_retail.Repositories
 {
     public class InventoryRepository
-    {
+{
         private readonly AppDbContext _context;
 
         public InventoryRepository(AppDbContext context)
@@ -53,8 +53,30 @@ namespace be_retail.Repositories
                 .FirstOrDefaultAsync(i => i.ProductId == productId);
         }
 
+        public async Task<Inventory?> GetByIdAsync(int inventoryId)
+        {
+            return await _context.Inventories
+                .FirstOrDefaultAsync(i => i.InventoryId == inventoryId);
+        }
+
         public async Task<Inventory> UpdateAsync(Inventory inventory)
         {
+            _context.Inventories.Update(inventory);
+            await _context.SaveChangesAsync();
+            return inventory;
+        }
+
+        public async Task<Inventory?> UpdateQuantityAsync(int inventoryId, int quantity)
+        {
+            var inventory = await GetByIdAsync(inventoryId);
+            if (inventory == null)
+            {
+                return null;
+            }
+
+            inventory.Quantity = quantity;
+            inventory.UpdatedAt = DateTime.UtcNow;
+
             _context.Inventories.Update(inventory);
             await _context.SaveChangesAsync();
             return inventory;
