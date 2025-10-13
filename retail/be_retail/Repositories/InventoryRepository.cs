@@ -44,41 +44,18 @@ namespace be_retail.Repositories
                 })
                 .ToListAsync();
 
-            return new PagedResponse<InventoryResponseDTO>
-            {
-                Data = inventories,
-                Page = page,
-                PageSize = pageSize,
-                Total = totalCount
-            };
+            return new PagedResponse<InventoryResponseDTO>(inventories, totalCount, page, pageSize);
         }
 
-        public async Task<Inventory?> GetInventoryByProductIdAsync(int productId)
+        public async Task<Inventory?> GetByProductIdAsync(int productId)
         {
             return await _context.Inventories
                 .FirstOrDefaultAsync(i => i.ProductId == productId);
         }
 
-        public async Task<Inventory> CreateOrUpdateInventoryAsync(int productId, int quantityChange)
+        public async Task<Inventory> UpdateAsync(Inventory inventory)
         {
-            var inventory = await GetInventoryByProductIdAsync(productId);
-            
-            if (inventory == null)
-            {
-                inventory = new Inventory
-                {
-                    ProductId = productId,
-                    Quantity = quantityChange,
-                    UpdatedAt = DateTime.UtcNow
-                };
-                _context.Inventories.Add(inventory);
-            }
-            else
-            {
-                inventory.Quantity += quantityChange;
-                inventory.UpdatedAt = DateTime.UtcNow;
-            }
-
+            _context.Inventories.Update(inventory);
             await _context.SaveChangesAsync();
             return inventory;
         }
@@ -116,6 +93,30 @@ namespace be_retail.Repositories
                 .FirstOrDefaultAsync();
 
             return summary ?? new { TotalProducts = 0, TotalQuantity = 0, TotalValue = (decimal)0, LowStockProducts = 0 };
+        }
+
+        public async Task<Inventory> CreateOrUpdateInventoryAsync(int productId, int quantityChange)
+        {
+            var inventory = await GetByProductIdAsync(productId);
+            if (inventory == null)
+            {
+                inventory = new Inventory
+                {
+                    ProductId = productId,
+                    Quantity = quantityChange,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                _context.Inventories.Add(inventory);
+            }
+            else
+            {
+                inventory.Quantity += quantityChange;
+                inventory.UpdatedAt = DateTime.UtcNow;
+                _context.Inventories.Update(inventory);
+            }
+
+            await _context.SaveChangesAsync();
+            return inventory;
         }
     }
 }
