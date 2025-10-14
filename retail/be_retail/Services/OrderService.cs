@@ -34,7 +34,7 @@ namespace be_retail.Services
             _paymentRepo = paymentRepository;
         }
 
-        internal async Task<ApiResponse<OrderResponseDTO>> GetByIdAsync(int id)
+        public async Task<ApiResponse<OrderResponseDTO>> GetByIdAsync(int id)
         {
             try
             {
