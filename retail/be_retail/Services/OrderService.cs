@@ -186,6 +186,11 @@ namespace be_retail.Services
                     }
                 }
 
+                if (form.PaymentMethod == "cash")
+                {
+                    form.Status = "paid";
+                }
+
                 var order = new Order
                 {
                     CustomerId = form.CustomerId,
