@@ -34,6 +34,10 @@ namespace be_retail.Controllers
         [HttpGet("search")]
         public async Task<IActionResult> SearchOrders([FromQuery] OrderSearchForm form)
         {
+            if (form == null)
+            {
+                return BadRequest(new { Status = 400, Message = "Dữ liệu không hợp lệ", Data = false });
+            }
             var result = await _service.SearchAsync(form);
             switch (result.Status)
             {
@@ -51,6 +55,11 @@ namespace be_retail.Controllers
         [HttpPost("create")]
         public async Task<IActionResult> CreateOrder([FromBody] OrderCreateForm form)
         {
+            if (form == null || form.OrderItems == null || !form.OrderItems.Any())
+            {
+                return BadRequest(new { Status = 400, Message = "Dữ liệu không hợp lệ", Data = false });
+            }
+
             var result = await _service.CreateAsync(form);
             switch (result.Status)
             {
@@ -70,6 +79,10 @@ namespace be_retail.Controllers
         [HttpPatch("update/{id}")]
         public async Task<IActionResult> UpdateOrder(int id, [FromBody] OrderUpdateForm form)
         {
+            if (form == null || form.OrderItems == null || !form.OrderItems.Any())
+            {
+                return BadRequest(new { Status = 400, Message = "Dữ liệu không hợp lệ", Data = false });
+            }
             var result = await _service.UpdateAsync(id, form);
             switch (result.Status)
             {
@@ -89,6 +102,10 @@ namespace be_retail.Controllers
         [HttpPatch("cancel/{id}")]
         public async Task<IActionResult> CancelOrder(int id)
         {
+            if (id <= 0)
+            {
+                return BadRequest(new { Status = 400, Message = "Dữ liệu không hợp lệ", Data = false });
+            }
             var result = await _service.CancelAsync(id);
             switch (result.Status)
             {
