@@ -1,6 +1,4 @@
-
 -- DATABASE STORE MANAGEMENT FULL
-
 DROP DATABASE store_management;
 CREATE DATABASE store_management;
 USE store_management;
@@ -22,7 +20,8 @@ CREATE TABLE customers (
     phone VARCHAR(20),
     email VARCHAR(100),
     address TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN DEFAULT FALSE -- Cột is_deleted đã được thêm
 );
 
 -- Bảng loại sản phẩm
