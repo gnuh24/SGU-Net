@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace be_retail.Services
 {
-    class OrderService
+    public class OrderService
     {
         private readonly AppDbContext _context;
         private readonly ProductRepository _productRepo;

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 
 namespace be_retail.DTOs
 {
@@ -11,6 +12,6 @@ namespace be_retail.DTOs
         public decimal Amount { get; set; }
 
         [RegularExpression("cash|card|bank_transfer|e-wallet")]
-        public string PaymentMethod { get; set; }
+        public string PaymentMethod { get; set; } = null!;
     }
 }
