@@ -23,9 +23,13 @@ namespace be_retail.Controllers
         public async Task<IActionResult> GetInventories(
             [FromQuery] string? search,
             [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 10)
+            [FromQuery] int pageSize = 10,
+            [FromQuery] int? categoryId = null,
+            [FromQuery] int? supplierId = null,
+            [FromQuery] string? categoryName = null,
+            [FromQuery] string? supplierName = null)
         {
-            var result = await _inventoryService.GetInventoriesAsync(page, pageSize, search);
+            var result = await _inventoryService.GetInventoriesAsync(page, pageSize, search, categoryId, supplierId, categoryName, supplierName);
 
             return Ok(new ApiResponse<object>
             {
@@ -108,6 +112,32 @@ namespace be_retail.Controllers
                 Status = 200,
                 Message = "Inventory summary fetched successfully.",
                 Data = result.Data
+            });
+        }
+
+        // Các filter theo categoryId/supplierId đã được tích hợp vào GET /inventories
+
+        // 🟢 Lấy danh sách sản phẩm sắp hết hàng
+        [HttpGet("low-stock")]
+        public async Task<IActionResult> GetLowStockProducts(
+            [FromQuery] int threshold = 10,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
+        {
+            var result = await _inventoryService.GetLowStockProductsAsync(threshold, page, pageSize);
+
+            return Ok(new ApiResponse<object>
+            {
+                Status = 200,
+                Message = "Get low stock products successfully.",
+                Data = new
+                {
+                    total = result.Total,
+                    page = result.Page,
+                    pageSize = result.PageSize,
+                    totalPages = result.TotalPages,
+                    data = result.Data
+                }
             });
         }
 
