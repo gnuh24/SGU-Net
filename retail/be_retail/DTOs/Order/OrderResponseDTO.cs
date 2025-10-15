@@ -11,6 +11,6 @@ namespace be_retail.DTOs
         public string Status { get; set; } = string.Empty;
         public DateTime OrderDate { get; set; }
         public List<OrderItemResponseDTO> OrderItems { get; set; } = new List<OrderItemResponseDTO>();
-        public PaymentResponseDTO Payment { get; set; }
+        public PaymentResponseDTO Payment { get; set; } = null!;
     }
 }
