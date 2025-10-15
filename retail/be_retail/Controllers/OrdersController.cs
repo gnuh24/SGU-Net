@@ -6,7 +6,7 @@ namespace be_retail.Controllers
 {
     [ApiController]
     [Route("api/v1/orders")]
-    class OrdersController : ControllerBase
+    public class OrdersController : ControllerBase
     {
         private readonly OrderService _service;
         public OrdersController(OrderService service)

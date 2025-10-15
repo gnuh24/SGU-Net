@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace be_retail.Repositories
 {
-    class PaymentRepository
+    public class PaymentRepository
     {
         private readonly AppDbContext _context;
         public PaymentRepository(AppDbContext context)
