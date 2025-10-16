@@ -84,6 +84,9 @@ namespace be_retail.Services
             {
                 var query = _orderRepo.Query();
 
+                if (form.OrderId.HasValue)
+                    query = query.Where(o => o.OrderId == form.OrderId.Value);
+
                 if (form.CustomerId.HasValue)
                     query = query.Where(o => o.CustomerId == form.CustomerId);
 
