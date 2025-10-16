@@ -78,7 +78,7 @@ namespace be_retail.Services
             }
         }
 
-        public async Task<ApiResponse<PagedResponse<Order>>> SearchAsync(OrderSearchForm form)
+        public async Task<ApiResponse<PagedResponse<OrderResponseDTO>>> SearchAsync(OrderSearchForm form)
         {
             try
             {
@@ -120,13 +120,44 @@ namespace be_retail.Services
                     .Take(pageSize)
                     .ToListAsync();
 
-                var result = new PagedResponse<Order>(data, total, page, pageSize);
+                var mappedData = data.Select(order => new OrderResponseDTO
+                {
+                    OrderId = order.OrderId,
+                    CustomerId = order.CustomerId,
+                    UserId = order.UserId,
+                    PromoId = order.PromoId,
+                    TotalAmount = order.TotalAmount,
+                    DiscountAmount = order.DiscountAmount,
+                    Status = order.Status,
+                    OrderDate = order.OrderDate,
+                    OrderItems = order.OrderItems.Select(item => new OrderItemResponseDTO
+                    {
+                        OrderItemId = item.OrderItemId,
+                        ProductId = item.ProductId,
+                        Quantity = item.Quantity,
+                        Price = item.Price,
+                        Subtotal = item.Price * item.Quantity,
+                        ProductName = item.Product?.Name
+                    }).ToList(),
+                    Payment = order.Payment == null ? null! : new PaymentResponseDTO
+                    {
+                        PaymentId = order.Payment.PaymentId,
+                        OrderId = order.Payment.OrderId,
+                        Amount = order.Payment.Amount,
+                        PaymentMethod = order.Payment.PaymentMethod,
+                        PaymentDate = order.Payment.PaymentDate
+                        
+                    }
+                }).ToList();
 
-                return new ApiResponse<PagedResponse<Order>>(200, "Lấy danh sách đơn hàng thành công", result);
+
+                var result = new PagedResponse<OrderResponseDTO>(mappedData, total, page, pageSize);
+
+                return new ApiResponse<PagedResponse<OrderResponseDTO>>(200, "Lấy danh sách đơn hàng thành công", result);
             }
             catch (Exception ex)
             {
-                return new ApiResponse<PagedResponse<Order>>(500, "Lỗi khi tìm kiếm đơn hàng", new PagedResponse<Order>(new List<Order>(), 0, form.Page, form.PageSize));
+                return new ApiResponse<PagedResponse<OrderResponseDTO>>(500, "Lỗi khi tìm kiếm đơn hàng", new PagedResponse<OrderResponseDTO>(new List<OrderResponseDTO>(), 0, form.Page, form.PageSize));
             }
         }
 
