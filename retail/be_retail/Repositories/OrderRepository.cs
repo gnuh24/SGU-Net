@@ -24,8 +24,6 @@ namespace be_retail.Repositories
         public IQueryable<Order> Query()
         {
             return _context.Orders
-                .Include(o => o.OrderItems)
-                .Include(o => o.Payment)
                 .AsQueryable();
         }
         public async Task<List<Order>> GetAllAsync()
