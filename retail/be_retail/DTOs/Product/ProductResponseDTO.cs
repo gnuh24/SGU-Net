@@ -21,5 +21,11 @@ namespace be_retail.DTOs
         public DateTime CreatedAt { get; set; }
 
         public bool IsDeleted { get; set; } = false;
+
+        public string? CategoryName { get; set; }
+
+        public string? SupplierName { get; set; }
+
+        public int? CurrentStock { get; set; }
     }
 }

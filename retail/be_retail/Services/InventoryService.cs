@@ -21,9 +21,13 @@ namespace be_retail.Services
         public async Task<PagedResponse<InventoryResponseDTO>> GetInventoriesAsync(
             int page, 
             int pageSize, 
-            string? search)
+            string? search,
+            int? categoryId,
+            int? supplierId,
+            string? categoryName,
+            string? supplierName)
         {
-            return await _inventoryRepository.GetInventoriesAsync(page, pageSize, search);
+            return await _inventoryRepository.GetInventoriesAsync(page, pageSize, search, categoryId, supplierId, categoryName, supplierName);
         }
 
         public async Task<InventoryResponseDTO?> GetInventoryDetailAsync(int id)
@@ -124,6 +128,14 @@ namespace be_retail.Services
                     Message = "Có lỗi xảy ra khi xử lý: " + ex.Message
                 };
             }
+        }
+
+        public async Task<PagedResponse<InventoryResponseDTO>> GetLowStockProductsAsync(
+            int threshold,
+            int page,
+            int pageSize)
+        {
+            return await _inventoryRepository.GetLowStockProductsAsync(threshold, page, pageSize);
         }
     }
 }
