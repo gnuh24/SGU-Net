@@ -17,16 +17,11 @@ namespace be_retail.Controllers
             _productService = productService;
         }
 
-        // 🟢 Lấy danh sách có paging, search, sort
-        [HttpGet]
-        public async Task<IActionResult> GetAll(
-            [FromQuery] string? search,
-            [FromQuery] string? sortBy,
-            [FromQuery] bool desc = true,
-            [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 10)
+        // 🟢 Tìm kiếm sản phẩm theo Barcode (endpoint riêng)
+        [HttpGet("by-barcode/{barcode}")]
+        public async Task<IActionResult> GetByBarcode(string barcode)
         {
-            var (entities, total) = await _productService.GetPagedAsync(search, sortBy, desc, page, pageSize);
+            var entities = await _productService.GetByBarcodeAsync(barcode);
 
             var data = entities.Select(c => new ProductResponseDTO
             {
@@ -38,7 +33,51 @@ namespace be_retail.Controllers
                 Price = c.Price,
                 Unit = c.Unit,
                 CreatedAt = c.CreatedAt,
-                IsDeleted = c.IsDeleted
+                IsDeleted = c.IsDeleted,
+                CategoryName = c.Category?.Name,
+                SupplierName = c.Supplier?.Name,
+                CurrentStock = 0
+            }).ToList();
+
+            return Ok(new ApiResponse<object>
+            {
+                Status = 200,
+                Message = "Get products by barcode successfully.",
+                Data = data
+            });
+        }
+
+        // 🟢 Lấy danh sách có paging, search, sort
+        [HttpGet]
+        public async Task<IActionResult> GetAll(
+            [FromQuery] string? search,
+            [FromQuery] string? sortBy,
+            [FromQuery] bool desc = true,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] int? categoryId = null,
+            [FromQuery] int? supplierId = null,
+            [FromQuery] string? categoryName = null,
+            [FromQuery] string? supplierName = null,
+            [FromQuery] bool? isDeleted = null)
+        {
+            var (entities, total) = await _productService.GetPagedAsync(
+                search, sortBy, desc, page, pageSize, categoryId, supplierId, categoryName, supplierName, isDeleted);
+
+            var data = entities.Select(c => new ProductResponseDTO
+            {
+                ProductId = c.ProductId,
+                CategoryId = c.CategoryId,
+                SupplierId = c.SupplierId,
+                ProductName = c.Name,
+                Barcode = c.Barcode,
+                Price = c.Price,
+                Unit = c.Unit,
+                CreatedAt = c.CreatedAt,
+                IsDeleted = c.IsDeleted,
+                CategoryName = c.Category?.Name,
+                SupplierName = c.Supplier?.Name,
+                CurrentStock = 0 // Sẽ được cập nhật sau khi có thông tin tồn kho
             }).ToList();
 
             return Ok(new ApiResponse<object>
@@ -80,7 +119,10 @@ namespace be_retail.Controllers
                 Price = product.Price,
                 Unit = product.Unit,
                 CreatedAt = product.CreatedAt,
-                IsDeleted = product.IsDeleted
+                IsDeleted = product.IsDeleted,
+                CategoryName = product.Category?.Name,
+                SupplierName = product.Supplier?.Name,
+                CurrentStock = 0 // Sẽ được cập nhật sau khi có thông tin tồn kho
             };
 
             return Ok(new ApiResponse<ProductResponseDTO>
@@ -107,7 +149,10 @@ namespace be_retail.Controllers
                 Price = created.Price,
                 Unit = created.Unit,
                 CreatedAt = created.CreatedAt,
-                IsDeleted = created.IsDeleted
+                IsDeleted = created.IsDeleted,
+                CategoryName = created.Category?.Name,
+                SupplierName = created.Supplier?.Name,
+                CurrentStock = 0
             };
 
             return Ok(new ApiResponse<ProductResponseDTO>
@@ -143,7 +188,10 @@ namespace be_retail.Controllers
                 Price = updated.Price,
                 Unit = updated.Unit,
                 CreatedAt = updated.CreatedAt,
-                IsDeleted = updated.IsDeleted
+                IsDeleted = updated.IsDeleted,
+                CategoryName = updated.Category?.Name,
+                SupplierName = updated.Supplier?.Name,
+                CurrentStock = 0
             };
 
             return Ok(new ApiResponse<ProductResponseDTO>
@@ -153,6 +201,8 @@ namespace be_retail.Controllers
                 Data = dto
             });
         }
+
+        // Các filter theo categoryId/supplierId đã được tích hợp vào GET /products
 
         // 🟢 Xóa hàng hóa
         [HttpDelete("{id}")]
@@ -178,7 +228,10 @@ namespace be_retail.Controllers
                 Price = deleted.Price,
                 Unit = deleted.Unit,
                 CreatedAt = deleted.CreatedAt,
-                IsDeleted = deleted.IsDeleted
+                IsDeleted = deleted.IsDeleted,
+                CategoryName = deleted.Category?.Name,
+                SupplierName = deleted.Supplier?.Name,
+                CurrentStock = 0
             };
 
             return Ok(new ApiResponse<ProductResponseDTO>

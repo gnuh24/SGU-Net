@@ -19,11 +19,22 @@ namespace be_retail.Services
             string? sortBy,
             bool desc,
             int page,
-            int pageSize)
+            int pageSize,
+            int? categoryId,
+            int? supplierId,
+            string? categoryName,
+            string? supplierName,
+            bool? isDeleted)
         {
-            var products = await _repository.GetPagedAsync(search, sortBy, desc, page, pageSize);
-            var total = await _repository.CountAsync(search);
+            var products = await _repository.GetPagedAsync(
+                search, sortBy, desc, page, pageSize, categoryId, supplierId, categoryName, supplierName, isDeleted);
+            var total = await _repository.CountAsync(search, categoryId, supplierId, categoryName, supplierName, isDeleted);
             return (products, total);
+        }
+
+        public async Task<List<Product>> GetByBarcodeAsync(string barcode)
+        {
+            return await _repository.FindByBarcodeAsync(barcode);
         }
 
         public async Task<Product?> GetByIdAsync(int id)
@@ -70,5 +81,7 @@ namespace be_retail.Services
         {
             return await _repository.DeleteAsync(id);
         }
+
+        // Các API by-category/by-supplier đã được tích hợp vào GetPagedAsync
     }
 }
