@@ -2,6 +2,7 @@ namespace be_retail.DTOs
 {
     public class OrderSearchForm
     {
+        public int? OrderId { get; set; }
         public int? CustomerId { get; set; }
         public int? UserId { get; set; }
         public int? PromoId { get; set; }
