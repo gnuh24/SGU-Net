@@ -78,14 +78,14 @@ namespace be_retail.Services
             }
         }
 
-        public async Task<ApiResponse<PagedResponse<OrderResponseDTO>>> SearchAsync(OrderSearchForm form)
+        public async Task<ApiResponse<PagedResponse<OrderBasicDTO>>> SearchAsync(OrderSearchForm form)
         {
             try
             {
                 var query = _orderRepo.Query();
 
                 if (form.OrderId.HasValue)
-                    query = query.Where(o => o.OrderId == form.OrderId.Value);
+                    query = query.Where(o => o.OrderId == form.OrderId);
 
                 if (form.CustomerId.HasValue)
                     query = query.Where(o => o.CustomerId == form.CustomerId);
@@ -123,7 +123,7 @@ namespace be_retail.Services
                     .Take(pageSize)
                     .ToListAsync();
 
-                var mappedData = data.Select(order => new OrderResponseDTO
+                var mappedData = data.Select(order => new OrderBasicDTO
                 {
                     OrderId = order.OrderId,
                     CustomerId = order.CustomerId,
@@ -133,34 +133,16 @@ namespace be_retail.Services
                     DiscountAmount = order.DiscountAmount,
                     Status = order.Status,
                     OrderDate = order.OrderDate,
-                    OrderItems = order.OrderItems.Select(item => new OrderItemResponseDTO
-                    {
-                        OrderItemId = item.OrderItemId,
-                        ProductId = item.ProductId,
-                        Quantity = item.Quantity,
-                        Price = item.Price,
-                        Subtotal = item.Price * item.Quantity,
-                        ProductName = item.Product?.Name
-                    }).ToList(),
-                    Payment = order.Payment == null ? null! : new PaymentResponseDTO
-                    {
-                        PaymentId = order.Payment.PaymentId,
-                        OrderId = order.Payment.OrderId,
-                        Amount = order.Payment.Amount,
-                        PaymentMethod = order.Payment.PaymentMethod,
-                        PaymentDate = order.Payment.PaymentDate
-                        
-                    }
                 }).ToList();
 
 
-                var result = new PagedResponse<OrderResponseDTO>(mappedData, total, page, pageSize);
+                var result = new PagedResponse<OrderBasicDTO>(mappedData, total, page, pageSize);
 
-                return new ApiResponse<PagedResponse<OrderResponseDTO>>(200, "Lấy danh sách đơn hàng thành công", result);
+                return new ApiResponse<PagedResponse<OrderBasicDTO>>(200, "Lấy danh sách đơn hàng thành công", result);
             }
             catch (Exception ex)
             {
-                return new ApiResponse<PagedResponse<OrderResponseDTO>>(500, "Lỗi khi tìm kiếm đơn hàng", new PagedResponse<OrderResponseDTO>(new List<OrderResponseDTO>(), 0, form.Page, form.PageSize));
+                return new ApiResponse<PagedResponse<OrderBasicDTO>>(500, "Lỗi khi tìm kiếm đơn hàng", new PagedResponse<OrderBasicDTO>(new List<OrderBasicDTO>(), 0, form.Page, form.PageSize));
             }
         }
 
