@@ -11,14 +11,16 @@ namespace be_retail.Controllers
     public class ProductController : ControllerBase
     {
         private readonly ProductService _productService;
+        private readonly InventoryService _inventoryService;
 
-        public ProductController(ProductService productService)
+        public ProductController(ProductService productService, InventoryService inventoryService)
         {
             _productService = productService;
+            _inventoryService = inventoryService;
         }
 
         // 🟢 Tìm kiếm sản phẩm theo Barcode (endpoint riêng)
-        [HttpGet("by-barcode/{barcode}")]
+        [HttpGet("barcode/{barcode}")]
         public async Task<IActionResult> GetByBarcode(string barcode)
         {
             var entities = await _productService.GetByBarcodeAsync(barcode);
@@ -138,7 +140,6 @@ namespace be_retail.Controllers
         public async Task<IActionResult> Create([FromBody] ProductCreateForm form)
         {
             var created = await _productService.CreateAsync(form);
-
             var dto = new ProductResponseDTO
             {
                 ProductId = created.ProductId,
@@ -154,6 +155,8 @@ namespace be_retail.Controllers
                 SupplierName = created.Supplier?.Name,
                 CurrentStock = 0
             };
+
+            await _inventoryService.CreateAsync(new InventoryCreateForm { ProductId = created.ProductId, Quantity = 0, CreatedAt = created.CreatedAt });
 
             return Ok(new ApiResponse<ProductResponseDTO>
             {

@@ -22,6 +22,8 @@ namespace be_retail.Controllers
         [HttpGet]
         public async Task<IActionResult> GetInventories(
             [FromQuery] string? search,
+            [FromQuery] string? sortBy,
+            [FromQuery] bool desc = true,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10,
             [FromQuery] int? categoryId = null,
@@ -29,7 +31,7 @@ namespace be_retail.Controllers
             [FromQuery] string? categoryName = null,
             [FromQuery] string? supplierName = null)
         {
-            var result = await _inventoryService.GetInventoriesAsync(page, pageSize, search, categoryId, supplierId, categoryName, supplierName);
+            var result = await _inventoryService.GetInventoriesAsync(page, pageSize, search, sortBy, desc, categoryId, supplierId, categoryName, supplierName);
 
             return Ok(new ApiResponse<object>
             {
@@ -67,6 +69,27 @@ namespace be_retail.Controllers
             });
         }
 
+        // 🟢 Lấy danh sách tồn kho theo ProductId (sắp xếp theo CreatedAt)
+        [HttpGet("product/{productId}")]
+        public async Task<IActionResult> GetInventoriesByProductId(int productId, [FromQuery] bool desc = true)
+        {
+            var data = await _inventoryService.GetByProductIdAsync(productId, desc);
+            if (data == null || data.Count == 0)
+            {
+                return NotFound(new ApiResponse<string>
+                {
+                    Status = 404,
+                    Message = "No inventory records found for product."
+                });
+            }
+            return Ok(new ApiResponse<object>
+            {
+                Status = 200,
+                Message = "Inventories fetched successfully.",
+                Data = data
+            });
+        }
+
         // 🟢 Thêm số lượng sản phẩm vào tồn kho
         [HttpPost("add-quantity")]
         public async Task<IActionResult> AddQuantity([FromBody] StockInForm form)
@@ -82,7 +105,7 @@ namespace be_retail.Controllers
 
             var result = await _inventoryService.StockInAsync(form);
             
-            if (result.Status == 1) // Logic StockIn của Service trả về Status=1 cho thành công
+            if (result.Status == 1) 
             {
                 return Ok(new ApiResponse<InventoryResponseDTO>
                 {
