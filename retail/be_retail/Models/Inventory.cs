@@ -19,6 +19,9 @@ namespace be_retail.Models
         [Column("updated_at")]
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
+        [Column("created_at")]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
         // Navigation property
         [ForeignKey("ProductId")]
         public virtual Product Product { get; set; } = null!;

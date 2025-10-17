@@ -22,17 +22,24 @@ namespace be_retail.Services
             int page, 
             int pageSize, 
             string? search,
+            string? sortBy,
+            bool desc,
             int? categoryId,
             int? supplierId,
             string? categoryName,
             string? supplierName)
         {
-            return await _inventoryRepository.GetInventoriesAsync(page, pageSize, search, categoryId, supplierId, categoryName, supplierName);
+            return await _inventoryRepository.GetInventoriesAsync(page, pageSize, search, sortBy, desc, categoryId, supplierId, categoryName, supplierName);
         }
 
         public async Task<InventoryResponseDTO?> GetInventoryDetailAsync(int id)
         {
             return await _inventoryRepository.GetInventoryDetailAsync(id);
+        }
+
+        public async Task<List<InventoryResponseDTO>> GetByProductIdAsync(int productId, bool desc = true)
+        {
+            return await _inventoryRepository.GetDtosByProductIdOrderedAsync(productId, desc);
         }
 
         public async Task<ApiResponse<object>> GetInventorySummaryAsync()
@@ -41,6 +48,18 @@ namespace be_retail.Services
             return new ApiResponse<object> { Status = 1, Message = "Lấy tổng quan tồn kho thành công", Data = summary };
         }
 
+        public async Task<Inventory> CreateAsync(InventoryCreateForm form)
+        {
+            // Map DTO → Entity ở Service
+            var inventory = new Inventory
+            {
+                ProductId = form.ProductId,
+                Quantity = form.Quantity,
+                CreatedAt = form.CreatedAt
+            };
+
+            return await _inventoryRepository.CreateAsync(inventory);
+        }
         public async Task<ApiResponse<InventoryResponseDTO>> StockInAsync(StockInForm form)
         {
             try
@@ -55,14 +74,20 @@ namespace be_retail.Services
                     };
                 }
                 
-                var updatedInventory = await _inventoryRepository.CreateOrUpdateInventoryAsync(form.ProductId, form.Quantity);
+                var newInventory = await _inventoryRepository.CreateAsync(new Inventory
+                {
+                    ProductId = form.ProductId,
+                    Quantity = form.Quantity,
+                    CreatedAt = DateTime.UtcNow
+                });
 
                 var responseDto = new InventoryResponseDTO
                 {
-                    InventoryId = updatedInventory.InventoryId,
-                    ProductId = updatedInventory.ProductId,
-                    Quantity = updatedInventory.Quantity,
-                    UpdatedAt = updatedInventory.UpdatedAt
+                    InventoryId = newInventory.InventoryId,
+                    ProductId = newInventory.ProductId,
+                    Quantity = newInventory.Quantity,
+                    CreatedAt = newInventory.CreatedAt,
+                    UpdatedAt = newInventory.UpdatedAt
                 };
 
                 return new ApiResponse<InventoryResponseDTO>
@@ -110,6 +135,7 @@ namespace be_retail.Services
                     InventoryId = updated.InventoryId,
                     ProductId = updated.ProductId,
                     Quantity = updated.Quantity,
+                    CreatedAt = updated.CreatedAt,
                     UpdatedAt = updated.UpdatedAt
                 };
 

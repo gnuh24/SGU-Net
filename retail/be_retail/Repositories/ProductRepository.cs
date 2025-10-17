@@ -61,8 +61,6 @@ namespace be_retail.Repositories
             {
                 query = query.Where(p => p.Supplier != null && p.Supplier.Name.Contains(supplierName));
             }
-
-            // Mặc định loại trừ sản phẩm đã xóa nếu không truyền isDeleted
             if (isDeleted.HasValue)
             {
                 query = query.Where(p => p.IsDeleted == isDeleted.Value);

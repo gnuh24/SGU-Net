@@ -7,6 +7,7 @@ namespace be_retail.DTOs.Inventory
         public int InventoryId { get; set; }
         public int ProductId { get; set; }
         public int Quantity { get; set; }
+        public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
 
         // Thông tin sản phẩm
@@ -22,8 +23,5 @@ namespace be_retail.DTOs.Inventory
         // Thông tin Supplier
         public int? SupplierId { get; set; }
         public string? SupplierName { get; set; }
-
-        // Cảnh báo tồn kho thấp
-        public bool IsLowStock { get; set; } = false;
     }
 }
