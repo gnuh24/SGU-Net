@@ -87,8 +87,7 @@ namespace be_retail.Repositories
                     CategoryId = i.Product.CategoryId,
                     CategoryName = i.Product.Category != null ? i.Product.Category.Name : null,
                     SupplierId = i.Product.SupplierId,
-                    SupplierName = i.Product.Supplier != null ? i.Product.Supplier.Name : null,
-                    IsLowStock = i.Quantity < 10
+                    SupplierName = i.Product.Supplier != null ? i.Product.Supplier.Name : null
                 })
                 .ToListAsync();
 
@@ -123,8 +122,7 @@ namespace be_retail.Repositories
                     CategoryId = i.Product.CategoryId,
                     CategoryName = i.Product.Category != null ? i.Product.Category.Name : null,
                     SupplierId = i.Product.SupplierId,
-                    SupplierName = i.Product.Supplier != null ? i.Product.Supplier.Name : null,
-                    IsLowStock = i.Quantity < 10
+                    SupplierName = i.Product.Supplier != null ? i.Product.Supplier.Name : null
                 })
                 .FirstOrDefaultAsync();
         }
@@ -156,8 +154,7 @@ namespace be_retail.Repositories
                     CategoryId = i.Product.CategoryId,
                     CategoryName = i.Product.Category != null ? i.Product.Category.Name : null,
                     SupplierId = i.Product.SupplierId,
-                    SupplierName = i.Product.Supplier != null ? i.Product.Supplier.Name : null,
-                    IsLowStock = i.Quantity < 10
+                    SupplierName = i.Product.Supplier != null ? i.Product.Supplier.Name : null
                 })
                 .ToListAsync();
         }
@@ -220,8 +217,7 @@ namespace be_retail.Repositories
                     CategoryId = i.Product.CategoryId,
                     CategoryName = i.Product.Category != null ? i.Product.Category.Name : null,
                     SupplierId = i.Product.SupplierId,
-                    SupplierName = i.Product.Supplier != null ? i.Product.Supplier.Name : null,
-                    IsLowStock = i.Quantity < 10
+                    SupplierName = i.Product.Supplier != null ? i.Product.Supplier.Name : null
                 })
                 .FirstOrDefaultAsync();
         }
@@ -299,12 +295,59 @@ namespace be_retail.Repositories
                     CategoryId = i.Product.CategoryId,
                     CategoryName = i.Product.Category != null ? i.Product.Category.Name : null,
                     SupplierId = i.Product.SupplierId,
-                    SupplierName = i.Product.Supplier != null ? i.Product.Supplier.Name : null,
-                    IsLowStock = i.Quantity <= threshold
+                    SupplierName = i.Product.Supplier != null ? i.Product.Supplier.Name : null
                 })
                 .ToListAsync();
 
             return new PagedResponse<InventoryResponseDTO>(inventories, totalCount, page, pageSize);
+        }
+
+        public async Task<List<Inventory>> GetInventoriesByProductIdFIFOAsync(int productId)
+        {
+            return await _context.Inventories
+                .Where(i => i.ProductId == productId && i.Quantity > 0)
+                .OrderBy(i => i.CreatedAt)
+                .ToListAsync();
+        }
+
+        public async Task<(bool IsSufficient, List<(int InventoryId, int QuantityToDeduct)> InventoryDeductions, int TotalAvailable)> 
+            CheckAndGetInventoryForSaleAsync(int productId, int requestedQuantity)
+        {
+            var inventories = await GetInventoriesByProductIdFIFOAsync(productId);
+            
+            var totalAvailable = inventories.Sum(i => i.Quantity);
+            if (totalAvailable < requestedQuantity)
+            {
+                return (false, new List<(int, int)>(), totalAvailable);
+            }
+
+            var deductions = new List<(int InventoryId, int QuantityToDeduct)>();
+            var remainingQuantity = requestedQuantity;
+
+            foreach (var inventory in inventories)
+            {
+                if (remainingQuantity <= 0) break;
+
+                var quantityToDeduct = Math.Min(remainingQuantity, inventory.Quantity);
+                deductions.Add((inventory.InventoryId, quantityToDeduct));
+                remainingQuantity -= quantityToDeduct;
+            }
+
+            return (true, deductions, totalAvailable);
+        }
+
+        public async Task UpdateInventoryForSaleAsync(List<(int InventoryId, int QuantityToDeduct)> inventoryDeductions)
+        {
+            foreach (var (inventoryId, quantityToDeduct) in inventoryDeductions)
+            {
+                var inventory = await GetByIdAsync(inventoryId);
+                if (inventory != null)
+                {
+                    inventory.Quantity -= quantityToDeduct;
+                    inventory.UpdatedAt = DateTime.UtcNow;
+                    await UpdateAsync(inventory);
+                }
+            }
         }
     }
 }

@@ -155,30 +155,37 @@ namespace be_retail.Services
                 decimal totalAmount = 0;
                 decimal discountAmount = 0;
                 var orderItems = new List<OrderItem>();
+                var inventoryDeductions = new List<(int InventoryId, int QuantityToDeduct)>();
+
+                // Kiểm tra tồn kho theo FIFO cho tất cả sản phẩm trước khi tạo đơn hàng
                 foreach (var item in form.OrderItems)
                 {
                     var product = await _productRepo.GetByIdAsync(item.ProductId);
                     if (product == null)
                         return new ApiResponse<bool>(404, $"Không tìm thấy sản phẩm ID {item.ProductId}", false);
 
-                    var inventory = await _inventoryRepo.GetByProductIdAsync(item.ProductId);
-                    if (inventory == null || inventory.Quantity < item.Quantity)
-                        return new ApiResponse<bool>(400, $"Sản phẩm {item.ProductId} không đủ tồn kho", false);
+                    // Kiểm tra tồn kho theo FIFO
+                    var (isSufficient, deductions, totalAvailable) = await _inventoryRepo.CheckAndGetInventoryForSaleAsync(item.ProductId, item.Quantity);
+                    
+                    if (!isSufficient)
+                    {
+                        return new ApiResponse<bool>(400, 
+                            $"Sản phẩm '{product.Name}' không đủ tồn kho. Yêu cầu: {item.Quantity}, Có sẵn: {totalAvailable}", 
+                            false);
+                    }
+
+                    // Lưu thông tin deduction để cập nhật sau
+                    inventoryDeductions.AddRange(deductions);
 
                     var subTotal = product.Price * item.Quantity;
                     totalAmount += subTotal;
-                    orderItems.Add
-                    (
-                        new OrderItem
-                        {
-                            ProductId = item.ProductId,
-                            Quantity = item.Quantity,
-                            Price = product.Price,
-                            Subtotal = subTotal
-                        }
-                    );
-                    inventory.Quantity -= item.Quantity;
-                    await _inventoryRepo.UpdateAsync(inventory);
+                    orderItems.Add(new OrderItem
+                    {
+                        ProductId = item.ProductId,
+                        Quantity = item.Quantity,
+                        Price = product.Price,
+                        Subtotal = subTotal
+                    });
                 }
 
                 if (form.PromoId != null)
@@ -224,6 +231,9 @@ namespace be_retail.Services
                     oi.OrderId = order.OrderId;
                 }
                 await _orderItemRepo.AddRangeAsync(orderItems);
+
+                // Cập nhật inventory theo FIFO sau khi tạo order thành công
+                await _inventoryRepo.UpdateInventoryForSaleAsync(inventoryDeductions);
 
                 Payment payment = new Payment
                 {
@@ -280,15 +290,13 @@ namespace be_retail.Services
                     var existingItems = await _orderItemRepo.GetByOrderIdAsync(order.OrderId);
                     var existingItemIds = existingItems.Select(i => i.OrderItemId).ToList();
 
+                    var inventoryDeductions = new List<(int InventoryId, int QuantityToDeduct)>();
+
                     foreach (var itemForm in form.OrderItems)
                     {
                         var product = await _productRepo.GetByIdAsync(itemForm.ProductId);
                         if (product == null)
                             return new ApiResponse<bool>(400, $"Sản phẩm ID {itemForm.ProductId} không tồn tại", false);
-
-                        var inventory = await _inventoryRepo.GetByProductIdAsync(itemForm.ProductId);
-                        if (inventory == null || inventory.Quantity < itemForm.Quantity)
-                            return new ApiResponse<bool>(400, $"Sản phẩm {product.Name} không đủ hàng trong kho", false);
 
                         if (itemForm.OrderItemId != null)
                         {
@@ -298,9 +306,20 @@ namespace be_retail.Services
                             {
                                 int quantityDiff = itemForm.Quantity - existingItem.Quantity;
 
-                                // Cập nhật tồn kho
-                                inventory.Quantity -= quantityDiff;
-                                await _inventoryRepo.UpdateAsync(inventory);
+                                if (quantityDiff > 0) // Cần thêm hàng
+                                {
+                                    // Kiểm tra tồn kho theo FIFO
+                                    var (isSufficient, deductions, totalAvailable) = await _inventoryRepo.CheckAndGetInventoryForSaleAsync(itemForm.ProductId, quantityDiff);
+                                    
+                                    if (!isSufficient)
+                                    {
+                                        return new ApiResponse<bool>(400, 
+                                            $"Sản phẩm '{product.Name}' không đủ tồn kho để tăng số lượng. Yêu cầu thêm: {quantityDiff}, Có sẵn: {totalAvailable}", 
+                                            false);
+                                    }
+
+                                    inventoryDeductions.AddRange(deductions);
+                                }
 
                                 existingItem.Quantity = itemForm.Quantity;
                                 existingItem.Price = product.Price;
@@ -313,6 +332,18 @@ namespace be_retail.Services
                         else
                         {
                             // --- Thêm item mới ---
+                            // Kiểm tra tồn kho theo FIFO
+                            var (isSufficient, deductions, totalAvailable) = await _inventoryRepo.CheckAndGetInventoryForSaleAsync(itemForm.ProductId, itemForm.Quantity);
+                            
+                            if (!isSufficient)
+                            {
+                                return new ApiResponse<bool>(400, 
+                                    $"Sản phẩm '{product.Name}' không đủ tồn kho. Yêu cầu: {itemForm.Quantity}, Có sẵn: {totalAvailable}", 
+                                    false);
+                            }
+
+                            inventoryDeductions.AddRange(deductions);
+
                             var newItem = new OrderItem
                             {
                                 OrderId = order.OrderId,
@@ -322,24 +353,23 @@ namespace be_retail.Services
                                 Subtotal = product.Price * itemForm.Quantity
                             };
 
-                            inventory.Quantity -= itemForm.Quantity;
-                            await _inventoryRepo.UpdateAsync(inventory);
-
                             await _orderItemRepo.CreateAsync(newItem);
                             totalAmount += newItem.Subtotal;
                         }
+                    }
+
+                    // Cập nhật inventory theo FIFO
+                    if (inventoryDeductions.Any())
+                    {
+                        await _inventoryRepo.UpdateInventoryForSaleAsync(inventoryDeductions);
                     }
 
                     // --- Xóa item không còn trong form ---
                     var removedItems = existingItems.Where(i => !form.OrderItems.Any(f => f.OrderItemId == i.OrderItemId)).ToList();
                     foreach (var removed in removedItems)
                     {
-                        var inventory = await _inventoryRepo.GetByProductIdAsync(removed.ProductId);
-                        if (inventory != null)
-                        {
-                            inventory.Quantity += removed.Quantity; // hoàn lại tồn kho
-                            await _inventoryRepo.UpdateAsync(inventory);
-                        }
+                        // Hoàn trả hàng vào inventory (thêm vào inventory mới nhất)
+                        await _inventoryRepo.CreateOrUpdateInventoryAsync(removed.ProductId, removed.Quantity);
                         await _orderItemRepo.DeleteAsync(removed.OrderItemId);
                         totalAmount -= removed.Subtotal;
                     }
@@ -437,12 +467,8 @@ namespace be_retail.Services
                 var orderItems = await _orderItemRepo.GetByOrderIdAsync(order.OrderId);
                 foreach (var item in orderItems)
                 {
-                    var inventory = await _inventoryRepo.GetByProductIdAsync(item.ProductId);
-                    if (inventory != null)
-                    {
-                        inventory.Quantity += item.Quantity;
-                        await _inventoryRepo.UpdateAsync(inventory);
-                    }
+                    // Hoàn trả hàng vào inventory (thêm vào inventory mới nhất)
+                    await _inventoryRepo.CreateOrUpdateInventoryAsync(item.ProductId, item.Quantity);
                 }
 
                 // Cập nhật khuyến mãi (nếu có)
