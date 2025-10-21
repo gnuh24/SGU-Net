@@ -39,6 +39,10 @@ builder.Services.AddScoped<OrderItemRepository>();
 builder.Services.AddScoped<PaymentService>();
 builder.Services.AddScoped<PaymentRepository>();
 
+builder.Services.AddScoped<StatisticsRepository>();
+builder.Services.AddScoped<StatisticsService>();
+
+
 // Add DbContext
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>
