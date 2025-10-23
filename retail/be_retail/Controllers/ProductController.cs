@@ -37,8 +37,7 @@ namespace be_retail.Controllers
                 CreatedAt = c.CreatedAt,
                 IsDeleted = c.IsDeleted,
                 CategoryName = c.Category?.Name,
-                SupplierName = c.Supplier?.Name,
-                CurrentStock = 0
+                SupplierName = c.Supplier?.Name
             }).ToList();
 
             return Ok(new ApiResponse<object>
@@ -78,8 +77,7 @@ namespace be_retail.Controllers
                 CreatedAt = c.CreatedAt,
                 IsDeleted = c.IsDeleted,
                 CategoryName = c.Category?.Name,
-                SupplierName = c.Supplier?.Name,
-                CurrentStock = 0 // Sẽ được cập nhật sau khi có thông tin tồn kho
+                SupplierName = c.Supplier?.Name
             }).ToList();
 
             return Ok(new ApiResponse<object>
@@ -123,8 +121,7 @@ namespace be_retail.Controllers
                 CreatedAt = product.CreatedAt,
                 IsDeleted = product.IsDeleted,
                 CategoryName = product.Category?.Name,
-                SupplierName = product.Supplier?.Name,
-                CurrentStock = 0 // Sẽ được cập nhật sau khi có thông tin tồn kho
+                SupplierName = product.Supplier?.Name
             };
 
             return Ok(new ApiResponse<ProductResponseDTO>
@@ -152,8 +149,7 @@ namespace be_retail.Controllers
                 CreatedAt = created.CreatedAt,
                 IsDeleted = created.IsDeleted,
                 CategoryName = created.Category?.Name,
-                SupplierName = created.Supplier?.Name,
-                CurrentStock = 0
+                SupplierName = created.Supplier?.Name
             };
 
             await _inventoryService.CreateAsync(new InventoryCreateForm { ProductId = created.ProductId, Quantity = 0, CreatedAt = created.CreatedAt });
@@ -193,8 +189,7 @@ namespace be_retail.Controllers
                 CreatedAt = updated.CreatedAt,
                 IsDeleted = updated.IsDeleted,
                 CategoryName = updated.Category?.Name,
-                SupplierName = updated.Supplier?.Name,
-                CurrentStock = 0
+                SupplierName = updated.Supplier?.Name
             };
 
             return Ok(new ApiResponse<ProductResponseDTO>
@@ -233,8 +228,7 @@ namespace be_retail.Controllers
                 CreatedAt = deleted.CreatedAt,
                 IsDeleted = deleted.IsDeleted,
                 CategoryName = deleted.Category?.Name,
-                SupplierName = deleted.Supplier?.Name,
-                CurrentStock = 0
+                SupplierName = deleted.Supplier?.Name
             };
 
             return Ok(new ApiResponse<ProductResponseDTO>
