@@ -163,5 +163,10 @@ namespace be_retail.Services
         {
             return await _inventoryRepository.GetLowStockProductsAsync(threshold, page, pageSize);
         }
+
+        public async Task<int> GetTotalStockAsync(int productId)
+        {
+            return await _inventoryRepository.GetTotalStockByProductIdAsync(productId);
+        }
     }
 }
