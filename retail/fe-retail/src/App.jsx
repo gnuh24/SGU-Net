@@ -21,7 +21,10 @@ import AppLayout from "./components/layout/AppLayout";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import Dashboard from "./pages/dashboard/Dashboard";
-
+import ProductList from "./pages/products/ProductList";
+import CategoryList from "./pages/categories/CategoryList";
+import SupplierList from "./pages/suppliers/SupplierList";
+import InventoryList from "./pages/inventories/InventoryList";
 // Create a client
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -64,7 +67,14 @@ const AppContent = () => {
         <Route path="/" element={<AppLayout />}>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
-
+         <Route path="products">
+            <Route index element={<ProductList />} />
+            <Route path="categories" element={<CategoryList />} />
+            <Route path="suppliers" element={<SupplierList />} />
+          </Route>
+          <Route path="inventory" element={<InventoryList />} />
+        </Route>
+        
           {/* Add more routes as we create pages */}
           {/* <Route path="users" element={<UserManagement />} />
           <Route path="products" element={<ProductManagement />} />
@@ -73,7 +83,7 @@ const AppContent = () => {
           <Route path="promotions" element={<PromotionManagement />} />
           <Route path="pos" element={<POS />} />
           <Route path="reports/*" element={<Reports />} /> */}
-        </Route>
+      
 
         {/* Catch all route */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
