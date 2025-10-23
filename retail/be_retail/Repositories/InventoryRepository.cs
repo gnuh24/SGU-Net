@@ -349,5 +349,12 @@ namespace be_retail.Repositories
                 }
             }
         }
+
+        public async Task<int> GetTotalStockByProductIdAsync(int productId)
+        {
+            return await _context.Inventories
+                .Where(i => i.ProductId == productId)
+                .SumAsync(i => i.Quantity);
+        }
     }
 }

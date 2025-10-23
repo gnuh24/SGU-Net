@@ -25,6 +25,7 @@ interface Product {
   categoryName: string;
   supplierName: string;
   isDeleted: boolean;
+  currentStock?: number;
 }
 
 interface Category {

@@ -25,20 +25,26 @@ namespace be_retail.Controllers
         {
             var entities = await _productService.GetByBarcodeAsync(barcode);
 
-            var data = entities.Select(c => new ProductResponseDTO
+            var data = new List<ProductResponseDTO>();
+            foreach (var c in entities)
             {
-                ProductId = c.ProductId,
-                CategoryId = c.CategoryId,
-                SupplierId = c.SupplierId,
-                ProductName = c.Name,
-                Barcode = c.Barcode,
-                Price = c.Price,
-                Unit = c.Unit,
-                CreatedAt = c.CreatedAt,
-                IsDeleted = c.IsDeleted,
-                CategoryName = c.Category?.Name,
-                SupplierName = c.Supplier?.Name
-            }).ToList();
+                var currentStock = await _inventoryService.GetTotalStockAsync(c.ProductId);
+                data.Add(new ProductResponseDTO
+                {
+                    ProductId = c.ProductId,
+                    CategoryId = c.CategoryId,
+                    SupplierId = c.SupplierId,
+                    ProductName = c.Name,
+                    Barcode = c.Barcode,
+                    Price = c.Price,
+                    Unit = c.Unit,
+                    CreatedAt = c.CreatedAt,
+                    IsDeleted = c.IsDeleted,
+                    CategoryName = c.Category?.Name,
+                    SupplierName = c.Supplier?.Name,
+                    CurrentStock = currentStock
+                });
+            }
 
             return Ok(new ApiResponse<object>
             {
@@ -65,20 +71,26 @@ namespace be_retail.Controllers
             var (entities, total) = await _productService.GetPagedAsync(
                 search, sortBy, desc, page, pageSize, categoryId, supplierId, categoryName, supplierName, isDeleted);
 
-            var data = entities.Select(c => new ProductResponseDTO
+            var data = new List<ProductResponseDTO>();
+            foreach (var c in entities)
             {
-                ProductId = c.ProductId,
-                CategoryId = c.CategoryId,
-                SupplierId = c.SupplierId,
-                ProductName = c.Name,
-                Barcode = c.Barcode,
-                Price = c.Price,
-                Unit = c.Unit,
-                CreatedAt = c.CreatedAt,
-                IsDeleted = c.IsDeleted,
-                CategoryName = c.Category?.Name,
-                SupplierName = c.Supplier?.Name
-            }).ToList();
+                var currentStock = await _inventoryService.GetTotalStockAsync(c.ProductId);
+                data.Add(new ProductResponseDTO
+                {
+                    ProductId = c.ProductId,
+                    CategoryId = c.CategoryId,
+                    SupplierId = c.SupplierId,
+                    ProductName = c.Name,
+                    Barcode = c.Barcode,
+                    Price = c.Price,
+                    Unit = c.Unit,
+                    CreatedAt = c.CreatedAt,
+                    IsDeleted = c.IsDeleted,
+                    CategoryName = c.Category?.Name,
+                    SupplierName = c.Supplier?.Name,
+                    CurrentStock = currentStock
+                });
+            }
 
             return Ok(new ApiResponse<object>
             {
@@ -109,6 +121,7 @@ namespace be_retail.Controllers
                 });
             }
 
+            var currentStock = await _inventoryService.GetTotalStockAsync(product.ProductId);
             var dto = new ProductResponseDTO
             {
                 ProductId = product.ProductId,
@@ -121,7 +134,8 @@ namespace be_retail.Controllers
                 CreatedAt = product.CreatedAt,
                 IsDeleted = product.IsDeleted,
                 CategoryName = product.Category?.Name,
-                SupplierName = product.Supplier?.Name
+                SupplierName = product.Supplier?.Name,
+                CurrentStock = currentStock
             };
 
             return Ok(new ApiResponse<ProductResponseDTO>
@@ -137,6 +151,7 @@ namespace be_retail.Controllers
         public async Task<IActionResult> Create([FromBody] ProductCreateForm form)
         {
             var created = await _productService.CreateAsync(form);
+            var currentStock = await _inventoryService.GetTotalStockAsync(created.ProductId);
             var dto = new ProductResponseDTO
             {
                 ProductId = created.ProductId,
@@ -149,7 +164,8 @@ namespace be_retail.Controllers
                 CreatedAt = created.CreatedAt,
                 IsDeleted = created.IsDeleted,
                 CategoryName = created.Category?.Name,
-                SupplierName = created.Supplier?.Name
+                SupplierName = created.Supplier?.Name,
+                CurrentStock = currentStock
             };
 
             await _inventoryService.CreateAsync(new InventoryCreateForm { ProductId = created.ProductId, Quantity = 0, CreatedAt = created.CreatedAt });
@@ -177,6 +193,7 @@ namespace be_retail.Controllers
                 });
             }
 
+            var currentStock = await _inventoryService.GetTotalStockAsync(updated.ProductId);
             var dto = new ProductResponseDTO
             {
                 ProductId = updated.ProductId,
@@ -189,7 +206,8 @@ namespace be_retail.Controllers
                 CreatedAt = updated.CreatedAt,
                 IsDeleted = updated.IsDeleted,
                 CategoryName = updated.Category?.Name,
-                SupplierName = updated.Supplier?.Name
+                SupplierName = updated.Supplier?.Name,
+                CurrentStock = currentStock
             };
 
             return Ok(new ApiResponse<ProductResponseDTO>
@@ -216,6 +234,7 @@ namespace be_retail.Controllers
                     Data = null
                 });
             }
+            var currentStock = await _inventoryService.GetTotalStockAsync(deleted.ProductId);
             var dto = new ProductResponseDTO
             {
                 ProductId = deleted.ProductId,
@@ -228,7 +247,8 @@ namespace be_retail.Controllers
                 CreatedAt = deleted.CreatedAt,
                 IsDeleted = deleted.IsDeleted,
                 CategoryName = deleted.Category?.Name,
-                SupplierName = deleted.Supplier?.Name
+                SupplierName = deleted.Supplier?.Name,
+                CurrentStock = currentStock
             };
 
             return Ok(new ApiResponse<ProductResponseDTO>
