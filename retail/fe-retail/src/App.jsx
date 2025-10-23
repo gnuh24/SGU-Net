@@ -25,6 +25,9 @@ import ProductList from "./pages/products/ProductList";
 import CategoryList from "./pages/categories/CategoryList";
 import SupplierList from "./pages/suppliers/SupplierList";
 import InventoryList from "./pages/inventories/InventoryList";
+import Customers from "./pages/customers/Customers";
+import Pos from "./pages/pos/Pos";
+
 // Create a client
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -73,6 +76,9 @@ const AppContent = () => {
             <Route path="suppliers" element={<SupplierList />} />
           </Route>
           <Route path="inventory" element={<InventoryList />} />
+          <Route path="customers" element={<Customers/>} />
+          <Route path="pos" element={<Pos/>} />
+          
         </Route>
         
           {/* Add more routes as we create pages */}
