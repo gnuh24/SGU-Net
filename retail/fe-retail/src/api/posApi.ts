@@ -1,113 +1,131 @@
 import axios from "axios";
-import type {
-  Customer,
-  Promotion,
-  Order,
-  OrderItem,
-  Payment,
-} from "../types"; 
 
-// Định nghĩa interface Product đúng như Swagger trả về
 export interface SwaggerProduct {
   productId: number;
   productName: string;
   barcode: string;
   price: number;
-  inventory: {
-    quantity: number;
-  };
-  // Thêm các trường khác nếu API trả về (như category, supplier...)
+  currentStock?: number;
+  inventory?: { quantity?: number };
+}
+export interface Customer {
+  customerId: number;
+  customerName: string;
+  phoneNumber: string;
+  id?: number; 
+  name?: string;
+  phone?: string; 
+}
+export interface CartItem {
+  productId: number;
+  productName: string;
+  quantity: number;
+  price: number;
+  stock: number;
+}
+export interface Promotion {
+  promoId: number;
+  promoCode: string;
+  discountType: "percentage" | "fixed_amount" | "fixed";
+  discountValue: number;
+}
+export interface ValidatedPromoResponse {
+  valid: boolean;
+  promotion: Promotion;
+  reason?: string;
+  promo?: Promotion; 
+}
+export interface Order {
+  orderId: number;
+  id: number; 
+  createdAt: string; 
+  totalAmount?: number;
+  discountAmount?: number;
+  status?: string;
 }
 
-const API_BASE_URL = "http://localhost:5260/api/v1"; // Cổng 5260
+const API_BASE_URL = "http://localhost:5260/api/v1";
+const apiClient = axios.create({ baseURL: API_BASE_URL });
 
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-});
+const unwrapData = (response: any): any[] => { 
+  let data = response.data?.data?.data;
+  if (data === undefined) {
+      data = response.data?.data;
+  }
+  if (data === undefined) {
+      data = response.data;
+  }
 
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    return Promise.reject(error);
+  if (!Array.isArray(data)) {
+    console.error("Phản hồi API không chứa dữ liệu mảng mong đợi:", response);
+    throw new Error("Phản hồi API không chứa dữ liệu mảng mong đợi sau khi giải nén.");
   }
-);
-
-// 🎯 SỬA: Hàm "mở" cho response dạng danh sách SẢN PHẨM { data: { items: [...] } }
-const unwrapProductListData = (response: any) => {
-  if (response.data && response.data.data && typeof response.data.data.items !== 'undefined') {
-    return response.data.data.items; // Trả về mảng 'items'
-  }
-  // Fallback nếu cấu trúc khác
-  if (response.data && typeof response.data.data !== 'undefined') {
-    return response.data.data;
-  }
-  return response.data;
+  return data;
 };
 
-// 🎯 SỬA: Hàm "mở" cho response dạng danh sách KHÁCH HÀNG { data: { data: [...] } }
-const unwrapCustomerListData = (response: any) => {
-  if (response.data && response.data.data && typeof response.data.data.data !== 'undefined') {
-    return response.data.data.data; // Trả về mảng 'data.data'
+const unwrapSingleData = (response: any): any => { 
+  let data = response.data?.data;
+  if (data === undefined) {
+      data = response.data;
   }
-  // Fallback
-  if (response.data && typeof response.data.data !== 'undefined') {
-    return response.data.data;
-  }
-  return response.data;
-};
 
-// Hàm "mở" cho response dạng một đối tượng (không có 'items')
-const unwrapSingleData = (response: any) => {
-  if (response.data && typeof response.data.data !== 'undefined') {
-    return response.data.data;
+  if (data === null || data === undefined) {
+     console.error("Phản hồi API không chứa đối tượng dữ liệu đơn lẻ mong đợi:", response);
+     throw new Error("Phản hồi API không chứa đối tượng dữ liệu đơn lẻ mong đợi sau khi giải nén.");
   }
-  return response.data;
+  return data;
 };
 
 
 export const posApi = {
-  /**
-   * Quét barcode
-   */
-  scanBarcode: (barcode: string): Promise<SwaggerProduct> => 
-    apiClient.get(`/products/barcode/${barcode}`).then(unwrapSingleData),
+  scanBarcode: (barcode: string): Promise<SwaggerProduct> =>
+  apiClient.get(`/products/barcode/${barcode}`).then(response => {
+    const dataArray = unwrapSingleData(response); 
+    if (Array.isArray(dataArray) && dataArray.length > 0) {
+      return dataArray[0]; // Chỉ trả về object sản phẩm đầu tiên
+    }
+    throw new Error("API scanBarcode không trả về dữ liệu sản phẩm hợp lệ.");
+  }),
 
-  /**
-   * Lấy TẤT CẢ sản phẩm (theo Swagger)
-   */
-  getAllProducts: (): Promise<SwaggerProduct[]> => 
-    apiClient.get(`/products`).then(unwrapProductListData), // 🎯 SỬA: Dùng unwrapProductListData
+  getAllProducts: (): Promise<SwaggerProduct[]> =>
+    apiClient.get(`/products?pageSize=1000`).then(unwrapData),
 
-  /**
-   * Lấy danh sách khách hàng
-   */
   getCustomers: (): Promise<Customer[]> =>
-    apiClient.get("/customers").then(unwrapCustomerListData), // 🎯 SỬA: Dùng unwrapCustomerListData
+    apiClient.get(`/customers`).then(unwrapData),
 
-  /**
-   * Kiểm tra mã khuyến mãi
-   */
   validatePromotion: (
     promoCode: string,
     orderAmount: number
-  ): Promise<{ valid: boolean; promo: Promotion; reason?: string }> =>
-    apiClient.post("/promotions/validate", { promoCode, orderAmount }).then(unwrapSingleData),
+  ): Promise<ValidatedPromoResponse> =>
+    apiClient
+      .post(`/promotions/validate`, { 
+        promo_code: promoCode,
+        order_amount: orderAmount,
+      })
+      .then(unwrapSingleData),
 
-  /**
-   * Tạo Order
-   */
-  createOrder: (orderData: Partial<Order>): Promise<Order> =>
-    apiClient.post("/orders", orderData).then(unwrapSingleData),
-
-  /**
-   * Tạo Order Items
-   */
-  createOrderItemsBulk: (itemsData: { items: Partial<OrderItem>[] }): Promise<OrderItem[]> =>
-    apiClient.post("/order-items/bulk", itemsData).then(unwrapSingleData),
-
-  /**
-   * Tạo Payment
-   */
-  createPayment: (paymentData: Partial<Payment>): Promise<Payment> =>
-    apiClient.post("/payments", paymentData).then(unwrapSingleData),
+  // Hàm duy nhất để tạo Order (theo Swagger /orders/create)
+  createFullOrder: (payload: {
+    userId: number;
+    customerId?: number | null; 
+    promoId?: number | null;    
+    paymentMethod: "cash" | "card" | "transfer";
+    orderItems: { productId: number; quantity: number; price: number }[];
+    status?: string;
+   
+  }): Promise<Order> => {
+    const snakeCasePayload = {
+      user_id: payload.userId,
+      customer_id: payload.customerId === null ? null : payload.customerId,
+      promo_id: payload.promoId === null ? null : payload.promoId,
+      payment_method: payload.paymentMethod,
+      order_items: payload.orderItems.map((item) => ({
+        product_id: item.productId,
+        quantity: item.quantity,
+        price: item.price,
+      })),
+      status: payload.status ?? "paid",
+    };
+    return apiClient.post(`/orders/create`, snakeCasePayload).then(unwrapSingleData);
+  },
 };

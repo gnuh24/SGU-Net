@@ -21,14 +21,10 @@ import {
 } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import axios from "axios";
-
-// 🎯 SỬA LỖI: Cập nhật đường dẫn import ordersApi dựa trên cấu trúc file
-// Từ 'src/pages/customers/Customers.tsx' đi ra 2 cấp (..) để vào 'src/api'
 import { ordersApi } from "../../api/orderApi"; 
 
 const { Title } = Typography;
 
-// ⚙️ Interface khớp với BE .NET
 interface Customer {
   customerId: number;
   name: string;
@@ -46,7 +42,6 @@ interface Order {
 }
 
 const API_CUSTOMERS = "http://localhost:5260/api/v1/customers";
-// const API_ORDERS = "http://localhost:5260/api/v1/orders"; // Không cần dùng API_ORDERS ở đây
 
 const CustomersPage: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -60,12 +55,10 @@ const CustomersPage: React.FC = () => {
   const [search, setSearch] = useState("");
   const [form] = Form.useForm();
 
-  // 🟢 Lấy danh sách khách hàng từ BE
   const fetchCustomers = async () => {
     try {
       setLoading(true);
       const res = await axios.get(API_CUSTOMERS);
-      // Giữ nguyên cách trích xuất dữ liệu khách hàng
       const data = res.data.data?.data || []; 
       setCustomers(data);
       setFiltered(data);
@@ -93,7 +86,6 @@ const CustomersPage: React.FC = () => {
     );
   }, [search, customers]);
 
-  // 🟢 Submit form Thêm / Cập nhật
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
@@ -116,7 +108,6 @@ const CustomersPage: React.FC = () => {
     }
   };
 
-  // 🗑️ Xóa khách hàng
   const handleDelete = (id: number) => {
     Modal.confirm({
       title: "Xóa khách hàng?",
@@ -141,9 +132,6 @@ const CustomersPage: React.FC = () => {
   const fetchOrders = async (customerId: number) => {
     try {
       setOrdersLoading(true);
-      
-      // 🎯 SỬA LỖI: Gọi ordersApi để lấy dữ liệu đơn hàng
-      // Hàm này đã được thiết lập để trả về trực tiếp mảng đơn hàng
       const data = await ordersApi.getByCustomerId(customerId);
       
       setOrders(Array.isArray(data) ? data : []); 
@@ -276,11 +264,26 @@ const CustomersPage: React.FC = () => {
           <Form.Item
             name="phone"
             label="Số điện thoại"
-            rules={[{ required: true, message: "Nhập số điện thoại!" }]}
+            rules={[
+            { required: true, message: "Nhập số điện thoại!" },
+            {
+              pattern: /^0\d{9}$/, 
+              message: "Số điện thoại không đúng định dạng (VD: 0xxxxxxxxx)!",
+            },
+          ]}
           >
             <Input />
           </Form.Item>
-          <Form.Item name="email" label="Email">
+          <Form.Item 
+            name="email" 
+            label="Email"
+            rules={[
+            {
+              type: "email",
+              message: "Email không đúng định dạng!",
+            },
+          ]}
+          >
             <Input type="email" />
           </Form.Item>
           <Form.Item name="address" label="Địa chỉ">
@@ -297,7 +300,7 @@ const CustomersPage: React.FC = () => {
         width={800}
         onCancel={() => {
             setOpenDetail(false);
-            setOrders([]); // Xóa đơn hàng khi đóng modal
+            setOrders([]); 
         }}
       >
         {editingCustomer ? (
