@@ -110,6 +110,13 @@ fe-retail/
 cd e:\SGU-Net\retail\fe-retail
 npm install
 ```
+> 💡 **Lưu ý:**  
+> Một số phiên bản Linux có thể không chạy được npm install ngay từ đầu. Nếu không chạy được `npm install`, hãy thử các bước sau:
+
+```bash
+rm -rf node_modules package-lock.json
+npm install
+```
 
 ### 2. Cấu hình environment
 
