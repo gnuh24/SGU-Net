@@ -1,4 +1,4 @@
-// User related types
+
 export interface User {
   id: number;
   username: string;
@@ -26,7 +26,6 @@ export interface AuthResponse {
   user: User;
 }
 
-// Product related types
 export interface Category {
   id: number;
   category_name: string;
@@ -58,9 +57,9 @@ export interface Product {
   updated_at: string;
   category?: Category;
   supplier?: Supplier;
+  inventory?: Inventory; 
 }
 
-// Customer related types
 export interface Customer {
   id: number;
   name: string;
@@ -71,7 +70,6 @@ export interface Customer {
   updated_at: string;
 }
 
-// Inventory related types
 export interface Inventory {
   id: number;
   product_id: number;
@@ -80,7 +78,6 @@ export interface Inventory {
   product?: Product;
 }
 
-// Promotion related types
 export interface Promotion {
   id: number;
   promo_code: string;
@@ -97,7 +94,6 @@ export interface Promotion {
   updated_at: string;
 }
 
-// Order related types
 export interface Order {
   id: number;
   customer_id?: number;
@@ -133,14 +129,36 @@ export interface Payment {
   created_at: string;
 }
 
-// Cart item for POS
+
 export interface CartItem {
-  product: Product;
+  product_id: number;
+  product_name: string;
   quantity: number;
-  subtotal: number;
+  price: number; 
+  stock: number;
 }
 
-// API Response wrapper
+export interface ValidatedPromoResponse {
+  valid: boolean;
+  promotion: Promotion;
+  reason?: string;
+}
+export interface CheckoutRequest {
+  customer_id?: number;
+  promo_id?: number;
+  user_id: number; 
+  items: {
+    product_id: number;
+    quantity: number;
+    price: number; 
+  }[];
+  payment: {
+    payment_method: "cash" | "card" | "transfer";
+    amount_paid: number;
+  };
+}
+
+
 export interface ApiResponse<T> {
   success: boolean;
   message: string;
@@ -148,7 +166,6 @@ export interface ApiResponse<T> {
   errors?: string[];
 }
 
-// Table pagination
 export interface PaginationParams {
   page: number;
   pageSize: number;
@@ -165,7 +182,6 @@ export interface PaginatedResponse<T> {
   totalPages: number;
 }
 
-// Form types
 export interface UserFormData {
   username: string;
   password?: string;
@@ -213,7 +229,6 @@ export interface PromotionFormData {
   usage_limit?: number;
 }
 
-// Report types
 export interface SalesReport {
   date: string;
   total_revenue: number;

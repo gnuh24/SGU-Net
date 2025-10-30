@@ -1,6 +1,4 @@
-
 -- DATABASE STORE MANAGEMENT FULL
-
 DROP DATABASE store_management;
 CREATE DATABASE store_management;
 USE store_management;
@@ -22,13 +20,15 @@ CREATE TABLE customers (
     phone VARCHAR(20),
     email VARCHAR(100),
     address TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN DEFAULT FALSE -- Cột is_deleted đã được thêm
 );
 
 -- Bảng loại sản phẩm
 CREATE TABLE categories (
     category_id INT AUTO_INCREMENT PRIMARY KEY,
-    category_name VARCHAR(100) NOT NULL
+    category_name VARCHAR(100) NOT NULL,
+    is_deleted BOOLEAN DEFAULT FALSE -- Cột is_deleted đã được thêm
 );
 
 -- Bảng nhà cung cấp
@@ -37,7 +37,8 @@ CREATE TABLE suppliers (
     name VARCHAR(100) NOT NULL,
     phone VARCHAR(20),
     email VARCHAR(100),
-    address TEXT
+    address TEXT,
+    is_deleted BOOLEAN DEFAULT FALSE -- Cột is_deleted đã được thêm
 );
 
 -- Bảng sản phẩm
@@ -49,7 +50,8 @@ CREATE TABLE products (
     barcode VARCHAR(50) UNIQUE,
     price DECIMAL(10,2) NOT NULL,
     unit VARCHAR(20) DEFAULT 'pcs',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN DEFAULT FALSE
 );
 
 -- Bảng tồn kho
@@ -57,7 +59,8 @@ CREATE TABLE inventory (
     inventory_id INT AUTO_INCREMENT PRIMARY KEY,
     product_id INT NOT NULL,
     quantity INT DEFAULT 0,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Bảng khuyến mãi
@@ -118,10 +121,11 @@ INSERT INTO customers (name,phone,email,address) VALUES
 
 -- DATA CATEGORIES
 INSERT INTO categories (category_name) VALUES
-('Đồ uống'),('Bánh kẹo'),('Gia vị'),('Đồ gia dụng'),('Mỹ phẩm');
+("Chưa phân loại"),('Đồ uống'),('Bánh kẹo'),('Gia vị'),('Đồ gia dụng'),('Mỹ phẩm');
 
 -- DATA SUPPLIERS
 INSERT INTO suppliers (name,phone,email,address) VALUES
+("Các nhà cung cấp khác","","",""),
 ('Công ty ABC','0909123456','abc@gmail.com','Hà Nội'),
 ('Công ty XYZ','0912123456','xyz@gmail.com','TP HCM'),
 ('Công ty 123','0933123456','123@gmail.com','Đà Nẵng');

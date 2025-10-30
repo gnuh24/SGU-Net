@@ -49,34 +49,34 @@ namespace be_retail.Controllers
             });
         }
 
-        [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
-        {
-            var user = await _authService.RegisterAsync(request);
-            if (user == null)
-            {
-                return BadRequest(new ApiResponse<string>
-                {
-                    Status = 400,
-                    Message = "Username already exists.",
-                    Data = null
-                });
-            }
+        // [HttpPost("register")]
+        // public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+        // {
+        //     var user = await _authService.RegisterAsync(request);
+        //     if (user == null)
+        //     {
+        //         return BadRequest(new ApiResponse<string>
+        //         {
+        //             Status = 400,
+        //             Message = "Username already exists.",
+        //             Data = null
+        //         });
+        //     }
 
-            var response = new AuthResponse
-            {
-                Username = user.Username!,
-                FullName = user.FullName!,
-                Role = user.Role!,
-                Token = "jwt_token_will_be_here"
-            };
+        //     var response = new AuthResponse
+        //     {
+        //         Username = user.Username!,
+        //         FullName = user.FullName!,
+        //         Role = user.Role!,
+        //         Token = "jwt_token_will_be_here"
+        //     };
 
-            return Ok(new ApiResponse<AuthResponse>
-            {
-                Status = 201,
-                Message = "User registered successfully.",
-                Data = response
-            });
-        }
+        //     return Ok(new ApiResponse<AuthResponse>
+        //     {
+        //         Status = 201,
+        //         Message = "User registered successfully.",
+        //         Data = response
+        //     });
+        // }
     }
 }

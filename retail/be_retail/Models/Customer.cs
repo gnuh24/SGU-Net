@@ -28,5 +28,8 @@ namespace be_retail.Models
 
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+        [Column("is_deleted")]
+        public bool IsDeleted { get; set; } = false; // ✅ Thêm cột này
     }
 }

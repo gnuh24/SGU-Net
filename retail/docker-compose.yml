@@ -1,0 +1,19 @@
+version: "3.9"
+
+services:
+  mysql:
+    image: mysql:8.0.36
+    container_name: mysql_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      MYSQL_DATABASE: store_management
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./db-retail/store_management_full.sql:/docker-entrypoint-initdb.d/init.sql
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:
+

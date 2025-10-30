@@ -21,7 +21,9 @@ namespace be_retail.Repositories
             int page,
             int pageSize)
         {
-            IQueryable<Customer> query = _context.Customers.AsQueryable();
+            IQueryable<Customer> query = _context.Customers
+                            .Where(c => !c.IsDeleted) // 🔹 Chỉ lấy khách hàng chưa bị xóa
+                            .AsQueryable();
 
             // Search theo tên, phone, email
             if (!string.IsNullOrEmpty(search))
@@ -91,6 +93,19 @@ namespace be_retail.Repositories
 
             await _context.SaveChangesAsync();
             return existing;
+        }
+
+
+        // 🟢 Xóa mềm
+        public async Task<bool> SoftDeleteAsync(int id)
+        {
+            var customer = await _context.Customers.FindAsync(id);
+            if (customer == null || customer.IsDeleted)
+                return false;
+
+            customer.IsDeleted = true;
+            await _context.SaveChangesAsync();
+            return true;
         }
     }
 }

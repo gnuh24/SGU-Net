@@ -9,12 +9,50 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+// CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UserRepository>();
 
 builder.Services.AddScoped<CustomerService>();
 builder.Services.AddScoped<CustomerRepository>();
-builder.Services.AddScoped<CustomerService>();
+
+builder.Services.AddScoped<SupplierService>();
+builder.Services.AddScoped<SupplierRepository>();
+
+builder.Services.AddScoped<CategoryService>();
+builder.Services.AddScoped<CategoryRepository>();
+
+builder.Services.AddScoped<ProductService>();
+builder.Services.AddScoped<ProductRepository>();
+
+builder.Services.AddScoped<InventoryService>();
+builder.Services.AddScoped<InventoryRepository>();
+
+builder.Services.AddScoped<PromotionService>();
+builder.Services.AddScoped<PromotionRepository>();
+
+builder.Services.AddScoped<OrderService>();
+builder.Services.AddScoped<OrderRepository>();
+
+builder.Services.AddScoped<OrderItemService>();
+builder.Services.AddScoped<OrderItemRepository>();
+
+builder.Services.AddScoped<PaymentService>();
+builder.Services.AddScoped<PaymentRepository>();
+
+builder.Services.AddScoped<StatisticsRepository>();
+builder.Services.AddScoped<StatisticsService>();
+
 
 // Add DbContext
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -23,13 +61,20 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     
 var app = builder.Build();
 
+// Seed data
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await be_retail.Data.DbSeeder.SeedAsync(context);
+}
+
 // Configure middleware
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
+app.UseCors("AllowFrontend");
 app.UseAuthorization();
 app.MapControllers();
 

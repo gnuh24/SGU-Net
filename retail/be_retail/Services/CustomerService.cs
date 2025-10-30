@@ -60,5 +60,10 @@ namespace be_retail.Services
 
             return await _repository.UpdateAsync(id, customer);
         }
+
+        public async Task<bool> DeleteAsync(int id)
+        {
+            return await _repository.SoftDeleteAsync(id);
+        }
     }
 }
