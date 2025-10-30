@@ -104,7 +104,6 @@ const PosPageInternal: React.FC = () => {
 
         setAllProducts(sortedProducts);
         setProductsFound(sortedProducts);
-
       } catch (err) {
         console.error("Lỗi tải dữ liệu:", err);
         staticMessage.error("Không thể tải dữ liệu ban đầu!");
@@ -117,9 +116,7 @@ const PosPageInternal: React.FC = () => {
   }, []);
 
   const addProductToCart = (p: SwaggerProduct) => {
-    console.log("addProductToCart received product:", p);
     const stock = p.currentStock ?? p.inventory?.quantity ?? 0;
-    console.log("Calculated stock:", stock);
     if (stock <= 0) {
       message.error("Sản phẩm đã hết hàng!");
       return;
@@ -160,7 +157,7 @@ const PosPageInternal: React.FC = () => {
   const removeFromCart = (id: number) =>
     setCart((prev) => prev.filter((c) => c.productId !== id));
 
- const handleSearch = async () => {
+  const handleSearch = async () => {
     if (!productQuery) {
       setProductsFound(allProducts);
       return;
@@ -174,20 +171,17 @@ const PosPageInternal: React.FC = () => {
     if (isNumericQuery) {
       try {
         const productFromApi = await posApi.scanBarcode(productQuery);
-        console.log("handleSearch received from API:", productFromApi);
         addProductToCart(productFromApi);
         message.success(`Đã thêm: ${productFromApi.productName}`);
-        setProductQuery(""); 
-        setProductsFound(allProducts); 
+        setProductQuery("");
+        setProductsFound(allProducts);
         setLoadingSearch(false);
-        return; 
-
+        return;
       } catch (err: any) {
         if (!(err.response && err.response.status === 404)) {
-            console.error("Lỗi quét barcode:", err);
-            message.error("Lỗi khi quét barcode!");
-            setLoadingSearch(false);
-            return; 
+          message.error("Lỗi khi quét barcode!");
+          setLoadingSearch(false);
+          return;
         }
       }
     }
@@ -195,7 +189,7 @@ const PosPageInternal: React.FC = () => {
     const localFound = allProducts.filter(
       (p) =>
         p.productName.toLowerCase().includes(query) ||
-        p.barcode?.includes(query) 
+        p.barcode?.includes(query)
     );
 
     setProductsFound(localFound);
@@ -209,10 +203,32 @@ const PosPageInternal: React.FC = () => {
     const sub = cart.reduce((s, i) => s + i.price * i.quantity, 0);
     let disc = 0;
     if (appliedPromotion) {
-      if (appliedPromotion.discountType === "fixed" || appliedPromotion.discountType === "fixed_amount") {
+      // Kiểm tra loại giảm giá: fixed/fixed_amount hoặc percentage/percent
+      if (
+        appliedPromotion.discountType === "fixed" ||
+        appliedPromotion.discountType === "fixed_amount"
+      ) {
+        // Giảm giá cố định (VNĐ)
         disc = appliedPromotion.discountValue;
+      } else if (
+        appliedPromotion.discountType === "percentage" ||
+        appliedPromotion.discountType === "percent"
+      ) {
+        // Giảm giá theo %
+        // Fix: Nếu discountValue < 1, có thể backend trả về dạng decimal (0.1 = 10%)
+        let percentValue = appliedPromotion.discountValue;
+        if (percentValue > 0 && percentValue < 1) {
+          // Backend trả về dạng 0.1 cho 10% -> nhân 100
+          percentValue = percentValue * 100;
+        }
+        disc = Math.round((sub * percentValue) / 100);
       } else {
-        disc = Math.round((sub * appliedPromotion.discountValue) / 100);
+        // Mặc định coi như percentage nếu không rõ
+        let percentValue = appliedPromotion.discountValue;
+        if (percentValue > 0 && percentValue < 1) {
+          percentValue = percentValue * 100;
+        }
+        disc = Math.round((sub * percentValue) / 100);
       }
     }
     const finalTotal = Math.max(sub - disc, 0);
@@ -221,20 +237,120 @@ const PosPageInternal: React.FC = () => {
   }, [cart, appliedPromotion]);
 
   const applyPromotion = async () => {
-    if (!promoCode) return message.warning("Nhập mã khuyến mãi!");
+    if (!promoCode.trim()) {
+      message.warning("Vui lòng nhập mã khuyến mãi!");
+      return;
+    }
+    if (cart.length === 0) {
+      message.warning("Giỏ hàng trống, không thể áp dụng khuyến mãi!");
+      return;
+    }
+
     try {
-      const res = await posApi.validatePromotion(promoCode, subtotal);
+      message.loading({
+        content: "Đang kiểm tra mã khuyến mãi...",
+        key: "promo",
+      });
+      const res = await posApi.validatePromotion(promoCode.trim(), subtotal);
+
       if (res.valid) {
-        setAppliedPromotion(res.promo ?? res.promotion);
-        message.success("Áp dụng mã thành công!");
+        const promotion = res.promo ?? res.promotion;
+        if (promotion) {
+          setAppliedPromotion(promotion);
+          message.success({
+            content: `✅ Áp dụng mã "${promotion.promoCode}" thành công!`,
+            key: "promo",
+            duration: 3,
+          });
+        } else {
+          setAppliedPromotion(null);
+          message.error({
+            content: `❌ Dữ liệu khuyến mãi không hợp lệ!`,
+            key: "promo",
+            duration: 4,
+          });
+        }
       } else {
         setAppliedPromotion(null);
-        message.error(res.reason || "Mã không hợp lệ!");
+        // Xử lý các lý do lỗi cụ thể
+        const reason = res.reason || "Mã không hợp lệ!";
+        if (
+          reason.toLowerCase().includes("hết hạn") ||
+          reason.toLowerCase().includes("expired")
+        ) {
+          message.error({
+            content: `❌ Mã khuyến mãi đã hết hạn!`,
+            key: "promo",
+            duration: 4,
+          });
+        } else if (
+          reason.toLowerCase().includes("không tồn tại") ||
+          reason.toLowerCase().includes("not found")
+        ) {
+          message.error({
+            content: `❌ Mã khuyến mãi không tồn tại!`,
+            key: "promo",
+            duration: 4,
+          });
+        } else if (
+          reason.toLowerCase().includes("inactive") ||
+          reason.toLowerCase().includes("không hoạt động")
+        ) {
+          message.error({
+            content: `❌ Mã khuyến mãi không còn hoạt động!`,
+            key: "promo",
+            duration: 4,
+          });
+        } else if (
+          reason.toLowerCase().includes("đơn tối thiểu") ||
+          reason.toLowerCase().includes("minimum")
+        ) {
+          message.error({
+            content: `❌ ${reason}`,
+            key: "promo",
+            duration: 4,
+          });
+        } else {
+          message.error({
+            content: `❌ ${reason}`,
+            key: "promo",
+            duration: 4,
+          });
+        }
       }
     } catch (err: any) {
-      const reason = err.response?.data?.message || "Không thể kiểm tra mã!";
       setAppliedPromotion(null);
-      message.error(reason);
+      const errorData = err.response?.data;
+      let reason = "Không thể kiểm tra mã khuyến mãi!";
+
+      if (errorData?.message) {
+        reason = errorData.message;
+      } else if (errorData?.error) {
+        reason = errorData.error;
+      } else if (err.message) {
+        reason = err.message;
+      }
+
+      // Xử lý lỗi HTTP status
+      if (err.response?.status === 404) {
+        message.error({
+          content: "❌ Mã khuyến mãi không tồn tại!",
+          key: "promo",
+          duration: 4,
+        });
+      } else if (err.response?.status === 400) {
+        message.error({
+          content: `❌ ${reason}`,
+          key: "promo",
+          duration: 4,
+        });
+      } else {
+        message.error({
+          content: `❌ ${reason}`,
+          key: "promo",
+          duration: 4,
+        });
+      }
     }
   };
 
@@ -244,11 +360,11 @@ const PosPageInternal: React.FC = () => {
     setPromoCode("");
     setAppliedPromotion(null);
     setPaymentMethod("cash");
-    setPaymentModalOpen(false); 
-    setPaidAmount(null);      
+    setPaymentModalOpen(false);
+    setPaidAmount(null);
     const el = document.getElementById("product-search");
     if (el) (el as HTMLInputElement).value = "";
-    setProductsFound(allProducts); 
+    setProductsFound(allProducts);
   };
   const printReceipt = (
     order: Order,
@@ -257,30 +373,9 @@ const PosPageInternal: React.FC = () => {
     totalAmount: number,
     cash: number
   ) => {
-    console.log("--- HÓA ĐƠN ---");
-    console.log(`Mã ĐH: ${order.orderId ?? order.id}`);
-    console.log(`Ngày: ${new Date(order.createdAt).toLocaleString()}`);
-    if (customer) {
-      console.log(`Khách hàng: ${customer.customerName ?? customer.name}`);
-    }
-    console.log("---");
-    items.forEach((item) => {
-      console.log(
-        `${item.productName} | ${item.quantity} x ${formatCurrency(item.price)}`
-      );
-    });
-    console.log("---");
-    console.log(`Tạm tính: ${formatCurrency(subtotal)}`);
-    console.log(`Giảm giá: ${formatCurrency(discount)}`);
-    console.log(`THÀNH TIỀN: ${formatCurrency(totalAmount)}`);
-    console.log(`Phương thức: ${paymentMethod}`);
-    if (paymentMethod === "cash") {
-      console.log(`Tiền khách đưa: ${formatCurrency(cash)}`);
-      console.log(`Tiền thối: ${formatCurrency(Math.max(cash - totalAmount, 0))}`);
-    }
-    console.log("--- Cảm ơn quý khách! ---");
+    // Receipt printing logic can be implemented here
+    // For now, just prepare the data
   };
-
 
   const handleCheckout = async () => {
     if (!user) {
@@ -291,7 +386,10 @@ const PosPageInternal: React.FC = () => {
       message.error("Giỏ hàng trống!");
       return;
     }
-    if (paymentMethod === "cash" && (paidAmount === null || paidAmount < total)) {
+    if (
+      paymentMethod === "cash" &&
+      (paidAmount === null || paidAmount < total)
+    ) {
       message.error("Số tiền khách trả không hợp lệ!");
       return;
     }
@@ -318,19 +416,24 @@ const PosPageInternal: React.FC = () => {
       message.destroy();
       message.success("Thanh toán thành công!");
 
-      printReceipt(createdOrder, cart, selectedCustomer, total, paidAmount ?? total);
-      resetPos(); 
-
+      printReceipt(
+        createdOrder,
+        cart,
+        selectedCustomer,
+        total,
+        paidAmount ?? total
+      );
+      resetPos();
     } catch (err: any) {
       message.destroy();
       console.error("Lỗi thanh toán:", err);
-      const errorMsg = err.response?.data?.message || "Lỗi khi xử lý thanh toán!";
+      const errorMsg =
+        err.response?.data?.message || "Lỗi khi xử lý thanh toán!";
       message.error(`Thanh toán thất bại: ${errorMsg}`);
     } finally {
       setLoadingCheckout(false);
     }
   };
-
 
   const columns = [
     { title: "Sản phẩm", dataIndex: "productName", key: "name" },
@@ -387,7 +490,7 @@ const PosPageInternal: React.FC = () => {
             <Title level={4}>Bán hàng (POS)</Title>
             <Space style={{ marginBottom: 16 }}>
               <Input
-                id="product-search" 
+                id="product-search"
                 placeholder="Quét mã vạch hoặc nhập tên sản phẩm"
                 value={productQuery}
                 onChange={(e) => setProductQuery(e.target.value)}
@@ -414,7 +517,7 @@ const PosPageInternal: React.FC = () => {
                 paddingBottom: "10px",
                 background: "#f9f9f9",
                 border: "1px solid #f0f0f0",
-                borderRadius: "8px"
+                borderRadius: "8px",
               }}
             >
               <Spin spinning={loadingProducts}>
@@ -422,7 +525,8 @@ const PosPageInternal: React.FC = () => {
                   <Space wrap size={16}>
                     {productsFound.length > 0 ? (
                       productsFound.map((p) => {
-                        const stock = p.currentStock ?? p.inventory?.quantity ?? 0;
+                        const stock =
+                          p.currentStock ?? p.inventory?.quantity ?? 0;
                         const isOutOfStock = stock <= 0;
                         return (
                           <Card
@@ -430,22 +534,29 @@ const PosPageInternal: React.FC = () => {
                             size="small"
                             style={{
                               width: 180,
-                              cursor: isOutOfStock ? 'not-allowed' : "pointer",
-                              borderColor: isOutOfStock ? "#ffccc7" : "#d9d9d9"
+                              cursor: isOutOfStock ? "not-allowed" : "pointer",
+                              borderColor: isOutOfStock ? "#ffccc7" : "#d9d9d9",
                             }}
                             onClick={() => !isOutOfStock && addProductToCart(p)}
                             hoverable={!isOutOfStock}
-                            styles={{ body: { opacity: isOutOfStock ? 0.6 : 1 } }}
+                            styles={{
+                              body: { opacity: isOutOfStock ? 0.6 : 1 },
+                            }}
                           >
                             <Text strong ellipsis>
                               {p.productName}
                             </Text>
                             <div>{formatCurrency(p.price)}</div>
-                            <div style={{ color: stock > 0 ? 'inherit' : 'red', fontSize: '0.9em' }}>
+                            <div
+                              style={{
+                                color: stock > 0 ? "inherit" : "red",
+                                fontSize: "0.9em",
+                              }}
+                            >
                               Tồn: {stock}
                             </div>
                           </Card>
-                        )
+                        );
                       })
                     ) : (
                       <Text type="secondary">Không tìm thấy sản phẩm nào.</Text>
@@ -474,7 +585,11 @@ const PosPageInternal: React.FC = () => {
               <Select
                 style={{ width: "100%" }}
                 placeholder="Chọn khách hàng (có thể tìm kiếm)"
-                value={selectedCustomer ? (selectedCustomer.customerId ?? selectedCustomer.id) : 0}
+                value={
+                  selectedCustomer
+                    ? selectedCustomer.customerId ?? selectedCustomer.id
+                    : 0
+                }
                 onChange={(selectedValue) => {
                   if (selectedValue === 0) {
                     setSelectedCustomer(null);
@@ -505,29 +620,81 @@ const PosPageInternal: React.FC = () => {
                   <Option
                     key={c.customerId ?? c.id}
                     value={c.customerId ?? c.id!}
-                    label={`${c.customerName ?? c.name} - ${c.phoneNumber ?? c.phone}`}
+                    label={`${c.customerName ?? c.name} - ${
+                      c.phoneNumber ?? c.phone
+                    }`}
                   >
-                    {`${c.customerName ?? c.name} - ${c.phoneNumber ?? c.phone}`}
+                    {`${c.customerName ?? c.name} - ${
+                      c.phoneNumber ?? c.phone
+                    }`}
                   </Option>
                 ))}
               </Select>
 
               <Divider />
-              <Title level={5}>Khuyến mãi</Title>
+              <Title level={5}>
+                <TagOutlined /> Khuyến mãi
+              </Title>
               <Space.Compact style={{ width: "100%" }}>
                 <Input
-                  placeholder="Nhập mã KM"
+                  placeholder="Nhập mã khuyến mãi"
                   value={promoCode}
-                  onChange={(e) => setPromoCode(e.target.value)}
+                  onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                  onPressEnter={applyPromotion}
+                  disabled={cart.length === 0}
+                  prefix={<TagOutlined />}
+                  allowClear
                 />
-                <Button onClick={applyPromotion} disabled={cart.length === 0}>
+                <Button
+                  type="primary"
+                  onClick={applyPromotion}
+                  disabled={cart.length === 0 || !promoCode.trim()}
+                >
                   Áp dụng
                 </Button>
               </Space.Compact>
               {appliedPromotion && (
-                <div style={{ marginTop: 6, color: "green" }}>
-                  <Text strong>Đã áp dụng:</Text> {appliedPromotion.promoCode} (-
-                  {formatCurrency(discount)})
+                <div
+                  style={{
+                    marginTop: 8,
+                    padding: "8px 12px",
+                    background: "#f6ffed",
+                    border: "1px solid #b7eb8f",
+                    borderRadius: "4px",
+                  }}
+                >
+                  <Text strong style={{ color: "#52c41a" }}>
+                    ✓ Đã áp dụng: {appliedPromotion.promoCode}
+                  </Text>
+                  <br />
+                  <Text style={{ fontSize: "0.9em", color: "#666" }}>
+                    Giảm {formatCurrency(discount)}
+                    {(appliedPromotion.discountType === "percentage" ||
+                      appliedPromotion.discountType === "percent") &&
+                      (() => {
+                        let percentValue = appliedPromotion.discountValue;
+                        if (percentValue > 0 && percentValue < 1) {
+                          percentValue = percentValue * 100;
+                        }
+                        return ` (${percentValue}%)`;
+                      })()}
+                    {(appliedPromotion.discountType === "fixed" ||
+                      appliedPromotion.discountType === "fixed_amount") &&
+                      " (Giảm cố định)"}
+                  </Text>
+                  <Button
+                    type="link"
+                    size="small"
+                    danger
+                    onClick={() => {
+                      setAppliedPromotion(null);
+                      setPromoCode("");
+                      message.info("Đã hủy mã khuyến mãi");
+                    }}
+                    style={{ float: "right", padding: 0 }}
+                  >
+                    Hủy
+                  </Button>
                 </div>
               )}
 
@@ -548,7 +715,7 @@ const PosPageInternal: React.FC = () => {
                 title="Tổng cộng"
                 value={total}
                 formatter={formatCurrency}
-                valueStyle={{ color: "#1890ff", fontSize: '1.5em' }}
+                valueStyle={{ color: "#1890ff", fontSize: "1.5em" }}
               />
 
               <Divider />
@@ -573,7 +740,9 @@ const PosPageInternal: React.FC = () => {
                       formatter={(value) =>
                         `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                       }
-                      parser={(value) => Number(value?.replace(/[^0-9]/g, "") || 0)}
+                      parser={(value) =>
+                        Number(value?.replace(/[^0-9]/g, "") || 0)
+                      }
                       style={{ width: "100%" }}
                       value={paidAmount}
                       onChange={(value) => setPaidAmount(value as number)}
@@ -608,7 +777,7 @@ const PosPageInternal: React.FC = () => {
       >
         <p>
           Tổng tiền cần thanh toán:{" "}
-          <strong style={{ color: "#1890ff", fontSize: '1.2em' }}>
+          <strong style={{ color: "#1890ff", fontSize: "1.2em" }}>
             {formatCurrency(total)}
           </strong>
         </p>
@@ -625,7 +794,7 @@ const PosPageInternal: React.FC = () => {
             <p>Tiền khách đưa: {formatCurrency(paidAmount ?? 0)}</p>
             <p>
               Tiền thối lại:{" "}
-              <strong style={{ color: "green", fontSize: '1.1em' }}>
+              <strong style={{ color: "green", fontSize: "1.1em" }}>
                 {formatCurrency(Math.max((paidAmount ?? 0) - total, 0))}
               </strong>
             </p>

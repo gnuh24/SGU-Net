@@ -11,13 +11,24 @@ import {
   Tag,
   UserCog,
   FileText,
+  Receipt,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { MENU_ITEMS } from "../../constants";
-type MenuItem = Required<MenuProps>["items"][number];
+
 const { Sider } = Layout;
+
+// Type definition for menu items (flexible to match MENU_ITEMS structure)
+type AppMenuItem = {
+  key: string;
+  label: string;
+  icon?: string;
+  path: string;
+  roles?: readonly string[];
+  children?: readonly AppMenuItem[];
+};
 
 const iconMap = {
   BarChart3,
@@ -28,6 +39,7 @@ const iconMap = {
   Tag,
   UserCog,
   FileText,
+  Receipt,
 };
 
 const Sidebar: React.FC = () => {
@@ -46,24 +58,22 @@ const Sidebar: React.FC = () => {
   };
 
   // ✅ Recursive builder for nested menu
-  const buildMenuItems = (items: AppMenuItem[]): MenuProps["items"] =>
-  items
-    // ✅ chỉ filter nếu có roles, nếu không có thì mặc định cho phép
-    .filter((item) => !item.roles || canAccess(item.roles))
-    .map((item) => {
-      const hasChildren = item.children && item.children.length > 0;
+  const buildMenuItems = (items: readonly AppMenuItem[]): MenuProps["items"] =>
+    items
+      // ✅ chỉ filter nếu có roles, nếu không có thì mặc định cho phép
+      .filter((item) => !item.roles || canAccess(item.roles))
+      .map((item) => {
+        const hasChildren = item.children && item.children.length > 0;
 
-      return {
-        key: item.key,
-        icon: renderIcon(item.icon),
-        label: item.label,
-        ...(hasChildren
-          ? { children: buildMenuItems(item.children) }
-          : { onClick: () => handleMenuClick(item.path) }),
-      };
-    });
-
-
+        return {
+          key: item.key,
+          icon: item.icon ? renderIcon(item.icon) : undefined,
+          label: item.label,
+          ...(hasChildren
+            ? { children: buildMenuItems(item.children!) }
+            : { onClick: () => handleMenuClick(item.path) }),
+        };
+      });
 
   const filteredMenuItems = buildMenuItems(MENU_ITEMS);
 

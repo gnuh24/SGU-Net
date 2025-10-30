@@ -22,10 +22,18 @@ namespace be_retail.Repositories
                 .Where(o => o.Status == "paid"); // chỉ tính đơn đã thanh toán
 
             if (startDate.HasValue)
-                query = query.Where(o => o.OrderDate >= startDate.Value);
+            {
+                // Start of day (00:00:00)
+                var inclusiveStartDate = startDate.Value.Date;
+                query = query.Where(o => o.OrderDate >= inclusiveStartDate);
+            }
 
             if (endDate.HasValue)
-                query = query.Where(o => o.OrderDate <= endDate.Value);
+            {
+                // End of day (23:59:59.9999999)
+                var inclusiveEndDate = endDate.Value.Date.AddDays(1).AddTicks(-1);
+                query = query.Where(o => o.OrderDate <= inclusiveEndDate);
+            }
 
             // Tổng đơn hàng
             var totalOrders = await query.CountAsync();
@@ -33,8 +41,9 @@ namespace be_retail.Repositories
             // Tổng doanh thu sau khi trừ discount
             var totalRevenue = await query.SumAsync(o => (decimal?)(o.TotalAmount - o.DiscountAmount)) ?? 0;
 
-            // Số khách hàng duy nhất đã mua hàng
+            // Số khách hàng duy nhất đã mua hàng (không tính khách vãng lai - customerId = 0 hoặc null)
             var totalCustomers = await query
+                .Where(o => o.CustomerId != null && o.CustomerId > 0)
                 .Select(o => o.CustomerId)
                 .Distinct()
                 .CountAsync();

@@ -35,6 +35,7 @@ namespace be_retail.Controllers
 
             var response = new AuthResponse
             {
+                UserId = user.UserId,
                 Username = user.Username!,
                 FullName = user.FullName!,
                 Role = user.Role!,

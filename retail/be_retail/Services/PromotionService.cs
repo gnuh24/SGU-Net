@@ -162,6 +162,50 @@ namespace be_retail.Services
 
             return true;
         }
+
+        public async Task<(bool Valid, string? Reason, Models.Promotion? Promotion)> ValidatePromotionDetailedAsync(string promoCode, decimal orderAmount)
+        {
+            var promotion = await _promotionRepository.GetByPromoCodeAsync(promoCode);
+            
+            if (promotion == null)
+            {
+                return (false, "Mã khuyến mãi không tồn tại!", null);
+            }
+
+            var now = DateTime.Now;
+            
+            // Check if promotion is active
+            if (promotion.Status != "active")
+            {
+                return (false, "Mã khuyến mãi không còn hoạt động!", null);
+            }
+            
+            // Check date range - start date
+            if (promotion.StartDate > now)
+            {
+                return (false, "Mã khuyến mãi chưa có hiệu lực!", null);
+            }
+
+            // Check date range - end date
+            if (promotion.EndDate < now)
+            {
+                return (false, "Mã khuyến mãi đã hết hạn!", null);
+            }
+            
+            // Check usage limit
+            if (promotion.UsageLimit > 0 && promotion.UsedCount >= promotion.UsageLimit)
+            {
+                return (false, "Mã khuyến mãi đã hết lượt sử dụng!", null);
+            }
+            
+            // Check minimum order amount
+            if (promotion.MinOrderAmount > 0 && orderAmount < promotion.MinOrderAmount)
+            {
+                return (false, $"Đơn hàng tối thiểu {promotion.MinOrderAmount:N0}₫", null);
+            }
+
+            return (true, null, promotion);
+        }
     }
 }
 

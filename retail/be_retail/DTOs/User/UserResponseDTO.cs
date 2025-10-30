@@ -1,11 +1,10 @@
-namespace be_retail.DTOs
+namespace be_retail.DTOs.User
 {
-    public class AuthResponse
+    public class UserResponseDTO
     {
         public int UserId { get; set; }
         public string Username { get; set; } = null!;
         public string FullName { get; set; } = null!;
         public string Role { get; set; } = null!;
-        public string Token { get; set; } = null!;
     }
 }
