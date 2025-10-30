@@ -79,6 +79,13 @@ export const MENU_ITEMS = [
     roles: ["admin", "staff"],
   },
   {
+    key: "orders",
+    label: "Danh sách hóa đơn",
+    icon: "Receipt",
+    path: "/orders",
+    roles: ["admin", "staff"],
+  },
+  {
     key: "customers",
     label: "Quản lý khách hàng",
     icon: "Users",
@@ -151,11 +158,6 @@ export const MENU_ITEMS = [
         key: "inventory-report",
         label: "Báo cáo tồn kho",
         path: "/reports/inventory",
-      },
-      {
-        key: "staff-report",
-        label: "Báo cáo nhân viên",
-        path: "/reports/staff",
       },
     ],
   },

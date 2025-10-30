@@ -13,21 +13,36 @@ export class AuthService {
       return mockAuthService.login(credentials);
     }
 
-    const response = await apiService.post<AuthResponse>(
-      "/auth/login",
+    // Backend endpoint is /auth/staff-login
+    const response = await apiService.post<any>(
+      "/auth/staff-login",
       credentials
     );
 
-    if (response.data) {
+    // Backend returns ApiResponse wrapper: { status, message, data: AuthResponse }
+    const authData = response.data?.data || response.data;
+
+    if (authData) {
+      // Backend returns: { userId, username, fullName, role, token }
+      // Map to frontend User format
+      const user: User = {
+        id: authData.userId,
+        username: authData.username,
+        full_name: authData.fullName,
+        role: authData.role,
+      };
+
       // Store token and user info
-      localStorage.setItem(STORAGE_KEYS.TOKEN, response.data.token);
-      localStorage.setItem(
-        STORAGE_KEYS.USER,
-        JSON.stringify(response.data.user)
-      );
+      localStorage.setItem(STORAGE_KEYS.TOKEN, authData.token);
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+
+      return {
+        user,
+        token: authData.token,
+      };
     }
 
-    return response.data!;
+    throw new Error("Login failed: No data returned from server");
   }
 
   async register(userData: RegisterRequest): Promise<AuthResponse> {

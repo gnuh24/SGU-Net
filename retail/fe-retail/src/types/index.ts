@@ -1,12 +1,11 @@
-
 export interface User {
   id: number;
   username: string;
   full_name: string;
   role: "admin" | "staff";
-  status: "active" | "inactive";
-  created_at: string;
-  updated_at: string;
+  status?: "active" | "inactive";
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface LoginRequest {
@@ -57,7 +56,7 @@ export interface Product {
   updated_at: string;
   category?: Category;
   supplier?: Supplier;
-  inventory?: Inventory; 
+  inventory?: Inventory;
 }
 
 export interface Customer {
@@ -82,7 +81,7 @@ export interface Promotion {
   id: number;
   promo_code: string;
   description: string;
-  discount_type: "percentage" | "fixed";
+  discount_type: "percentage" | "percent" | "fixed" | "fixed_amount";
   discount_value: number;
   start_date: string;
   end_date: string;
@@ -129,12 +128,11 @@ export interface Payment {
   created_at: string;
 }
 
-
 export interface CartItem {
   product_id: number;
   product_name: string;
   quantity: number;
-  price: number; 
+  price: number;
   stock: number;
 }
 
@@ -146,18 +144,17 @@ export interface ValidatedPromoResponse {
 export interface CheckoutRequest {
   customer_id?: number;
   promo_id?: number;
-  user_id: number; 
+  user_id: number;
   items: {
     product_id: number;
     quantity: number;
-    price: number; 
+    price: number;
   }[];
   payment: {
     payment_method: "cash" | "card" | "transfer";
     amount_paid: number;
   };
 }
-
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -221,7 +218,7 @@ export interface SupplierFormData {
 export interface PromotionFormData {
   promo_code: string;
   description: string;
-  discount_type: "percentage" | "fixed";
+  discount_type: "percentage" | "percent" | "fixed" | "fixed_amount";
   discount_value: number;
   start_date: string;
   end_date: string;

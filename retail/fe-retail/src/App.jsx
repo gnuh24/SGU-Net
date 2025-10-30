@@ -25,6 +25,12 @@ import UserForm from "./pages/users/UserForm";
 import PromotionsList from "./pages/promotions/PromotionsList";
 import PromotionForm from "./pages/promotions/PromotionForm";
 import ReportsDashboard from "./pages/reports/ReportsDashboard";
+import ReportsIndex from "./pages/reports/index";
+import RevenueReport from "./pages/reports/RevenueReport";
+import ProductReport from "./pages/reports/ProductReport";
+import CustomerReport from "./pages/reports/CustomerReport";
+import InventoryReport from "./pages/reports/InventoryReport";
+import OrdersList from "./pages/orders/OrdersList";
 import Dashboard from "./pages/dashboard/Dashboard";
 import RoleGuard from "./components/auth/RoleGuard";
 import ProductList from "./pages/products/ProductList";
@@ -103,6 +109,16 @@ const AppContent = () => {
             }
           />
 
+          {/* Orders (Admin & Staff) */}
+          <Route
+            path="orders"
+            element={
+              <RoleGuard allowedRoles={["admin", "staff"]}>
+                <OrdersList />
+              </RoleGuard>
+            }
+          />
+
           {/* Promotions (Admin only) */}
           <Route
             path="promotions"
@@ -134,31 +150,67 @@ const AppContent = () => {
             path="reports"
             element={
               <RoleGuard allowedRoles={["admin"]}>
+                <ReportsIndex />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="reports/dashboard"
+            element={
+              <RoleGuard allowedRoles={["admin"]}>
                 <ReportsDashboard />
               </RoleGuard>
             }
           />
-        </Route>
-         <Route path="products">
+          <Route
+            path="reports/sales"
+            element={
+              <RoleGuard allowedRoles={["admin"]}>
+                <RevenueReport />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="reports/products"
+            element={
+              <RoleGuard allowedRoles={["admin"]}>
+                <ProductReport />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="reports/customers"
+            element={
+              <RoleGuard allowedRoles={["admin"]}>
+                <CustomerReport />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="reports/inventory"
+            element={
+              <RoleGuard allowedRoles={["admin"]}>
+                <InventoryReport />
+              </RoleGuard>
+            }
+          />
+
+          {/* Products */}
+          <Route path="products">
             <Route index element={<ProductList />} />
             <Route path="categories" element={<CategoryList />} />
             <Route path="suppliers" element={<SupplierList />} />
           </Route>
+
+          {/* Inventory */}
           <Route path="inventory" element={<InventoryList />} />
-          <Route path="customers" element={<Customers/>} />
-          <Route path="pos" element={<Pos/>} />
-          
+
+          {/* Customers */}
+          <Route path="customers" element={<Customers />} />
+
+          {/* POS */}
+          <Route path="pos" element={<Pos />} />
         </Route>
-        
-          {/* Add more routes as we create pages */}
-          {/* <Route path="users" element={<UserManagement />} />
-          <Route path="products" element={<ProductManagement />} />
-          <Route path="customers" element={<CustomerManagement />} />
-          <Route path="inventory" element={<InventoryManagement />} />
-          <Route path="promotions" element={<PromotionManagement />} />
-          <Route path="pos" element={<POS />} />
-          <Route path="reports/*" element={<Reports />} /> */}
-      
 
         {/* Catch all route */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

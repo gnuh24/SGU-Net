@@ -375,14 +375,46 @@ namespace be_retail.Controllers
         {
             try
             {
-                var isValid = await _promotionService.ValidatePromotionAsync(request.PromoCode, request.OrderAmount);
+                var (isValid, reason, promotion) = await _promotionService.ValidatePromotionDetailedAsync(request.PromoCode, request.OrderAmount);
                 
-                return Ok(new ApiResponse<object>
+                if (isValid && promotion != null)
                 {
-                    Status = 200,
-                    Message = isValid ? "Promotion is valid." : "Promotion is not valid.",
-                    Data = new { IsValid = isValid }
-                });
+                    var response = new ValidatePromotionResponse
+                    {
+                        Valid = true,
+                        Reason = null,
+                        Promotion = new PromotionInfo
+                        {
+                            PromoId = promotion.PromoId,
+                            PromoCode = promotion.PromoCode,
+                            DiscountType = (promotion.DiscountType == "percent" || promotion.DiscountType == "percentage") ? "percent" : "fixed",
+                            DiscountValue = promotion.DiscountValue
+                        }
+                    };
+
+                    return Ok(new ApiResponse<ValidatePromotionResponse>
+                    {
+                        Status = 200,
+                        Message = "Promotion is valid.",
+                        Data = response
+                    });
+                }
+                else
+                {
+                    var response = new ValidatePromotionResponse
+                    {
+                        Valid = false,
+                        Reason = reason,
+                        Promotion = null
+                    };
+
+                    return Ok(new ApiResponse<ValidatePromotionResponse>
+                    {
+                        Status = 200,
+                        Message = "Promotion is not valid.",
+                        Data = response
+                    });
+                }
             }
             catch (Exception ex)
             {

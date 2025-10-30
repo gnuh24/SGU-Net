@@ -75,24 +75,75 @@ const PromotionsList: React.FC = () => {
     { title: "ID", dataIndex: "id", key: "id" },
     { title: "Code", dataIndex: "promo_code", key: "promo_code" },
     { title: "Description", dataIndex: "description", key: "description" },
-    { title: "Type", dataIndex: "discount_type", key: "discount_type" },
-    { title: "Value", dataIndex: "discount_value", key: "discount_value" },
+    {
+      title: "Type",
+      dataIndex: "discount_type",
+      key: "discount_type",
+      render: (type: string) => {
+        if (type === "percent" || type === "percentage") return "Giảm %";
+        if (type === "fixed" || type === "fixed_amount") return "Giảm VNĐ";
+        return type;
+      },
+    },
+    {
+      title: "Value",
+      dataIndex: "discount_value",
+      key: "discount_value",
+      render: (value: number, record: any) => {
+        const type = record.discount_type;
+        if (type === "percent" || type === "percentage") {
+          // Fix: Nếu value < 1 thì backend trả về dạng decimal (0.1 = 10%)
+          let percentValue = value;
+          if (percentValue > 0 && percentValue < 1) {
+            percentValue = percentValue * 100;
+          }
+          return `${percentValue}%`;
+        }
+        return new Intl.NumberFormat("vi-VN").format(value) + " VNĐ";
+      },
+    },
+    {
+      title: "Start Date",
+      dataIndex: "start_date",
+      key: "start_date",
+      render: (date: string) =>
+        date ? new Date(date).toLocaleDateString("vi-VN") : "N/A",
+    },
+    {
+      title: "End Date",
+      dataIndex: "end_date",
+      key: "end_date",
+      render: (date: string) =>
+        date ? new Date(date).toLocaleDateString("vi-VN") : "N/A",
+    },
     {
       title: "Status",
       dataIndex: "status",
       key: "status",
-      render: (status: any) => {
+      render: (status: any, record: any) => {
+        const now = new Date();
+        const endDate = record.end_date ? new Date(record.end_date) : null;
+        const startDate = record.start_date
+          ? new Date(record.start_date)
+          : null;
+
+        // Kiểm tra hết hạn
+        if (endDate && endDate < now) {
+          return <span className="text-gray-500">Hết hạn</span>;
+        }
+
+        // Kiểm tra chưa bắt đầu
+        if (startDate && startDate > now) {
+          return <span className="text-blue-500">Chưa bắt đầu</span>;
+        }
+
+        // Kiểm tra trạng thái active/inactive
         const s = String(status);
-        const label = s === "active" || s === "true" ? "Active" : "Inactive";
-        return (
-          <span
-            className={
-              s === "active" || s === "true" ? "text-green-500" : "text-red-500"
-            }
-          >
-            {label}
-          </span>
-        );
+        if (s === "active" || s === "true") {
+          return <span className="text-green-500">Đang hoạt động</span>;
+        } else {
+          return <span className="text-red-500">Không hoạt động</span>;
+        }
       },
     },
     {

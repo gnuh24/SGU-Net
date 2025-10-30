@@ -1,4 +1,5 @@
 import axios from "axios";
+import { mockPromotionService } from "@/services/mock/mockPromotionService";
 
 export interface SwaggerProduct {
   productId: number;
@@ -12,9 +13,9 @@ export interface Customer {
   customerId: number;
   customerName: string;
   phoneNumber: string;
-  id?: number; 
+  id?: number;
   name?: string;
-  phone?: string; 
+  phone?: string;
 }
 export interface CartItem {
   productId: number;
@@ -26,19 +27,19 @@ export interface CartItem {
 export interface Promotion {
   promoId: number;
   promoCode: string;
-  discountType: "percentage" | "fixed_amount" | "fixed";
+  discountType: "percentage" | "percent" | "fixed_amount" | "fixed";
   discountValue: number;
 }
 export interface ValidatedPromoResponse {
   valid: boolean;
-  promotion: Promotion;
+  promotion?: Promotion;
   reason?: string;
-  promo?: Promotion; 
+  promo?: Promotion;
 }
 export interface Order {
   orderId: number;
-  id: number; 
-  createdAt: string; 
+  id: number;
+  createdAt: string;
   totalAmount?: number;
   discountAmount?: number;
   status?: string;
@@ -47,45 +48,46 @@ export interface Order {
 const API_BASE_URL = "http://localhost:5260/api/v1";
 const apiClient = axios.create({ baseURL: API_BASE_URL });
 
-const unwrapData = (response: any): any[] => { 
+const unwrapData = (response: any): any[] => {
   let data = response.data?.data?.data;
   if (data === undefined) {
-      data = response.data?.data;
+    data = response.data?.data;
   }
   if (data === undefined) {
-      data = response.data;
+    data = response.data;
   }
 
   if (!Array.isArray(data)) {
-    console.error("Phản hồi API không chứa dữ liệu mảng mong đợi:", response);
-    throw new Error("Phản hồi API không chứa dữ liệu mảng mong đợi sau khi giải nén.");
+    throw new Error(
+      "Phản hồi API không chứa dữ liệu mảng mong đợi sau khi giải nén."
+    );
   }
   return data;
 };
 
-const unwrapSingleData = (response: any): any => { 
+const unwrapSingleData = (response: any): any => {
   let data = response.data?.data;
   if (data === undefined) {
-      data = response.data;
+    data = response.data;
   }
 
   if (data === null || data === undefined) {
-     console.error("Phản hồi API không chứa đối tượng dữ liệu đơn lẻ mong đợi:", response);
-     throw new Error("Phản hồi API không chứa đối tượng dữ liệu đơn lẻ mong đợi sau khi giải nén.");
+    throw new Error(
+      "Phản hồi API không chứa đối tượng dữ liệu đơn lẻ mong đợi sau khi giải nén."
+    );
   }
   return data;
 };
 
-
 export const posApi = {
   scanBarcode: (barcode: string): Promise<SwaggerProduct> =>
-  apiClient.get(`/products/barcode/${barcode}`).then(response => {
-    const dataArray = unwrapSingleData(response); 
-    if (Array.isArray(dataArray) && dataArray.length > 0) {
-      return dataArray[0]; // Chỉ trả về object sản phẩm đầu tiên
-    }
-    throw new Error("API scanBarcode không trả về dữ liệu sản phẩm hợp lệ.");
-  }),
+    apiClient.get(`/products/barcode/${barcode}`).then((response) => {
+      const dataArray = unwrapSingleData(response);
+      if (Array.isArray(dataArray) && dataArray.length > 0) {
+        return dataArray[0]; // Chỉ trả về object sản phẩm đầu tiên
+      }
+      throw new Error("API scanBarcode không trả về dữ liệu sản phẩm hợp lệ.");
+    }),
 
   getAllProducts: (): Promise<SwaggerProduct[]> =>
     apiClient.get(`/products?pageSize=1000`).then(unwrapData),
@@ -93,39 +95,89 @@ export const posApi = {
   getCustomers: (): Promise<Customer[]> =>
     apiClient.get(`/customers`).then(unwrapData),
 
-  validatePromotion: (
+  validatePromotion: async (
     promoCode: string,
     orderAmount: number
-  ): Promise<ValidatedPromoResponse> =>
-    apiClient
-      .post(`/promotions/validate`, { 
-        promo_code: promoCode,
-        order_amount: orderAmount,
-      })
-      .then(unwrapSingleData),
+  ): Promise<ValidatedPromoResponse> => {
+    // Kiểm tra mock mode
+    const useMock = import.meta.env.VITE_USE_MOCK_API === "true";
+
+    if (useMock) {
+      // Sử dụng mock service
+      return await mockPromotionService.validatePromotion(
+        promoCode,
+        orderAmount
+      );
+    }
+
+    // Gọi API thực - backend uses PromoCode and OrderAmount (PascalCase)
+    try {
+      const response = await apiClient.post(`/promotions/validate`, {
+        PromoCode: promoCode,
+        OrderAmount: orderAmount,
+      });
+
+      // Backend returns: { status: 200, message: "...", data: { valid, reason, promotion } }
+      const apiData = response.data?.data || response.data;
+
+      // Support both PascalCase (old) and camelCase (new with Program.cs config)
+      const promo = apiData.promotion || apiData.Promotion;
+
+      return {
+        valid: apiData.valid || apiData.Valid,
+        reason: apiData.reason || apiData.Reason,
+        promotion: promo
+          ? {
+              promoId: promo.promoId || promo.PromoId,
+              promoCode: promo.promoCode || promo.PromoCode,
+              discountType: promo.discountType || promo.DiscountType,
+              discountValue: promo.discountValue || promo.DiscountValue,
+            }
+          : undefined,
+      };
+    } catch (error: any) {
+      // Handle error response
+      const errorData = error.response?.data?.data || error.response?.data;
+      if (errorData?.valid === false) {
+        return {
+          valid: false,
+          reason: errorData.reason || "Mã khuyến mãi không hợp lệ!",
+        };
+      }
+      throw error;
+    }
+  },
 
   // Hàm duy nhất để tạo Order (theo Swagger /orders/create)
-  createFullOrder: (payload: {
+  createFullOrder: async (payload: {
     userId: number;
-    customerId?: number | null; 
-    promoId?: number | null;    
+    customerId?: number | null;
+    promoId?: number | null;
     paymentMethod: "cash" | "card" | "transfer";
     orderItems: { productId: number; quantity: number; price: number }[];
     status?: string;
-   
   }): Promise<Order> => {
-    const snakeCasePayload = {
-      user_id: payload.userId,
-      customer_id: payload.customerId === null ? null : payload.customerId,
-      promo_id: payload.promoId === null ? null : payload.promoId,
-      payment_method: payload.paymentMethod,
-      order_items: payload.orderItems.map((item) => ({
-        product_id: item.productId,
+    // Backend expects camelCase based on OrderCreateForm.cs
+    const camelCasePayload = {
+      userId: payload.userId,
+      customerId: payload.customerId === null ? null : payload.customerId,
+      promoId: payload.promoId === null ? null : payload.promoId,
+      paymentMethod: payload.paymentMethod,
+      orderItems: payload.orderItems.map((item) => ({
+        productId: item.productId,
         quantity: item.quantity,
         price: item.price,
       })),
       status: payload.status ?? "paid",
     };
-    return apiClient.post(`/orders/create`, snakeCasePayload).then(unwrapSingleData);
+
+    try {
+      const response = await apiClient.post(`/orders/create`, camelCasePayload);
+      // Backend returns: { status: 200, message: "...", data: Order }
+      const order = response.data?.data || response.data;
+      return order;
+    } catch (error: any) {
+      throw error;
+    }
   },
 };

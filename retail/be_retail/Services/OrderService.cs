@@ -82,7 +82,10 @@ namespace be_retail.Services
         {
             try
             {
-                var query = _orderRepo.Query();
+                // Don't use Include with Customer to avoid INNER JOIN issue with customerId = 0
+                IQueryable<Order> query = _orderRepo.Query()
+                    .Include(o => o.User)
+                    .Include(o => o.Promotion);
 
                 if (form.OrderId.HasValue)
                     query = query.Where(o => o.OrderId == form.OrderId);
@@ -123,6 +126,12 @@ namespace be_retail.Services
                     .Take(pageSize)
                     .ToListAsync();
 
+                // Get customer IDs that are not 0
+                var customerIds = data.Where(o => o.CustomerId > 0).Select(o => o.CustomerId).Distinct().ToList();
+                var customers = await _context.Customers
+                    .Where(c => customerIds.Contains(c.CustomerId))
+                    .ToDictionaryAsync(c => c.CustomerId, c => c.Name);
+
                 var mappedData = data.Select(order => new OrderBasicDTO
                 {
                     OrderId = order.OrderId,
@@ -133,6 +142,11 @@ namespace be_retail.Services
                     DiscountAmount = order.DiscountAmount,
                     Status = order.Status,
                     OrderDate = order.OrderDate,
+                    CustomerName = order.CustomerId > 0 && customers.ContainsKey(order.CustomerId) 
+                        ? customers[order.CustomerId] 
+                        : null,
+                    UserName = order.User?.FullName,
+                    PromoName = order.Promotion?.PromoCode,
                 }).ToList();
 
 
@@ -146,7 +160,7 @@ namespace be_retail.Services
             }
         }
 
-        public async Task<ApiResponse<bool>> CreateAsync(OrderCreateForm form)
+        public async Task<ApiResponse<OrderResponseDTO>> CreateAsync(OrderCreateForm form)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -162,16 +176,16 @@ namespace be_retail.Services
                 {
                     var product = await _productRepo.GetByIdAsync(item.ProductId);
                     if (product == null)
-                        return new ApiResponse<bool>(404, $"Không tìm thấy sản phẩm ID {item.ProductId}", false);
+                        return new ApiResponse<OrderResponseDTO>(404, $"Không tìm thấy sản phẩm ID {item.ProductId}", null);
 
                     // Kiểm tra tồn kho theo FIFO
                     var (isSufficient, deductions, totalAvailable) = await _inventoryRepo.CheckAndGetInventoryForSaleAsync(item.ProductId, item.Quantity);
                     
                     if (!isSufficient)
                     {
-                        return new ApiResponse<bool>(400, 
+                        return new ApiResponse<OrderResponseDTO>(400, 
                             $"Sản phẩm '{product.Name}' không đủ tồn kho. Yêu cầu: {item.Quantity}, Có sẵn: {totalAvailable}", 
-                            false);
+                            null);
                     }
 
                     // Lưu thông tin deduction để cập nhật sau
@@ -205,7 +219,7 @@ namespace be_retail.Services
                     }
                     else
                     {
-                        return new ApiResponse<bool>(400, "Mã khuyến mãi không hợp lệ hoặc không thể áp dụng", false);
+                        return new ApiResponse<OrderResponseDTO>(400, "Mã khuyến mãi không hợp lệ hoặc không thể áp dụng", null);
                     }
                 }
 
@@ -254,12 +268,46 @@ namespace be_retail.Services
 
                 await transaction.CommitAsync();
 
-                return new ApiResponse<bool>(200, "Tạo đơn hàng thành công", true);
+                // Reload order with all related data
+                var createdOrder = await _orderRepo.Query()
+                    .Include(o => o.OrderItems)
+                    .Include(o => o.Payment)
+                    .FirstOrDefaultAsync(o => o.OrderId == order.OrderId);
+
+                var orderDto = new OrderResponseDTO
+                {
+                    OrderId = createdOrder.OrderId,
+                    CustomerId = createdOrder.CustomerId,
+                    UserId = createdOrder.UserId,
+                    PromoId = createdOrder.PromoId,
+                    Status = createdOrder.Status,
+                    TotalAmount = createdOrder.TotalAmount,
+                    DiscountAmount = createdOrder.DiscountAmount,
+                    OrderDate = createdOrder.OrderDate,
+                    OrderItems = createdOrder.OrderItems.Select(oi => new OrderItemResponseDTO
+                    {
+                        OrderItemId = oi.OrderItemId,
+                        ProductId = oi.ProductId,
+                        Quantity = oi.Quantity,
+                        Price = oi.Price,
+                        Subtotal = oi.Subtotal
+                    }).ToList(),
+                    Payment = new PaymentResponseDTO
+                    {
+                        PaymentId = createdOrder.Payment.PaymentId,
+                        OrderId = createdOrder.Payment.OrderId,
+                        Amount = createdOrder.Payment.Amount,
+                        PaymentMethod = createdOrder.Payment.PaymentMethod,
+                        PaymentDate = createdOrder.Payment.PaymentDate
+                    }
+                };
+
+                return new ApiResponse<OrderResponseDTO>(200, "Tạo đơn hàng thành công", orderDto);
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                return new ApiResponse<bool>(500, "Lỗi khi tạo đơn hàng", false);
+                return new ApiResponse<OrderResponseDTO>(500, "Lỗi khi tạo đơn hàng: " + ex.Message, null);
             }
         }
 

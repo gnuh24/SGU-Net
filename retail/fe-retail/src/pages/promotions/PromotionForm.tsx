@@ -30,11 +30,11 @@ const PromotionForm: React.FC = () => {
           if (mapped.status === "active") mapped.status = true;
           else if (mapped.status === "inactive") mapped.status = false;
 
-          // Map start_at/end_at to date_range (dayjs)
-          if (mapped.start_at || mapped.end_at) {
+          // Map start_date/end_date to date_range (dayjs)
+          if (mapped.start_date || mapped.end_date) {
             mapped.date_range = [
-              mapped.start_at ? dayjs(mapped.start_at) : null,
-              mapped.end_at ? dayjs(mapped.end_at) : null,
+              mapped.start_date ? dayjs(mapped.start_date) : null,
+              mapped.end_date ? dayjs(mapped.end_date) : null,
             ];
           }
 
@@ -52,11 +52,11 @@ const PromotionForm: React.FC = () => {
       if (values.status === true) values.status = "active";
       if (values.status === false) values.status = "inactive";
 
-      // If date_range provided (RangePicker), convert to ISO start_at/end_at
+      // If date_range provided (RangePicker), convert to ISO start_date/end_date
       if (values.date_range && Array.isArray(values.date_range)) {
         const [start, end] = values.date_range;
-        values.start_at = start ? start.toISOString() : undefined;
-        values.end_at = end ? end.toISOString() : undefined;
+        values.start_date = start ? start.toISOString() : undefined;
+        values.end_date = end ? end.toISOString() : undefined;
         delete values.date_range;
       }
 
