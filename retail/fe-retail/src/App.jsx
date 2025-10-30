@@ -20,7 +20,13 @@ import AppLayout from "./components/layout/AppLayout";
 // Pages
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
+import UsersList from "./pages/users/UsersList";
+import UserForm from "./pages/users/UserForm";
+import PromotionsList from "./pages/promotions/PromotionsList";
+import PromotionForm from "./pages/promotions/PromotionForm";
+import ReportsDashboard from "./pages/reports/ReportsDashboard";
 import Dashboard from "./pages/dashboard/Dashboard";
+import RoleGuard from "./components/auth/RoleGuard";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -65,14 +71,67 @@ const AppContent = () => {
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
 
-          {/* Add more routes as we create pages */}
-          {/* <Route path="users" element={<UserManagement />} />
-          <Route path="products" element={<ProductManagement />} />
-          <Route path="customers" element={<CustomerManagement />} />
-          <Route path="inventory" element={<InventoryManagement />} />
-          <Route path="promotions" element={<PromotionManagement />} />
-          <Route path="pos" element={<POS />} />
-          <Route path="reports/*" element={<Reports />} /> */}
+          {/* Users (Admin only) */}
+          <Route
+            path="users"
+            element={
+              <RoleGuard allowedRoles={["admin"]}>
+                <UsersList />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="users/new"
+            element={
+              <RoleGuard allowedRoles={["admin"]}>
+                <UserForm />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="users/:id/edit"
+            element={
+              <RoleGuard allowedRoles={["admin"]}>
+                <UserForm />
+              </RoleGuard>
+            }
+          />
+
+          {/* Promotions (Admin only) */}
+          <Route
+            path="promotions"
+            element={
+              <RoleGuard allowedRoles={["admin"]}>
+                <PromotionsList />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="promotions/new"
+            element={
+              <RoleGuard allowedRoles={["admin"]}>
+                <PromotionForm />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="promotions/:id/edit"
+            element={
+              <RoleGuard allowedRoles={["admin"]}>
+                <PromotionForm />
+              </RoleGuard>
+            }
+          />
+
+          {/* Reports (Admin only) */}
+          <Route
+            path="reports"
+            element={
+              <RoleGuard allowedRoles={["admin"]}>
+                <ReportsDashboard />
+              </RoleGuard>
+            }
+          />
         </Route>
 
         {/* Catch all route */}
