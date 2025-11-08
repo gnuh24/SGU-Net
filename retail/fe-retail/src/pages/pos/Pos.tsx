@@ -34,6 +34,8 @@ import {
   Promotion,
 } from "@/api/posApi";
 import { useAuth } from "@/hooks/useAuth";
+import { BrowserMultiFormatReader } from "@zxing/browser";
+
 
 const formatCurrency = (value: string | number | bigint) => {
   const numValue = Number(value);
@@ -73,6 +75,63 @@ const PosPageInternal: React.FC = () => {
   const [paidAmount, setPaidAmount] = useState<number | null>(null);
   const [loadingCheckout, setLoadingCheckout] = useState(false);
 
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const videoRef = React.useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+  let reader: BrowserMultiFormatReader | null = null;
+  let activeStream: MediaStream | null = null;
+
+  if (scannerOpen) {
+    reader = new BrowserMultiFormatReader();
+    setScanning(true);
+
+    reader
+      .decodeOnceFromVideoDevice(undefined, videoRef.current!)
+      .then(async (result) => {
+        const code = result.getText(); // 👉 nội dung QR (ví dụ "8900000000001")
+        message.success(`Đã quét QR: ${code}`);
+        setScannerOpen(false);
+        setScanning(false);
+
+        try {
+          const product = await posApi.scanBarcode(code);
+          addProductToCart(product);
+          message.success(`Đã thêm sản phẩm: ${product.productName}`);
+        } catch (error) {
+          console.error(error);
+          message.error("Không tìm thấy sản phẩm tương ứng!");
+        }
+      })
+      .catch((err) => {
+        console.warn("Lỗi hoặc hủy quét:", err);
+        setScanning(false);
+      });
+
+    // Lưu lại stream để dừng thủ công khi đóng modal
+    const interval = setInterval(() => {
+      if (videoRef.current?.srcObject && !activeStream) {
+        activeStream = videoRef.current.srcObject as MediaStream;
+        clearInterval(interval);
+      }
+    }, 300);
+  }
+
+  // ✅ Cleanup: khi modal đóng hoặc unmount, dừng camera ngay
+  return () => {
+    setScanning(false);
+    if (videoRef.current?.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach((t) => t.stop());
+      videoRef.current.srcObject = null;
+    }
+    reader = null;
+  };
+}, [scannerOpen]);
+
+
+  
   useEffect(() => {
     const fetchInitialData = async () => {
       setLoadingCustomers(true);
@@ -508,6 +567,16 @@ const PosPageInternal: React.FC = () => {
               </Button>
             </Space>
 
+            <Button
+              type="primary"
+              icon={<SearchOutlined />}
+              onClick={() => setScannerOpen(true)}
+              style={{ marginLeft: 16 }} 
+            >
+              Quét mã
+            </Button>
+
+
             <Divider />
             <Title level={5}>Danh sách sản phẩm</Title>
             <div
@@ -801,6 +870,35 @@ const PosPageInternal: React.FC = () => {
           </>
         )}
       </Modal>
+
+      <Modal
+        open={scannerOpen}
+        title="Quét mã vạch sản phẩm"
+        onCancel={() => setScannerOpen(false)}
+        footer={null}
+        width={600}
+      >
+        <div style={{ textAlign: "center" }}>
+          <video
+            ref={videoRef}
+            style={{
+              width: "100%",
+              maxHeight: "400px",
+              borderRadius: "8px",
+              background: "#000",
+            }}
+          />
+          <div style={{ marginTop: 12 }}>
+            {scanning ? (
+              <Spin tip="Đang quét..." />
+            ) : (
+              <Button onClick={() => setScannerOpen(false)}>Đóng</Button>
+            )}
+          </div>
+        </div>
+      </Modal>
+
+      
     </div>
   );
 };
