@@ -1,7 +1,22 @@
--- DATABASE STORE MANAGEMENT FULL
-DROP DATABASE store_management;
-CREATE DATABASE store_management;
+-- ================================================
+-- DATABASE STORE MANAGEMENT FULL (UTF-8 Enabled)
+-- ================================================
+
+-- Xóa database cũ
+DROP DATABASE IF EXISTS store_management;
+
+-- Tạo database mới với UTF-8 đầy đủ
+CREATE DATABASE store_management
+CHARACTER SET utf8mb4
+COLLATE utf8mb4_unicode_ci;
+
+-- Sử dụng database này
 USE store_management;
+
+-- Đảm bảo session hiện tại cũng ở UTF-8
+SET NAMES 'utf8mb4';
+SET CHARACTER SET utf8mb4;
+SET collation_connection = 'utf8mb4_unicode_ci';
 
 -- Bảng người dùng
 CREATE TABLE users (
