@@ -10,6 +10,11 @@ export interface SwaggerProduct {
   inventory?: { quantity?: number };
   image?: string;
   imageUrl?: string;
+  categoryId?: number;
+  categoryName?: string;
+  supplierId?: number;
+  supplierName?: string;
+  unit?: string;
 }
 export interface Customer {
   customerId: number;

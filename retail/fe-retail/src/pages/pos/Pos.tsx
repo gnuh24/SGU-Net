@@ -20,7 +20,6 @@ import {
 } from "antd";
 import {
   DeleteOutlined,
-  UserOutlined,
   TagOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
@@ -37,7 +36,6 @@ import { getImageUrl } from "../../utils/imageUtils";
 import { useAuth } from "@/hooks/useAuth";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 
-
 const formatCurrency = (value: string | number | bigint) => {
   const numValue = Number(value);
   if (isNaN(numValue)) return String(value);
@@ -50,13 +48,16 @@ const formatCurrency = (value: string | number | bigint) => {
 const { Title, Text } = Typography;
 const { Option } = Select;
 
-// Component chính
+type StockFilter = "all" | "in" | "out";
+
+const GRID_CARD_WIDTH = 180; 
+
 const PosPageInternal: React.FC = () => {
   const { user } = useAuth();
   const { message } = App.useApp();
+
   const [productQuery, setProductQuery] = useState("");
   const [allProducts, setAllProducts] = useState<SwaggerProduct[]>([]);
-  const [productsFound, setProductsFound] = useState<SwaggerProduct[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -80,59 +81,65 @@ const PosPageInternal: React.FC = () => {
   const [scanning, setScanning] = useState(false);
   const videoRef = React.useRef<HTMLVideoElement>(null);
 
+  const [categories, setCategories] = useState<
+    { categoryId: number; categoryName?: string }[]
+  >([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number>(0); // 0 = all
+  const [stockFilter, setStockFilter] = useState<StockFilter>("all");
+  const [minPrice, setMinPrice] = useState<number | null>(null);
+  const [maxPrice, setMaxPrice] = useState<number | null>(null);
+
+  const [gridLimit, setGridLimit] = useState<number>(30);
+
   useEffect(() => {
-  let reader: BrowserMultiFormatReader | null = null;
-  let activeStream: MediaStream | null = null;
+    let reader: BrowserMultiFormatReader | null = null;
+    let activeStream: MediaStream | null = null;
 
-  if (scannerOpen) {
-    reader = new BrowserMultiFormatReader();
-    setScanning(true);
+    if (scannerOpen) {
+      reader = new BrowserMultiFormatReader();
+      setScanning(true);
 
-    reader
-      .decodeOnceFromVideoDevice(undefined, videoRef.current!)
-      .then(async (result) => {
-        const code = result.getText(); // 👉 nội dung QR (ví dụ "8900000000001")
-        message.success(`Đã quét QR: ${code}`);
-        setScannerOpen(false);
-        setScanning(false);
+      reader
+        .decodeOnceFromVideoDevice(undefined, videoRef.current!)
+        .then(async (result) => {
+          const code = result.getText();
+          message.success(`Đã quét QR: ${code}`);
+          setScannerOpen(false);
+          setScanning(false);
 
-        try {
-          const product = await posApi.scanBarcode(code);
-          addProductToCart(product);
-          message.success(`Đã thêm sản phẩm: ${product.productName}`);
-        } catch (error) {
-          console.error(error);
-          message.error("Không tìm thấy sản phẩm tương ứng!");
+          try {
+            const product = await posApi.scanBarcode(code);
+            addProductToCart(product);
+            message.success(`Đã thêm sản phẩm: ${product.productName}`);
+          } catch (error) {
+            console.error(error);
+            message.error("Không tìm thấy sản phẩm tương ứng!");
+          }
+        })
+        .catch((err) => {
+          console.warn("Lỗi hoặc hủy quét:", err);
+          setScanning(false);
+        });
+
+      const interval = setInterval(() => {
+        if (videoRef.current?.srcObject && !activeStream) {
+          activeStream = videoRef.current.srcObject as MediaStream;
+          clearInterval(interval);
         }
-      })
-      .catch((err) => {
-        console.warn("Lỗi hoặc hủy quét:", err);
-        setScanning(false);
-      });
-
-    // Lưu lại stream để dừng thủ công khi đóng modal
-    const interval = setInterval(() => {
-      if (videoRef.current?.srcObject && !activeStream) {
-        activeStream = videoRef.current.srcObject as MediaStream;
-        clearInterval(interval);
-      }
-    }, 300);
-  }
-
-  // ✅ Cleanup: khi modal đóng hoặc unmount, dừng camera ngay
-  return () => {
-    setScanning(false);
-    if (videoRef.current?.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach((t) => t.stop());
-      videoRef.current.srcObject = null;
+      }, 300);
     }
-    reader = null;
-  };
-}, [scannerOpen]);
 
+    return () => {
+      setScanning(false);
+      if (videoRef.current?.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach((t) => t.stop());
+        videoRef.current.srcObject = null;
+      }
+      reader = null;
+    };
+  }, [scannerOpen, message]);
 
-  
   useEffect(() => {
     const fetchInitialData = async () => {
       setLoadingCustomers(true);
@@ -163,7 +170,18 @@ const PosPageInternal: React.FC = () => {
         });
 
         setAllProducts(sortedProducts);
-        setProductsFound(sortedProducts);
+
+        const catMap = new Map<number, string | undefined>();
+        sortedProducts.forEach((p) => {
+          if (p.categoryId !== undefined && !catMap.has(p.categoryId)) {
+            catMap.set(p.categoryId, p.categoryName ?? undefined);
+          }
+        });
+        const cats = Array.from(catMap.entries()).map(([categoryId, categoryName]) => ({
+          categoryId,
+          categoryName,
+        }));
+        setCategories(cats);
       } catch (err) {
         console.error("Lỗi tải dữ liệu:", err);
         staticMessage.error("Không thể tải dữ liệu ban đầu!");
@@ -219,22 +237,20 @@ const PosPageInternal: React.FC = () => {
 
   const handleSearch = async () => {
     if (!productQuery) {
-      setProductsFound(allProducts);
+      setGridLimit(30);
       return;
     }
     setLoadingSearch(true);
 
-    const query = productQuery.toLowerCase();
-    const isNumericQuery = /^\d+$/.test(productQuery);
+    const query = productQuery.toLowerCase().trim();
+    const isNumericQuery = /^\d+$/.test(productQuery.trim());
 
-    // Ưu tiên quét barcode nếu là số
     if (isNumericQuery) {
       try {
-        const productFromApi = await posApi.scanBarcode(productQuery);
+        const productFromApi = await posApi.scanBarcode(productQuery.trim());
         addProductToCart(productFromApi);
         message.success(`Đã thêm: ${productFromApi.productName}`);
         setProductQuery("");
-        setProductsFound(allProducts);
         setLoadingSearch(false);
         return;
       } catch (err: any) {
@@ -246,44 +262,21 @@ const PosPageInternal: React.FC = () => {
       }
     }
 
-    const localFound = allProducts.filter(
-      (p) =>
-        p.productName.toLowerCase().includes(query) ||
-        p.barcode?.includes(query)
-    );
-
-    setProductsFound(localFound);
-    if (localFound.length === 0) {
-      message.warning("Không tìm thấy sản phẩm nào!");
-    }
+    setGridLimit(30); 
     setLoadingSearch(false);
   };
 
+  const [paidAmountLocalSetter, setPaidAmountLocalSetter] = useState<number | null>(null); 
   const { subtotal, discount, total } = useMemo(() => {
     const sub = cart.reduce((s, i) => s + i.price * i.quantity, 0);
     let disc = 0;
     if (appliedPromotion) {
-      // Kiểm tra loại giảm giá: fixed/fixed_amount hoặc percentage/percent
       if (
         appliedPromotion.discountType === "fixed" ||
         appliedPromotion.discountType === "fixed_amount"
       ) {
-        // Giảm giá cố định (VNĐ)
         disc = appliedPromotion.discountValue;
-      } else if (
-        appliedPromotion.discountType === "percentage" ||
-        appliedPromotion.discountType === "percent"
-      ) {
-        // Giảm giá theo %
-        // Fix: Nếu discountValue < 1, có thể backend trả về dạng decimal (0.1 = 10%)
-        let percentValue = appliedPromotion.discountValue;
-        if (percentValue > 0 && percentValue < 1) {
-          // Backend trả về dạng 0.1 cho 10% -> nhân 100
-          percentValue = percentValue * 100;
-        }
-        disc = Math.round((sub * percentValue) / 100);
       } else {
-        // Mặc định coi như percentage nếu không rõ
         let percentValue = appliedPromotion.discountValue;
         if (percentValue > 0 && percentValue < 1) {
           percentValue = percentValue * 100;
@@ -292,6 +285,7 @@ const PosPageInternal: React.FC = () => {
       }
     }
     const finalTotal = Math.max(sub - disc, 0);
+
     setPaidAmount(finalTotal);
     return { subtotal: sub, discount: disc, total: finalTotal };
   }, [cart, appliedPromotion]);
@@ -332,51 +326,8 @@ const PosPageInternal: React.FC = () => {
         }
       } else {
         setAppliedPromotion(null);
-        // Xử lý các lý do lỗi cụ thể
         const reason = res.reason || "Mã không hợp lệ!";
-        if (
-          reason.toLowerCase().includes("hết hạn") ||
-          reason.toLowerCase().includes("expired")
-        ) {
-          message.error({
-            content: `❌ Mã khuyến mãi đã hết hạn!`,
-            key: "promo",
-            duration: 4,
-          });
-        } else if (
-          reason.toLowerCase().includes("không tồn tại") ||
-          reason.toLowerCase().includes("not found")
-        ) {
-          message.error({
-            content: `❌ Mã khuyến mãi không tồn tại!`,
-            key: "promo",
-            duration: 4,
-          });
-        } else if (
-          reason.toLowerCase().includes("inactive") ||
-          reason.toLowerCase().includes("không hoạt động")
-        ) {
-          message.error({
-            content: `❌ Mã khuyến mãi không còn hoạt động!`,
-            key: "promo",
-            duration: 4,
-          });
-        } else if (
-          reason.toLowerCase().includes("đơn tối thiểu") ||
-          reason.toLowerCase().includes("minimum")
-        ) {
-          message.error({
-            content: `❌ ${reason}`,
-            key: "promo",
-            duration: 4,
-          });
-        } else {
-          message.error({
-            content: `❌ ${reason}`,
-            key: "promo",
-            duration: 4,
-          });
-        }
+        message.error({ content: `❌ ${reason}`, key: "promo", duration: 4 });
       }
     } catch (err: any) {
       setAppliedPromotion(null);
@@ -391,25 +342,14 @@ const PosPageInternal: React.FC = () => {
         reason = err.message;
       }
 
-      // Xử lý lỗi HTTP status
       if (err.response?.status === 404) {
         message.error({
           content: "❌ Mã khuyến mãi không tồn tại!",
           key: "promo",
           duration: 4,
         });
-      } else if (err.response?.status === 400) {
-        message.error({
-          content: `❌ ${reason}`,
-          key: "promo",
-          duration: 4,
-        });
       } else {
-        message.error({
-          content: `❌ ${reason}`,
-          key: "promo",
-          duration: 4,
-        });
+        message.error({ content: `❌ ${reason}`, key: "promo", duration: 4 });
       }
     }
   };
@@ -424,8 +364,13 @@ const PosPageInternal: React.FC = () => {
     setPaidAmount(null);
     const el = document.getElementById("product-search");
     if (el) (el as HTMLInputElement).value = "";
-    setProductsFound(allProducts);
+    setSelectedCategoryId(0);
+    setStockFilter("all");
+    setMinPrice(null);
+    setMaxPrice(null);
+    setGridLimit(30);
   };
+
   const printReceipt = (
     order: Order,
     items: CartItem[],
@@ -433,8 +378,6 @@ const PosPageInternal: React.FC = () => {
     totalAmount: number,
     cash: number
   ) => {
-    // Receipt printing logic can be implemented here
-    // For now, just prepare the data
   };
 
   const handleCheckout = async () => {
@@ -446,10 +389,7 @@ const PosPageInternal: React.FC = () => {
       message.error("Giỏ hàng trống!");
       return;
     }
-    if (
-      paymentMethod === "cash" &&
-      (paidAmount === null || paidAmount < total)
-    ) {
+    if (paymentMethod === "cash" && (paidAmount === null || paidAmount < total)) {
       message.error("Số tiền khách trả không hợp lệ!");
       return;
     }
@@ -457,7 +397,6 @@ const PosPageInternal: React.FC = () => {
     setLoadingCheckout(true);
     try {
       message.loading("Đang xử lý đơn hàng...", 0);
-
       const payload = {
         userId: user.id,
         customerId: selectedCustomer?.customerId ?? selectedCustomer?.id,
@@ -476,19 +415,12 @@ const PosPageInternal: React.FC = () => {
       message.destroy();
       message.success("Thanh toán thành công!");
 
-      printReceipt(
-        createdOrder,
-        cart,
-        selectedCustomer,
-        total,
-        paidAmount ?? total
-      );
+      printReceipt(createdOrder, cart, selectedCustomer, total, paidAmount ?? total);
       resetPos();
     } catch (err: any) {
       message.destroy();
       console.error("Lỗi thanh toán:", err);
-      const errorMsg =
-        err.response?.data?.message || "Lỗi khi xử lý thanh toán!";
+      const errorMsg = err.response?.data?.message || "Lỗi khi xử lý thanh toán!";
       message.error(`Thanh toán thất bại: ${errorMsg}`);
     } finally {
       setLoadingCheckout(false);
@@ -541,48 +473,140 @@ const PosPageInternal: React.FC = () => {
     },
   ];
 
+  const displayedProducts = useMemo(() => {
+    let items = allProducts.slice();
+
+    const q = productQuery.trim().toLowerCase();
+    if (q) {
+      items = items.filter(
+        (p) =>
+          p.productName.toLowerCase().includes(q) ||
+          (p.barcode && p.barcode.includes(q))
+      );
+    }
+
+    if (selectedCategoryId && selectedCategoryId !== 0) {
+      items = items.filter((p) => p.categoryId === selectedCategoryId);
+    }
+
+    if (stockFilter === "in") {
+      items = items.filter((p) => (p.currentStock ?? p.inventory?.quantity ?? 0) > 0);
+    } else if (stockFilter === "out") {
+      items = items.filter((p) => (p.currentStock ?? p.inventory?.quantity ?? 0) <= 0);
+    }
+
+    if (minPrice !== null) {
+      items = items.filter((p) => (p.price ?? 0) >= minPrice);
+    }
+    if (maxPrice !== null) {
+      items = items.filter((p) => (p.price ?? 0) <= maxPrice);
+    }
+
+    return items;
+  }, [allProducts, productQuery, selectedCategoryId, stockFilter, minPrice, maxPrice]);
+
+  const slicedProducts = useMemo(() => displayedProducts.slice(0, gridLimit), [displayedProducts, gridLimit]);
+
+  useEffect(() => {
+    setGridLimit(30);
+  }, [selectedCategoryId, stockFilter, minPrice, maxPrice]);
+
+ 
   return (
     <div style={{ padding: 24 }}>
       <Card>
         <Row gutter={24}>
-          {/* === CỘT TRÁI (Sản phẩm & Giỏ hàng) === */}
+          {/* LEFT: products & cart */}
           <Col xs={24} md={15}>
             <Title level={4}>Bán hàng (POS)</Title>
-            <Space style={{ marginBottom: 16 }}>
+
+            {/* Search + actions */}
+            <Space style={{ marginBottom: 12 }}>
               <Input
                 id="product-search"
-                placeholder="Quét mã vạch hoặc nhập tên sản phẩm"
+                placeholder="Nhập tên sản phẩm"
                 value={productQuery}
                 onChange={(e) => setProductQuery(e.target.value)}
-                style={{ width: 300 }}
+                style={{ width: 320 }}
                 onPressEnter={handleSearch}
                 prefix={<SearchOutlined />}
                 allowClear
               />
-              <Button
-                type="primary"
-                onClick={handleSearch}
-                loading={loadingSearch}
-              >
+              <Button type="primary" onClick={handleSearch} loading={loadingSearch}>
                 Tìm / Thêm
               </Button>
+              <Button
+                type="default"
+                onClick={() => {
+                  // open scanner modal
+                  setScannerOpen(true);
+                }}
+                icon={<SearchOutlined />}
+              >
+                Quét mã
+              </Button>             
             </Space>
 
-            <Button
-              type="primary"
-              icon={<SearchOutlined />}
-              onClick={() => setScannerOpen(true)}
-              style={{ marginLeft: 16 }} 
-            >
-              Quét mã
-            </Button>
+          
 
+              {/* Row with dropdown + price filters */}
+              <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
+                <Select
+                  placeholder="Chọn danh mục"
+                  style={{ minWidth: 220 }}
+                  value={selectedCategoryId === 0 ? undefined : selectedCategoryId}
+                  onChange={(v) => setSelectedCategoryId(Number(v) ?? 0)}
+                  allowClear
+                >
+                  <Option key="all" value={0}>
+                    Tất cả
+                  </Option>
+                  {categories.map((c) => (
+                    <Option key={c.categoryId} value={c.categoryId}>
+                      {c.categoryName ?? `Category ${c.categoryId}`}
+                    </Option>
+                  ))}
+                </Select>
+
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <InputNumber
+                    placeholder="Giá từ"
+                    min={0}
+                    style={{ width: 120 }}
+                    value={minPrice ?? undefined}
+                    onChange={(v) => setMinPrice(v === null || v === undefined ? null : Number(v))}
+                  />
+                  <InputNumber
+                    placeholder="Đến"
+                    min={0}
+                    style={{ width: 120 }}
+                    value={maxPrice ?? undefined}
+                    onChange={(v) => setMaxPrice(v === null || v === undefined ? null : Number(v))}
+                  />
+                 <Button type="primary"
+                    onClick={() => {
+                      // reset filters quickly
+                      setSelectedCategoryId(0);
+                      setStockFilter("all");
+                      setMinPrice(null);
+                      setMaxPrice(null);
+                      setProductQuery("");
+                      setGridLimit(30);
+                    }}
+                  >
+                    RESET
+                  </Button>
+                </div>              
+              </div>
+            
 
             <Divider />
+
             <Title level={5}>Danh sách sản phẩm</Title>
+
             <div
               style={{
-                maxHeight: "300px",
+                maxHeight: "420px",
                 overflowY: "auto",
                 paddingBottom: "10px",
                 background: "#f9f9f9",
@@ -592,86 +616,101 @@ const PosPageInternal: React.FC = () => {
             >
               <Spin spinning={loadingProducts}>
                 <div style={{ padding: 16 }}>
-                  <Space wrap size={16}>
-                    {productsFound.length > 0 ? (
-                      productsFound.map((p) => {
-                        const stock =
-                          p.currentStock ?? p.inventory?.quantity ?? 0;
+                  {/* Grid container: responsive */}
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: `repeat(auto-fill, minmax(${GRID_CARD_WIDTH}px, 1fr))`,
+                      gap: 16,
+                    }}
+                  >
+                    {slicedProducts.length > 0 ? (
+                      slicedProducts.map((p) => {
+                        const stock = p.currentStock ?? p.inventory?.quantity ?? 0;
                         const isOutOfStock = stock <= 0;
+                        const imgUrl = getImageUrl(p.imageUrl, p.image);
+
                         return (
-                          <Card
+                          <div
                             key={p.productId}
-                            size="small"
-                            style={{
-                              width: 180,
-                              cursor: isOutOfStock ? "not-allowed" : "pointer",
-                              borderColor: isOutOfStock ? "#ffccc7" : "#d9d9d9",
-                            }}
                             onClick={() => !isOutOfStock && addProductToCart(p)}
-                            hoverable={!isOutOfStock}
-                            styles={{
-                              body: { opacity: isOutOfStock ? 0.6 : 1 },
+                            style={{
+                              cursor: isOutOfStock ? "not-allowed" : "pointer",
+                              borderRadius: 8,
+                              overflow: "hidden",
+                              border: isOutOfStock ? "1px solid #ffccc7" : "1px solid #e8e8e8",
+                              background: "#fff",
+                              boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+                              transition: "transform 120ms ease, box-shadow 120ms ease",
+                              display: "flex",
+                              flexDirection: "column",
+                              height: 260,
+                              opacity: isOutOfStock ? 0.6 : 1,
                             }}
-                            cover={
-                              (() => {
-                                const imgUrl = getImageUrl(p.imageUrl, p.image);
-                                return imgUrl ? (
-                                  <img
-                                    alt={p.productName}
-                                    src={imgUrl}
-                                    style={{
-                                      width: "100%",
-                                      height: 120,
-                                      objectFit: "cover",
-                                    }}
-                                    onError={(e) => {
-                                      // Fallback nếu ảnh không load được
-                                      const target = e.target as HTMLImageElement;
-                                      target.style.display = 'none';
-                                      const parent = target.parentElement;
-                                      if (parent) {
-                                        parent.innerHTML = '<div style="width: 100%; height: 120px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px;">No Image</div>';
-                                      }
-                                    }}
-                                  />
-                                ) : (
-                                  <div
-                                    style={{
-                                      width: "100%",
-                                      height: 120,
-                                      background: "#f0f0f0",
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                      color: "#999",
-                                      fontSize: 12,
-                                    }}
-                                  >
-                                    No Image
-                                  </div>
-                                );
-                              })()
-                            }
+                            onMouseEnter={(e) => {
+                              (e.currentTarget as HTMLDivElement).style.transform = "translateY(-4px)";
+                              (e.currentTarget as HTMLDivElement).style.boxShadow = "0 6px 18px rgba(0,0,0,0.08)";
+                            }}
+                            onMouseLeave={(e) => {
+                              (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)";
+                              (e.currentTarget as HTMLDivElement).style.boxShadow = "0 1px 3px rgba(0,0,0,0.04)";
+                            }}
                           >
-                            <Text strong ellipsis>
-                              {p.productName}
-                            </Text>
-                            <div>{formatCurrency(p.price)}</div>
-                            <div
-                              style={{
-                                color: stock > 0 ? "inherit" : "red",
-                                fontSize: "0.9em",
-                              }}
-                            >
-                              Tồn: {stock}
+                            <div style={{ width: "100%", height: 140, background: "#fafafa", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                              {imgUrl ? (
+                                <img
+                                  alt={p.productName}
+                                  src={imgUrl}
+                                  style={{
+                                    maxWidth: "100%",
+                                    maxHeight: "100%",
+                                    objectFit: "contain",
+                                  }}
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = "none";
+                                  }}
+                                />
+                              ) : (
+                                <div style={{ color: "#999", fontSize: 12 }}>No Image</div>
+                              )}
                             </div>
-                          </Card>
+
+                            <div style={{ padding: 10, display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
+                              <div style={{ fontWeight: 600, fontSize: 13, lineHeight: "1.2em", height: 34, overflow: "hidden" }} title={p.productName}>
+                                {p.productName}
+                              </div>
+                              <div style={{ color: "#1890ff", fontWeight: 700 }}>{formatCurrency(p.price)}</div>
+                              <div style={{ color: stock > 0 ? "#666" : "red", fontSize: 12 }}>
+                                Tồn: {stock}
+                              </div>
+                                {/* <Button size="small" type="text" onClick={(e) => { e.stopPropagation(); setProductQuery(String(p.barcode ?? "")); }}>
+                                  Mã: {p.barcode ?? "-"}
+                                </Button> */}
+                            </div>
+                          </div>
                         );
                       })
                     ) : (
-                      <Text type="secondary">Không tìm thấy sản phẩm nào.</Text>
+                      <div style={{ padding: 12 }}>
+                        <Text type="secondary">Không tìm thấy sản phẩm nào.</Text>
+                      </div>
                     )}
-                  </Space>
+                  </div>
+
+                  {/* Load more if items exceed limit */}
+                  {displayedProducts.length > gridLimit && (
+                    <div style={{ textAlign: "center", marginTop: 12 }}>
+                      <Button onClick={() => setGridLimit((prev) => prev + 30)}>Xem thêm</Button>
+                    </div>
+                  )}
+
+                  {/* If no items at all */}
+                  {displayedProducts.length === 0 && !loadingProducts && (
+                    <div style={{ padding: 12 }}>
+                      <Text type="secondary">Không có sản phẩm phù hợp.</Text>
+                    </div>
+                  )}
                 </div>
               </Spin>
             </div>
@@ -688,7 +727,7 @@ const PosPageInternal: React.FC = () => {
             />
           </Col>
 
-          {/* === CỘT PHẢI (Thanh toán) === */}
+          {/* RIGHT: payment/card */}
           <Col xs={24} md={9}>
             <Card style={{ position: "sticky", top: 24 }}>
               <Title level={5}>Khách hàng</Title>
@@ -876,6 +915,7 @@ const PosPageInternal: React.FC = () => {
         </Row>
       </Card>
 
+      {/* Payment confirm modal */}
       <Modal
         open={paymentModalOpen}
         title="Xác nhận thanh toán"
@@ -912,6 +952,7 @@ const PosPageInternal: React.FC = () => {
         )}
       </Modal>
 
+      {/* Scanner modal */}
       <Modal
         open={scannerOpen}
         title="Quét mã vạch sản phẩm"
@@ -930,16 +971,10 @@ const PosPageInternal: React.FC = () => {
             }}
           />
           <div style={{ marginTop: 12 }}>
-            {scanning ? (
-              <Spin tip="Đang quét..." />
-            ) : (
-              <Button onClick={() => setScannerOpen(false)}>Đóng</Button>
-            )}
+            {scanning ? <Spin tip="Đang quét..." /> : <Button onClick={() => setScannerOpen(false)}>Đóng</Button>}
           </div>
         </div>
       </Modal>
-
-      
     </div>
   );
 };
