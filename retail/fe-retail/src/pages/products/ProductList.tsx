@@ -9,9 +9,13 @@ import {
   Form,
   InputNumber,
   message,
+  Upload,
+  Image,
 } from "antd";
-import { SearchOutlined, EditOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
+import { SearchOutlined, EditOutlined, DeleteOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
+import type { UploadFile } from "antd";
 import dayjs from "dayjs";
+import { getImageUrl } from "../../utils/imageUtils";
 
 interface Product {
   productId: number;
@@ -26,6 +30,8 @@ interface Product {
   supplierName: string;
   isDeleted: boolean;
   currentStock?: number;
+  image?: string;
+  imageUrl?: string;
 }
 
 interface Category {
@@ -39,6 +45,41 @@ interface Supplier {
 }
 
 const API_URL = "http://localhost:5260/api/v1/products";
+
+// Hàm tạo barcode tự động: lấy barcode lớn nhất + 1
+const generateBarcode = (products: Product[]): string => {
+  const prefix = "890";
+  
+  // Lọc các barcode hợp lệ (bắt đầu bằng 890 và có 13 ký tự)
+  const validBarcodes = products
+    .filter(p => p.barcode && p.barcode.startsWith("890") && p.barcode.length === 13)
+    .map(p => p.barcode!);
+  
+  if (validBarcodes.length === 0) {
+    // Nếu không có barcode nào, bắt đầu từ 8900000000001
+    return "8900000000001";
+  }
+  
+  // Tìm barcode lớn nhất (chuyển phần số sau 890 thành số để so sánh)
+  const maxBarcode = validBarcodes.reduce((max, current) => {
+    const maxNum = parseInt(max.substring(3), 10);
+    const currentNum = parseInt(current.substring(3), 10);
+    return currentNum > maxNum ? current : max;
+  });
+  
+  // Lấy phần số sau 890, +1, và format lại
+  const maxNum = parseInt(maxBarcode.substring(3), 10);
+  const nextNum = maxNum + 1;
+  const nextDigits = nextNum.toString().padStart(10, "0");
+  
+  // Kiểm tra không vượt quá giới hạn (8909999999999)
+  if (nextNum > 9999999999) {
+    // Nếu vượt quá, tìm khoảng trống hoặc bắt đầu lại
+    return "8900000000001";
+  }
+  
+  return prefix + nextDigits;
+};
 
 const ProductList: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -56,6 +97,8 @@ const ProductList: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [form] = Form.useForm();
+  const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const fetchCategories = async () => {
     const res = await fetch("http://localhost:5260/api/v1/categories?pageSize=100");
@@ -124,28 +167,44 @@ const ProductList: React.FC = () => {
     fetchProducts();
   }, [searchText, categoryId, supplierId, status]);
 
+  // Reset preview và fileList khi modal đóng
+  useEffect(() => {
+    if (!isModalOpen) {
+      setFileList([]);
+      setImagePreview(null);
+    }
+  }, [isModalOpen]);
+
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
 
-      const payload = {
-        name: values.name,
-        barcode: values.barcode || "",
-        price: Number(values.price) || 0,
-        unit: values.unit || "",
-        categoryId: Number(values.categoryId),
-        supplierId: Number(values.supplierId),
-        isDeleted: false,
-      };
+      const formData = new FormData();
+      formData.append("name", values.name);
+      formData.append("barcode", values.barcode || "");
+      formData.append("price", String(Number(values.price) || 0));
+      formData.append("unit", values.unit || "");
+      formData.append("categoryId", String(Number(values.categoryId)));
+      formData.append("supplierId", String(Number(values.supplierId)));
+      formData.append("isDeleted", "false");
 
-      console.log("Payload gửi đi:", payload);
+      // Thêm file ảnh nếu có
+      if (fileList.length > 0) {
+        const file = fileList[0].originFileObj || fileList[0] as any;
+        if (file) {
+          formData.append("imageFile", file);
+          console.log("✅ Gửi ảnh mới:", file.name, file.size);
+        } else {
+          console.warn("⚠️ File không có originFileObj:", fileList[0]);
+        }
+      } else {
+        console.log("ℹ️ Không có ảnh mới để upload");
+      }
 
       if (editingProduct) {
-
         const res = await fetch(`${API_URL}/${editingProduct.productId}`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: formData,
         });
 
         const data = await res.json();
@@ -155,11 +214,9 @@ const ProductList: React.FC = () => {
           message.error(data.message || "Lỗi khi cập nhật!");
         }
       } else {
-
         const res = await fetch(API_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: formData,
         });
 
         const data = await res.json();
@@ -172,6 +229,8 @@ const ProductList: React.FC = () => {
 
       setIsModalOpen(false);
       setEditingProduct(null);
+      setFileList([]);
+      setImagePreview(null);
       form.resetFields();
       fetchProducts();
     } catch (error) {
@@ -203,6 +262,28 @@ const ProductList: React.FC = () => {
 
   const columns = [
     { title: "Mã SP", dataIndex: "productId", key: "productId" },
+    {
+      title: "Ảnh",
+      key: "image",
+      width: 100,
+      render: (_: unknown, record: Product) => {
+        const imageUrl = getImageUrl(record.imageUrl, record.image);
+        return imageUrl ? (
+          <Image
+            src={imageUrl}
+            alt={record.productName}
+            width={60}
+            height={60}
+            style={{ objectFit: "cover", borderRadius: 4 }}
+            preview={false}
+          />
+        ) : (
+          <div style={{ width: 60, height: 60, background: "#f0f0f0", borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", color: "#999" }}>
+            No Image
+          </div>
+        );
+      },
+    },
     { title: "Tên sản phẩm", dataIndex: "productName", key: "productName" },
     { title: "Barcode", dataIndex: "barcode", key: "barcode" },
     {
@@ -248,6 +329,16 @@ const ProductList: React.FC = () => {
                   ...record,
                   name: record.productName,
                 });
+                // Set image preview nếu có - phải set trước khi mở modal
+                const imgUrl = getImageUrl(record.imageUrl, record.image);
+                if (imgUrl) {
+                  // Set preview ngay lập tức
+                  setImagePreview(imgUrl);
+                  setFileList([]); // Clear fileList để hiển thị preview
+                } else {
+                  setImagePreview(null);
+                  setFileList([]);
+                }
                 setIsModalOpen(true);
               }}
             >
@@ -281,7 +372,11 @@ const ProductList: React.FC = () => {
           icon={<PlusOutlined />}
           onClick={() => {
             setEditingProduct(null);
+            const newBarcode = generateBarcode(products);
             form.resetFields();
+            form.setFieldsValue({ barcode: newBarcode });
+            setFileList([]);
+            setImagePreview(null);
             setIsModalOpen(true);
           }}
         >
@@ -361,21 +456,76 @@ const ProductList: React.FC = () => {
         title={editingProduct ? "Sửa sản phẩm" : "Thêm sản phẩm"}
         open={isModalOpen}
         onOk={handleSave}
-        onCancel={() => setIsModalOpen(false)}
+        onCancel={() => {
+          setIsModalOpen(false);
+          setEditingProduct(null);
+          form.resetFields();
+        }}
         okText="Lưu"
         cancelText="Hủy"
+        width={600}
       >
         <Form layout="vertical" form={form}>
           <Form.Item
             label="Tên sản phẩm"
-            name="name" // ✅ đổi từ productName -> name
+            name="name"
             rules={[{ required: true, message: "Nhập tên sản phẩm" }]}
           >
             <Input />
           </Form.Item>
 
-          <Form.Item label="Barcode" name="barcode">
-            <Input />
+          <Form.Item 
+            label="Barcode" 
+            name="barcode"
+            tooltip="Barcode tự động được tạo. Bạn có thể thay đổi nếu cần."
+            rules={[
+              { required: true, message: "Barcode là bắt buộc" },
+              { 
+                pattern: /^890\d{10}$/, 
+                message: "Barcode phải có dạng 890XXXXXXXXXX (13 chữ số)" 
+              },
+              {
+                validator: async (_, value) => {
+                  if (!value) return Promise.resolve();
+                  
+                  // Kiểm tra trùng barcode (chỉ khi edit)
+                  if (editingProduct) {
+                    const duplicate = products.find(
+                      p => p.barcode === value && p.productId !== editingProduct.productId
+                    );
+                    if (duplicate) {
+                      return Promise.reject(new Error(`Barcode "${value}" đã tồn tại cho sản phẩm "${duplicate.productName}"`));
+                    }
+                  } else {
+                    // Kiểm tra trùng khi tạo mới
+                    const duplicate = products.find(p => p.barcode === value);
+                    if (duplicate) {
+                      return Promise.reject(new Error(`Barcode "${value}" đã tồn tại cho sản phẩm "${duplicate.productName}"`));
+                    }
+                  }
+                  return Promise.resolve();
+                }
+              }
+            ]}
+          >
+            <Input 
+              placeholder="890XXXXXXXXXX"
+              suffix={
+                !editingProduct && (
+                  <Button 
+                    type="link" 
+                    size="small"
+                    onClick={() => {
+                      const newBarcode = generateBarcode(products);
+                      form.setFieldsValue({ barcode: newBarcode });
+                    }}
+                    style={{ padding: 0, height: 'auto' }}
+                  >
+                    Tạo mới
+                  </Button>
+                )
+              }
+            />
           </Form.Item>
 
           <Form.Item
@@ -415,8 +565,113 @@ const ProductList: React.FC = () => {
               }))}
             />
           </Form.Item>
-        </Form>
 
+          <Form.Item label="Ảnh sản phẩm" name="image">
+            <div>
+              {/* Hiển thị ảnh hiện tại nếu có (khi edit và chưa upload ảnh mới) */}
+              {imagePreview && fileList.length === 0 && editingProduct && (
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 12, color: "#666", marginBottom: 8 }}>
+                    Ảnh hiện tại:
+                  </div>
+                  <Image
+                    src={imagePreview}
+                    alt="Current image"
+                    width={100}
+                    height={100}
+                    style={{ objectFit: "cover", borderRadius: 4, border: "1px solid #d9d9d9" }}
+                    preview={false}
+                    onError={() => {
+                      console.error("Failed to load preview image:", imagePreview);
+                      setImagePreview(null);
+                    }}
+                  />
+                  <div style={{ marginTop: 8, fontSize: 12, color: "#999" }}>
+                    Upload ảnh mới bên dưới để thay thế
+                  </div>
+                </div>
+              )}
+              
+              {/* Upload component - luôn hiển thị */}
+              <Upload
+                listType="picture-card"
+                fileList={fileList}
+                beforeUpload={(file) => {
+                  const isImage = file.type.startsWith("image/");
+                  if (!isImage) {
+                    message.error("Chỉ được upload file ảnh!");
+                    return false;
+                  }
+                  const isLt5M = file.size / 1024 / 1024 < 5;
+                  if (!isLt5M) {
+                    message.error("Ảnh phải nhỏ hơn 5MB!");
+                    return false;
+                  }
+                // Tạo UploadFile object với originFileObj
+                const uploadFile: UploadFile = {
+                  uid: `${Date.now()}`,
+                  name: file.name,
+                  status: 'done',
+                  originFileObj: file,
+                } as UploadFile;
+                
+                setFileList([uploadFile]);
+                console.log("✅ File đã được thêm vào fileList:", file.name, file.size);
+                
+                // Clear preview ảnh cũ khi upload ảnh mới
+                if (editingProduct) {
+                  setImagePreview(null);
+                }
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                  // Set preview cho ảnh mới
+                  setImagePreview(e.target?.result as string);
+                };
+                reader.readAsDataURL(file);
+                return false; // Prevent auto upload
+                }}
+                onRemove={() => {
+                  setFileList([]);
+                  // Nếu đang edit, khôi phục preview ảnh cũ
+                  if (editingProduct && editingProduct.imageUrl) {
+                    const imgUrl = getImageUrl(editingProduct.imageUrl, editingProduct.image);
+                    setImagePreview(imgUrl);
+                  } else {
+                    setImagePreview(null);
+                  }
+                  return true;
+                }}
+                maxCount={1}
+              >
+                {fileList.length === 0 && (
+                  <div>
+                    <UploadOutlined />
+                    <div style={{ marginTop: 8 }}>
+                      {editingProduct && imagePreview ? "Thay đổi ảnh" : "Upload"}
+                    </div>
+                  </div>
+                )}
+              </Upload>
+              
+              {/* Hiển thị preview ảnh mới khi upload */}
+              {imagePreview && fileList.length > 0 && (
+                <div style={{ marginTop: 16 }}>
+                  <div style={{ fontSize: 12, color: "#666", marginBottom: 8 }}>
+                    Ảnh mới:
+                  </div>
+                  <Image
+                    src={imagePreview}
+                    alt="New image preview"
+                    width={100}
+                    height={100}
+                    style={{ objectFit: "cover", borderRadius: 4, border: "1px solid #52c41a" }}
+                    preview={false}
+                  />
+                </div>
+              )}
+            </div>
+          </Form.Item>
+        </Form>
       </Modal>
     </div>
   );

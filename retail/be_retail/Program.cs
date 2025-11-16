@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Microsoft.Extensions.FileProviders;
+using System.IO;
 using be_retail.Data;
 using be_retail.Services;
 using be_retail.Repositories;
@@ -162,6 +164,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 var app = builder.Build();
 
 // ----------------------------------------------------
+// Ensure directories exist
+// ----------------------------------------------------
+var productImageDirectory = Path.Combine(builder.Environment.ContentRootPath, "var", "image");
+Directory.CreateDirectory(productImageDirectory);
+
+// ----------------------------------------------------
 // Seed initial data
 // ----------------------------------------------------
 using (var scope = app.Services.CreateScope())
@@ -180,6 +188,20 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowFrontend");
+
+// Configure static files for images
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(productImageDirectory),
+    RequestPath = "/images",
+    OnPrepareResponse = ctx =>
+    {
+        // Add CORS headers for static files
+        ctx.Context.Response.Headers.Append("Access-Control-Allow-Origin", "http://localhost:3000");
+        ctx.Context.Response.Headers.Append("Access-Control-Allow-Methods", "GET");
+        ctx.Context.Response.Headers.Append("Access-Control-Allow-Headers", "Content-Type");
+    }
+});
 
 // 👇 Order matters!
 app.UseMiddleware<GlobalExceptionMiddleware>();
