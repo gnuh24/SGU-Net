@@ -32,7 +32,8 @@ import {
   CartItem,
   Order,
   Promotion,
-} from "@/api/posApi";
+} from "../../api/posApi";
+import { getImageUrl } from "../../utils/imageUtils";
 import { useAuth } from "@/hooks/useAuth";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 
@@ -611,6 +612,46 @@ const PosPageInternal: React.FC = () => {
                             styles={{
                               body: { opacity: isOutOfStock ? 0.6 : 1 },
                             }}
+                            cover={
+                              (() => {
+                                const imgUrl = getImageUrl(p.imageUrl, p.image);
+                                return imgUrl ? (
+                                  <img
+                                    alt={p.productName}
+                                    src={imgUrl}
+                                    style={{
+                                      width: "100%",
+                                      height: 120,
+                                      objectFit: "cover",
+                                    }}
+                                    onError={(e) => {
+                                      // Fallback nếu ảnh không load được
+                                      const target = e.target as HTMLImageElement;
+                                      target.style.display = 'none';
+                                      const parent = target.parentElement;
+                                      if (parent) {
+                                        parent.innerHTML = '<div style="width: 100%; height: 120px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px;">No Image</div>';
+                                      }
+                                    }}
+                                  />
+                                ) : (
+                                  <div
+                                    style={{
+                                      width: "100%",
+                                      height: 120,
+                                      background: "#f0f0f0",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      color: "#999",
+                                      fontSize: 12,
+                                    }}
+                                  >
+                                    No Image
+                                  </div>
+                                );
+                              })()
+                            }
                           >
                             <Text strong ellipsis>
                               {p.productName}

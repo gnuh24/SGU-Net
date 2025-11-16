@@ -8,6 +8,8 @@ export interface SwaggerProduct {
   price: number;
   currentStock?: number;
   inventory?: { quantity?: number };
+  image?: string;
+  imageUrl?: string;
 }
 export interface Customer {
   customerId: number;

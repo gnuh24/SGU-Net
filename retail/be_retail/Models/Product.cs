@@ -24,6 +24,10 @@ namespace be_retail.Models
         [Column("barcode")]
         public string? Barcode { get; set; }
 
+        [MaxLength(255)]
+        [Column("image")]
+        public string? Image { get; set; }
+
         [Column("price", TypeName = "DECIMAL(10,2)")]
         public decimal Price { get; set; }
 

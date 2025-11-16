@@ -49,6 +49,7 @@ namespace be_retail.Services
             {
                 Name = form.Name,
                 Barcode = form.Barcode,
+                Image = form.Image,
                 Price = form.Price,
                 Unit = form.Unit ?? "pcs",
                 CategoryId = form.CategoryId,
@@ -67,6 +68,7 @@ namespace be_retail.Services
             {
                 Name = form.Name,
                 Barcode = form.Barcode,
+                Image = form.Image,
                 Price = form.Price,
                 Unit = form.Unit ?? "pcs",
                 IsDeleted = form.IsDeleted,

@@ -206,6 +206,7 @@ namespace be_retail.Repositories
     
             existing.Name = updated.Name;
             existing.Barcode = updated.Barcode;
+            existing.Image = updated.Image;
             existing.Price = updated.Price;
             existing.Unit = updated.Unit;
             existing.IsDeleted = updated.IsDeleted;
