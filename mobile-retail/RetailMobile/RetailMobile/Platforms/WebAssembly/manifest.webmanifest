@@ -1,0 +1,10 @@
+{
+  "background_color": "#ffffff",
+  "description": "RetailMobile",
+  "display": "standalone",
+  "name": "RetailMobile",
+  "short_name": "RetailMobile",
+  "start_url": "/index.html",
+  "theme_color": "#ffffff",
+  "scope": "/"
+}
