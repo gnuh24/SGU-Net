@@ -31,7 +31,7 @@ namespace be_retail.Controllers
             }
         }
 
-        [HttpGet()]
+        [HttpGet]
         public async Task<IActionResult> GetOrders([FromQuery] OrderSearchForm form)
         {
             if (form == null)
