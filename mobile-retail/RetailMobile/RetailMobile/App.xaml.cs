@@ -70,8 +70,8 @@ public partial class App : Application
                 .UseHttp((context, services) =>
                 {
 #if DEBUG
-                // DelegatingHandler will be automatically injected
-                services.AddTransient<DelegatingHandler, DebugHttpHandler>();
+                    // DelegatingHandler will be automatically injected
+                    services.AddTransient<DelegatingHandler, DebugHttpHandler>();
 #endif
 
                 })
@@ -81,7 +81,7 @@ public partial class App : Application
 #if ANDROID
                     string dbPath = Path.Combine(Android.App.Application.Context.FilesDir.Path, "app.db3");
 #elif IOS
-    string dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "app.db3");
+                    string dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "app.db3");
 #else
     string dbPath = "app.db3"; // Desktop
 #endif
@@ -94,6 +94,15 @@ public partial class App : Application
 
                     // Add CartService
                     services.AddSingleton<CartService>();
+
+                    // TokenService
+                    services.AddSingleton<ITokenService, TokenService>();
+
+                    // ApiClientConfig từ appsettings.json
+                    services.Configure<ApiClientConfig>(context.Configuration.GetSection("ApiClient"));
+
+                    // ApiClient
+                    services.AddSingleton<ApiClient>();
                 })
                 .UseNavigation(RegisterRoutes)
             );

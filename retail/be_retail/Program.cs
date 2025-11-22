@@ -39,6 +39,15 @@ builder.Services.AddCors(options =>
               .AllowCredentials();
     });
 });
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowMobile",
+        policy => policy
+            .AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+    );
+});
 
 // ----------------------------------------------------
 // Register application services and repositories
@@ -188,6 +197,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowFrontend");
+app.UseCors("AllowMobile");
 
 // Configure static files for images
 app.UseStaticFiles(new StaticFileOptions
