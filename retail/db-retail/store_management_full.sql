@@ -24,7 +24,7 @@ CREATE TABLE users (
     username VARCHAR(50) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     full_name VARCHAR(100),
-    role ENUM('admin','staff') DEFAULT 'staff',
+    role ENUM('admin','manager','staff') DEFAULT 'staff',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -128,6 +128,7 @@ CREATE TABLE payments (
 -- DATA USERS
 INSERT INTO users (username,password,full_name,role) VALUES
 ('admin','jZae727K08KaOmKSgOaGzww/XVqGr/PKEgIMkjrcbJI=','Quản trị viên','admin'),
+('manager','jZae727K08KaOmKSgOaGzww/XVqGr/PKEgIMkjrcbJI=','Quản lý A','manager'),
 ('staff01','jZae727K08KaOmKSgOaGzww/XVqGr/PKEgIMkjrcbJI=','Nguyễn Văn A','staff'),
 ('staff02','jZae727K08KaOmKSgOaGzww/XVqGr/PKEgIMkjrcbJI=','Lê Thị B','staff');
 
