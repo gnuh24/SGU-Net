@@ -33,6 +33,6 @@ namespace be_retail.Models
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
         [Column("customer_id")]
-        public int CustomerId { get; set; }
+        public int? CustomerId { get; set; }
     }
 }
