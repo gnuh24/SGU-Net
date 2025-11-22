@@ -41,12 +41,26 @@ namespace be_retail.Controllers
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             var user = await _authService.LoginAsync(request);
-            if (user == null)
+
+            // 1. Không tìm thấy user
+            if (user == null || user.Role == "customer")
             {
                 return Unauthorized(new ApiResponse<string>
                 {
                     Status = 401,
-                    Message = "Invalid username or password.",
+                    Message = "Sai tên đăng nhập hoặc mật khẩu.",
+                    Data = null
+                });
+            }
+
+
+            // 3. Chỉ cho phép login nếu status = active
+            if (user.Status != "active")
+            {
+                return Unauthorized(new ApiResponse<string>
+                {
+                    Status = 401,
+                    Message = "Tài khoản của bạn đã bị khóa hoặc đang không hoạt động.",
                     Data = null
                 });
             }
@@ -54,7 +68,6 @@ namespace be_retail.Controllers
             // Generate JWT tokens
             var accessToken = _tokenService.GenerateAccessToken(user);
             var refreshToken = _tokenService.GenerateRefreshToken(user);
-
 
             var response = new AuthResponse
             {
@@ -73,6 +86,58 @@ namespace be_retail.Controllers
                 Data = response
             });
         }
+
+
+        [HttpPost("login")]
+        [AllowAnonymous]
+        public async Task<IActionResult> CustomerLogin([FromBody] LoginRequest request)
+        {
+            var user = await _authService.LoginAsync(request);
+
+            // 1. Không tìm thấy user hoặc không phải customer
+            if (user == null || user.Role != "customer")
+            {
+                return Unauthorized(new ApiResponse<string>
+                {
+                    Status = 401,
+                    Message = "Sai tên đăng nhập hoặc mật khẩu.",
+                    Data = null
+                });
+            }
+
+            // 2. Chỉ cho phép login nếu status = active
+            if (user.Status != "active")
+            {
+                return Unauthorized(new ApiResponse<string>
+                {
+                    Status = 401,
+                    Message = "Tài khoản của bạn đã bị khóa hoặc đang không hoạt động.",
+                    Data = null
+                });
+            }
+
+            // Generate JWT tokens
+            var accessToken = _tokenService.GenerateAccessToken(user);
+            var refreshToken = _tokenService.GenerateRefreshToken(user);
+
+            var response = new AuthResponse
+            {
+                UserId = user.UserId,
+                Username = user.Username!,
+                FullName = user.FullName!,
+                Role = user.Role!,
+                AccessToken = accessToken,
+                RefreshToken = refreshToken
+            };
+
+            return Ok(new ApiResponse<AuthResponse>
+            {
+                Status = 200,
+                Message = "Login successful.",
+                Data = response
+            });
+        }
+
 
         [HttpPost("refresh-token")]
         [Authorize(Roles = "admin,staff")]

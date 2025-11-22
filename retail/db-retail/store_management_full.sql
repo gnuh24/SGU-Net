@@ -17,17 +17,6 @@ USE store_management;
 SET NAMES 'utf8mb4';
 SET CHARACTER SET utf8mb4;
 SET collation_connection = 'utf8mb4_unicode_ci';
-
--- Bảng người dùng
-CREATE TABLE users (
-    user_id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(50) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    full_name VARCHAR(100),
-    role ENUM('admin','manager','staff') DEFAULT 'staff',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
 -- Bảng khách hàng
 CREATE TABLE customers (
     customer_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -38,6 +27,21 @@ CREATE TABLE customers (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     is_deleted BOOLEAN DEFAULT FALSE -- Cột is_deleted đã được thêm
 );
+
+-- Bảng người dùng
+CREATE TABLE users (
+    user_id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    full_name VARCHAR(100),
+    customer_id INT UNIQUE,
+    `role` ENUM('admin','manager','staff','customer') DEFAULT 'customer',
+    `status` ENUM('active','inactive','banned') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
+);
+
+
 
 -- Bảng loại sản phẩm
 CREATE TABLE categories (
@@ -125,16 +129,21 @@ CREATE TABLE payments (
     payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- DATA USERS
-INSERT INTO users (username,password,full_name,role) VALUES
-('admin','jZae727K08KaOmKSgOaGzww/XVqGr/PKEgIMkjrcbJI=','Quản trị viên','admin'),
-('manager','jZae727K08KaOmKSgOaGzww/XVqGr/PKEgIMkjrcbJI=','Quản lý A','manager'),
-('staff01','jZae727K08KaOmKSgOaGzww/XVqGr/PKEgIMkjrcbJI=','Nguyễn Văn A','staff'),
-('staff02','jZae727K08KaOmKSgOaGzww/XVqGr/PKEgIMkjrcbJI=','Lê Thị B','staff');
-
 -- DATA CUSTOMERS
 INSERT INTO customers (name,phone,email,address) VALUES
 ('Khách hàng 1', '0909000001', 'kh1@mail.com', 'Địa chỉ 1'),('Khách hàng 2', '0909000002', 'kh2@mail.com', 'Địa chỉ 2'),('Khách hàng 3', '0909000003', 'kh3@mail.com', 'Địa chỉ 3'),('Khách hàng 4', '0909000004', 'kh4@mail.com', 'Địa chỉ 4'),('Khách hàng 5', '0909000005', 'kh5@mail.com', 'Địa chỉ 5'),('Khách hàng 6', '0909000006', 'kh6@mail.com', 'Địa chỉ 6'),('Khách hàng 7', '0909000007', 'kh7@mail.com', 'Địa chỉ 7'),('Khách hàng 8', '0909000008', 'kh8@mail.com', 'Địa chỉ 8'),('Khách hàng 9', '0909000009', 'kh9@mail.com', 'Địa chỉ 9'),('Khách hàng 10', '0909000010', 'kh10@mail.com', 'Địa chỉ 10'),('Khách hàng 11', '0909000011', 'kh11@mail.com', 'Địa chỉ 11'),('Khách hàng 12', '0909000012', 'kh12@mail.com', 'Địa chỉ 12'),('Khách hàng 13', '0909000013', 'kh13@mail.com', 'Địa chỉ 13'),('Khách hàng 14', '0909000014', 'kh14@mail.com', 'Địa chỉ 14'),('Khách hàng 15', '0909000015', 'kh15@mail.com', 'Địa chỉ 15'),('Khách hàng 16', '0909000016', 'kh16@mail.com', 'Địa chỉ 16'),('Khách hàng 17', '0909000017', 'kh17@mail.com', 'Địa chỉ 17'),('Khách hàng 18', '0909000018', 'kh18@mail.com', 'Địa chỉ 18'),('Khách hàng 19', '0909000019', 'kh19@mail.com', 'Địa chỉ 19'),('Khách hàng 20', '0909000020', 'kh20@mail.com', 'Địa chỉ 20');
+
+
+-- DATA USERS
+INSERT INTO users (username, password, full_name, role, status, customer_id) VALUES
+('admin',   'jZae727K08KaOmKSgOaGzww/XVqGr/PKEgIMkjrcbJI=', 'Quản trị viên', 'admin',   'active', NULL),
+('manager', 'jZae727K08KaOmKSgOaGzww/XVqGr/PKEgIMkjrcbJI=', 'Quản lý A',    'manager', 'active', NULL),
+('staff01', 'jZae727K08KaOmKSgOaGzww/XVqGr/PKEgIMkjrcbJI=', 'Nguyễn Văn A', 'staff',   'active', NULL),
+('staff02', 'jZae727K08KaOmKSgOaGzww/XVqGr/PKEgIMkjrcbJI=', 'Lê Thị B',     'staff',   'banned', NULL),
+('cus01', 'jZae727K08KaOmKSgOaGzww/XVqGr/PKEgIMkjrcbJI=', 'Khách mới nè bro',     'customer',   'active', 1);
+
+
+
 
 -- DATA CATEGORIES
 INSERT INTO categories (category_name) VALUES
