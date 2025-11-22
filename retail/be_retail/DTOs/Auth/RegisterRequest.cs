@@ -13,6 +13,7 @@ namespace be_retail.DTOs
         [Required, MaxLength(100)]
         public string FullName { get; set; } = null!;
 
-        // Không cần role field vì luôn là "staff"
+        [Required, MaxLength(20)]
+        public string Phone { get; set; } = null!; // thêm phone
     }
 }

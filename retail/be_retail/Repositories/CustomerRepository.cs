@@ -107,5 +107,19 @@ namespace be_retail.Repositories
             await _context.SaveChangesAsync();
             return true;
         }
+
+        // 🔹 Tìm customer theo số điện thoại
+        public async Task<Customer?> GetByPhoneAsync(string phone)
+        {
+            if (string.IsNullOrEmpty(phone)) return null;
+
+            return await _context.Customers
+                .Where(c => !c.IsDeleted && c.Phone == phone)
+                .FirstOrDefaultAsync();
+        }
+
+ 
+
+
     }
 }

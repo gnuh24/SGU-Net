@@ -31,5 +31,8 @@ namespace be_retail.Models
 
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+        [Column("customer_id")]
+        public int CustomerId { get; set; }
     }
 }

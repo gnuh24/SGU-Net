@@ -10,9 +10,12 @@ namespace be_retail.Services
     {
         private readonly UserRepository _userRepository;
 
-        public AuthService(UserRepository userRepository)
+        private readonly CustomerRepository _customerRepository;
+
+        public AuthService(UserRepository userRepository, CustomerRepository customerRepository)
         {
             _userRepository = userRepository;
+            _customerRepository = customerRepository;
         }
 
         private string HashPassword(string password)
@@ -22,23 +25,59 @@ namespace be_retail.Services
             return Convert.ToBase64String(bytes);
         }
 
-        // 🔹 Đăng ký user
         public async Task<User?> RegisterAsync(RegisterRequest request)
         {
-            // Kiểm tra username đã tồn tại
-            if (await _userRepository.GetByUsernameAsync(request.Username) != null)
-                return null;
+            // 1. Kiểm tra username đã tồn tại
+            if (await _userRepository.GetByUsernameAsync(request.Username) != null){
+                throw new Exception("Username đã tồn tại");
+            }
 
+            Customer? customer = null;
+
+            // 2. Tìm customer theo số điện thoại
+            if (!string.IsNullOrEmpty(request.Phone))
+            {
+                customer = await _customerRepository.GetByPhoneAsync(request.Phone);
+
+                if (customer != null)
+                {
+                    // 2.1 Kiểm tra customer này đã có user chưa
+                    var existingUser = await _userRepository.GetByCustomerIdAsync(customer.CustomerId);
+
+                    if (existingUser != null)
+                    {
+                        throw new Exception("Số điện thoại này đã được tạo tài khoản trước đó.");
+                    }
+                }
+            }
+
+            // 3. Nếu chưa có customer thì tạo mới
+            if (customer == null)
+            {
+                customer = new Customer
+                {
+                    Name = request.FullName,
+                    Phone = request.Phone
+                };
+
+                customer = await _customerRepository.CreateAsync(customer);
+            }
+
+            // 4. Tạo user và liên kết customer_id
             var user = new User
             {
                 Username = request.Username,
                 Password = HashPassword(request.Password),
                 FullName = request.FullName,
-                Role = "staff" // Luôn là staff, không cho phép đăng ký admin
+                Role = "customer",
+                Status = "active",
+                CustomerId = customer.CustomerId
             };
 
             return await _userRepository.CreateAsync(user);
         }
+
+
 
         // 🔹 Đăng nhập
         public async Task<User?> LoginAsync(LoginRequest request)
