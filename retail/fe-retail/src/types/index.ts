@@ -21,8 +21,12 @@ export interface RegisterRequest {
 }
 
 export interface AuthResponse {
-  token: string;
-  user: User;
+  userId: number;
+  username: string;
+  fullName: string;
+  role: string;
+  accessToken: string;
+  refreshToken: string;
 }
 
 export interface Category {

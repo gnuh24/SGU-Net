@@ -24,7 +24,7 @@ let mockUsers: User[] = [
 ];
 
 export class MockAuthService {
-  async login(credentials: LoginRequest): Promise<AuthResponse> {
+  async login(credentials: LoginRequest): Promise<{ user: User; token: string }> {
     // Simulate API delay
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
@@ -50,7 +50,7 @@ export class MockAuthService {
     };
   }
 
-  async register(userData: RegisterRequest): Promise<AuthResponse> {
+  async register(userData: RegisterRequest): Promise<{ user: User; token: string }> {
     // Simulate API delay
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
@@ -97,7 +97,7 @@ export class MockAuthService {
     localStorage.removeItem(STORAGE_KEYS.USER);
   }
 
-  async refreshToken(): Promise<AuthResponse> {
+  async refreshToken(): Promise<{ user: User; token: string }> {
     const userStr = localStorage.getItem(STORAGE_KEYS.USER);
     if (!userStr) {
       throw new Error("No user found");
