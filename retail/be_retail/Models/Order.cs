@@ -40,8 +40,8 @@ namespace be_retail.Models
         public Customer? Customer { get; set; }
         [ForeignKey("UserId")]
         public User? User { get; set; }
-        // [ForeignKey("PromoId")]
-        // public Promo? Promo { get; set; }
+        [ForeignKey("PromoId")]
+        public Promotion? Promotion { get; set; }
 
         public IEnumerable<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
         public Payment Payment { get; set; } = null!;

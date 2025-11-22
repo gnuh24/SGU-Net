@@ -8,48 +8,75 @@ export class AuthService {
     return import.meta.env.VITE_USE_MOCK_API === "true";
   }
 
-  async login(credentials: LoginRequest): Promise<AuthResponse> {
+  async login(credentials: LoginRequest): Promise<{ user: User; token: string }> {
     if (this.useMockApi) {
       return mockAuthService.login(credentials);
     }
 
-    const response = await apiService.post<AuthResponse>(
-      "/auth/login",
+    // Backend endpoint is /auth/staff-login
+    const response = await apiService.post<any>(
+      "/auth/staff-login",
       credentials
     );
 
-    if (response.data) {
-      // Store token and user info
-      localStorage.setItem(STORAGE_KEYS.TOKEN, response.data.token);
-      localStorage.setItem(
-        STORAGE_KEYS.USER,
-        JSON.stringify(response.data.user)
-      );
+    // Backend returns ApiResponse wrapper: { status, message, data: AuthResponse }
+    const authData: AuthResponse = response.data?.data || response.data;
+
+    if (authData) {
+      // Backend returns: { userId, username, fullName, role, accessToken, refreshToken }
+      // Map to frontend User format
+      const user: User = {
+        id: authData.userId,
+        username: authData.username,
+        full_name: authData.fullName,
+        role: authData.role as "admin" | "staff",
+      };
+
+      // Store access token and refresh token
+      localStorage.setItem(STORAGE_KEYS.TOKEN, authData.accessToken);
+      localStorage.setItem("refreshToken", authData.refreshToken);
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+
+      return {
+        user,
+        token: authData.accessToken,
+      };
     }
 
-    return response.data!;
+    throw new Error("Login failed: No data returned from server");
   }
 
-  async register(userData: RegisterRequest): Promise<AuthResponse> {
+  async register(userData: RegisterRequest): Promise<{ user: User; token: string }> {
     if (this.useMockApi) {
       return mockAuthService.register(userData);
     }
 
-    const response = await apiService.post<AuthResponse>(
+    const response = await apiService.post<any>(
       "/auth/register",
       userData
     );
 
-    if (response.data) {
-      // Store token and user info
-      localStorage.setItem(STORAGE_KEYS.TOKEN, response.data.token);
-      localStorage.setItem(
-        STORAGE_KEYS.USER,
-        JSON.stringify(response.data.user)
-      );
+    const authData: AuthResponse = response.data?.data || response.data;
+
+    if (authData) {
+      const user: User = {
+        id: authData.userId,
+        username: authData.username,
+        full_name: authData.fullName,
+        role: authData.role as "admin" | "staff",
+      };
+
+      localStorage.setItem(STORAGE_KEYS.TOKEN, authData.accessToken);
+      localStorage.setItem("refreshToken", authData.refreshToken);
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+
+      return {
+        user,
+        token: authData.accessToken,
+      };
     }
 
-    return response.data!;
+    throw new Error("Register failed: No data returned from server");
   }
 
   async logout(): Promise<void> {
@@ -62,26 +89,42 @@ export class AuthService {
     } finally {
       // Clear local storage regardless of API response
       localStorage.removeItem(STORAGE_KEYS.TOKEN);
+      localStorage.removeItem("refreshToken");
       localStorage.removeItem(STORAGE_KEYS.USER);
     }
   }
 
-  async refreshToken(): Promise<AuthResponse> {
+  async refreshToken(): Promise<{ accessToken: string; refreshToken: string }> {
     if (this.useMockApi) {
-      return mockAuthService.refreshToken();
+      const mockResult = await mockAuthService.refreshToken();
+      return {
+        accessToken: mockResult.token,
+        refreshToken: mockResult.token,
+      };
     }
 
-    const response = await apiService.post<AuthResponse>("/auth/refresh");
-
-    if (response.data) {
-      localStorage.setItem(STORAGE_KEYS.TOKEN, response.data.token);
-      localStorage.setItem(
-        STORAGE_KEYS.USER,
-        JSON.stringify(response.data.user)
-      );
+    const currentRefreshToken = localStorage.getItem("refreshToken");
+    if (!currentRefreshToken) {
+      throw new Error("No refresh token available");
     }
 
-    return response.data!;
+    const response = await apiService.post<any>("/auth/refresh-token", {
+      refreshToken: currentRefreshToken,
+    });
+
+    const data = response.data?.data || response.data;
+
+    if (data && data.accessToken && data.refreshToken) {
+      localStorage.setItem(STORAGE_KEYS.TOKEN, data.accessToken);
+      localStorage.setItem("refreshToken", data.refreshToken);
+
+      return {
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+      };
+    }
+
+    throw new Error("Refresh token failed: No data returned from server");
   }
 
   getCurrentUser(): User | null {

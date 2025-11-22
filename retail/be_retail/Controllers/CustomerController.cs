@@ -141,5 +141,28 @@ namespace be_retail.Controllers
                 Data = dto
             });
         }
+
+        // 🗑️ Xóa mềm khách hàng
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var deleted = await _customerService.DeleteAsync(id);
+            if (!deleted)
+            {
+                return NotFound(new ApiResponse<string>
+                {
+                    Status = 404,
+                    Message = "Customer not found or already deleted.",
+                    Data = null
+                });
+            }
+
+            return Ok(new ApiResponse<string>
+            {
+                Status = 200,
+                Message = "Customer deleted successfully.",
+                Data = null
+            });
+        }
     }
 }

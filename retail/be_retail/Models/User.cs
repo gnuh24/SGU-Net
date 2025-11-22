@@ -26,6 +26,9 @@ namespace be_retail.Models
         [Column("role")]
         public string Role { get; set; } = "staff";
 
+        [Column("status")]
+        public string Status {get; set;} = "active";
+
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
     }

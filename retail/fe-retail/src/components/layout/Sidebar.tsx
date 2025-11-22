@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import type { MenuProps } from "antd";
 import { Layout, Menu, Avatar, Button } from "antd";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
@@ -10,6 +11,7 @@ import {
   Tag,
   UserCog,
   FileText,
+  Receipt,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -17,6 +19,16 @@ import { useAuth } from "../../hooks/useAuth";
 import { MENU_ITEMS } from "../../constants";
 
 const { Sider } = Layout;
+
+// Type definition for menu items (flexible to match MENU_ITEMS structure)
+type AppMenuItem = {
+  key: string;
+  label: string;
+  icon?: string;
+  path: string;
+  roles?: readonly string[];
+  children?: readonly AppMenuItem[];
+};
 
 const iconMap = {
   BarChart3,
@@ -27,6 +39,7 @@ const iconMap = {
   Tag,
   UserCog,
   FileText,
+  Receipt,
 };
 
 const Sidebar: React.FC = () => {
@@ -44,22 +57,25 @@ const Sidebar: React.FC = () => {
     navigate(path);
   };
 
-  const filteredMenuItems = MENU_ITEMS.filter((item) =>
-    canAccess(item.roles)
-  ).map((item) => ({
-    key: item.key,
-    icon: renderIcon(item.icon),
-    label: item.label,
-    onClick: () => handleMenuClick(item.path),
-    children:
-      "children" in item
-        ? item.children?.map((child) => ({
-            key: child.key,
-            label: child.label,
-            onClick: () => handleMenuClick(child.path),
-          }))
-        : undefined,
-  }));
+  // ✅ Recursive builder for nested menu
+  const buildMenuItems = (items: readonly AppMenuItem[]): MenuProps["items"] =>
+    items
+      // ✅ chỉ filter nếu có roles, nếu không có thì mặc định cho phép
+      .filter((item) => !item.roles || canAccess(item.roles))
+      .map((item) => {
+        const hasChildren = item.children && item.children.length > 0;
+
+        return {
+          key: item.key,
+          icon: item.icon ? renderIcon(item.icon) : undefined,
+          label: item.label,
+          ...(hasChildren
+            ? { children: buildMenuItems(item.children!) }
+            : { onClick: () => handleMenuClick(item.path) }),
+        };
+      });
+
+  const filteredMenuItems = buildMenuItems(MENU_ITEMS);
 
   const selectedKey =
     location.pathname === "/"
@@ -97,7 +113,7 @@ const Sidebar: React.FC = () => {
           <div className="p-4 border-b border-gray-700">
             <div className="flex items-center space-x-3">
               <Avatar className="bg-blue-600">
-                {user?.full_name.charAt(0).toUpperCase()}
+                {user?.full_name?.charAt(0).toUpperCase()}
               </Avatar>
               <div className="flex-1 min-w-0">
                 <div className="text-white text-sm font-medium truncate">
