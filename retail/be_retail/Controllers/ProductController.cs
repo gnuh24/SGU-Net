@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Authorization;
 using be_retail.Services;
 using be_retail.Api;
 using be_retail.DTOs;
@@ -64,6 +65,61 @@ namespace be_retail.Controllers
             });
         }
 
+        // 🟢 Lấy danh sách sản phẩm cho Public User (không cần authentication)
+        [HttpGet("public")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetPublicProducts(
+            [FromQuery] string? search,
+            [FromQuery] string? sortBy,
+            [FromQuery] bool desc = true,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] int? categoryId = null,
+            [FromQuery] int? supplierId = null,
+            [FromQuery] string? categoryName = null,
+            [FromQuery] string? supplierName = null)
+        {
+            // Chỉ lấy sản phẩm chưa bị xóa (isDeleted = false)
+            var (entities, total) = await _productService.GetPagedAsync(
+                search, sortBy, desc, page, pageSize, categoryId, supplierId, categoryName, supplierName, isDeleted: false);
+
+            var data = new List<ProductResponseDTO>();
+            foreach (var c in entities)
+            {
+                var currentStock = await _inventoryService.GetTotalStockAsync(c.ProductId);
+                data.Add(new ProductResponseDTO
+                {
+                    ProductId = c.ProductId,
+                    CategoryId = c.CategoryId,
+                    SupplierId = c.SupplierId,
+                    ProductName = c.Name,
+                    Barcode = c.Barcode,
+                    Image = c.Image,
+                    ImageUrl = BuildImageUrl(c.Image),
+                    Price = c.Price,
+                    Unit = c.Unit,
+                    CreatedAt = c.CreatedAt,
+                    IsDeleted = c.IsDeleted,
+                    CategoryName = c.Category?.Name,
+                    SupplierName = c.Supplier?.Name,
+                    CurrentStock = currentStock
+                });
+            }
+
+            return Ok(new ApiResponse<object>
+            {
+                Status = 200,
+                Message = "Get public products successfully.",
+                Data = new
+                {
+                    total,
+                    page,
+                    pageSize,
+                    data
+                }
+            });
+        }
+
         // 🟢 Lấy danh sách có paging, search, sort
         [HttpGet]
         public async Task<IActionResult> GetAll(
@@ -115,6 +171,49 @@ namespace be_retail.Controllers
                     pageSize,
                     data
                 }
+            });
+        }
+
+        // 🟢 Lấy chi tiết sản phẩm cho Public User (không cần authentication)
+        [HttpGet("public/{id}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetPublicProductById(int id)
+        {
+            var product = await _productService.GetByIdAsync(id);
+            if (product == null || product.IsDeleted)
+            {
+                return NotFound(new ApiResponse<string>
+                {
+                    Status = 404,
+                    Message = "Product not found.",
+                    Data = null
+                });
+            }
+
+            var currentStock = await _inventoryService.GetTotalStockAsync(product.ProductId);
+            var dto = new ProductResponseDTO
+            {
+                ProductId = product.ProductId,
+                CategoryId = product.CategoryId,
+                SupplierId = product.SupplierId,
+                ProductName = product.Name,
+                Barcode = product.Barcode,
+                Image = product.Image,
+                ImageUrl = BuildImageUrl(product.Image),
+                Price = product.Price,
+                Unit = product.Unit,
+                CreatedAt = product.CreatedAt,
+                IsDeleted = product.IsDeleted,
+                CategoryName = product.Category?.Name,
+                SupplierName = product.Supplier?.Name,
+                CurrentStock = currentStock
+            };
+
+            return Ok(new ApiResponse<ProductResponseDTO>
+            {
+                Status = 200,
+                Message = "Product fetched successfully.",
+                Data = dto
             });
         }
 
