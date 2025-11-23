@@ -104,8 +104,12 @@ dotnet list package
 ```
 MyUnoApp/
 │  MyUnoApp.csproj
-├── Presentation/     # XAML pages
-├── ViewModels/       # MVVM ViewModels
+├── Presentation/
+    ├── Views/       # XAML pages
+    ├── ViewModels/       # MVVM ViewModels
+├── Services/
+├── Helpers/
+├── Models/
 ├── Styles/           # Theme & Color palettes
 └── Platforms/
     ├── Android/
@@ -132,8 +136,6 @@ MyUnoApp/
 dotnet build -f net9.0-android
 dotnet run -f net9.0-android
 ```
-
-APK sẽ xuất ra trong `bin/Debug/net9.0-android/`
 
 ### 6.2 WebAssembly (WASM)
 
