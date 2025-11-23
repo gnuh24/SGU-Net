@@ -196,8 +196,44 @@ namespace be_retail.Controllers
         }
 
 
+        [HttpPost("register")]
+        [AllowAnonymous]
+        public async Task<IActionResult> CustomerRegister([FromBody] RegisterRequest request)
+        {
+            // Gọi thẳng service đăng ký
+            var user = await _authService.RegisterAsync(request);
 
+            if (user == null)
+            {
+                return BadRequest(new ApiResponse<string>
+                {
+                    Status = 400,
+                    Message = "Tên đăng nhập đã tồn tại.",
+                    Data = null
+                });
+            }
 
+            // Sinh JWT token
+            var accessToken = _tokenService.GenerateAccessToken(user);
+            var refreshToken = _tokenService.GenerateRefreshToken(user);
+
+            var response = new AuthResponse
+            {
+                UserId = user.UserId,
+                Username = user.Username,
+                FullName = user.FullName!,
+                Role = user.Role,
+                AccessToken = accessToken,
+                RefreshToken = refreshToken
+            };
+
+            return Ok(new ApiResponse<AuthResponse>
+            {
+                Status = 200,
+                Message = "Đăng ký thành công.",
+                Data = response
+            });
+        }
 
     }
 }

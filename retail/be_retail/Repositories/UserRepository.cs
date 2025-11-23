@@ -18,6 +18,12 @@ namespace be_retail.Repositories
             return await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
         }
 
+            public async Task<User?> GetByCustomerIdAsync(int customerId)
+        {
+            return await _context.Users
+                .FirstOrDefaultAsync(u => u.CustomerId == customerId);
+        }
+
         public async Task<User> CreateAsync(User user)
         {
             _context.Users.Add(user);
