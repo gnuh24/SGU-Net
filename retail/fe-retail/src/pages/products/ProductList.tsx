@@ -46,40 +46,34 @@ interface Supplier {
 
 const API_URL = "http://localhost:5260/api/v1/products";
 
-// Hàm tạo barcode tự động: lấy barcode lớn nhất + 1
 const generateBarcode = (products: Product[]): string => {
   const prefix = "890";
-  
-  // Lọc các barcode hợp lệ (bắt đầu bằng 890 và có 13 ký tự)
-  const validBarcodes = products
-    .filter(p => p.barcode && p.barcode.startsWith("890") && p.barcode.length === 13)
-    .map(p => p.barcode!);
-  
-  if (validBarcodes.length === 0) {
-    // Nếu không có barcode nào, bắt đầu từ 8900000000001
-    return "8900000000001";
+  const existingBarcodes = new Set(
+    products
+      .filter(p => p.barcode && p.barcode.startsWith(prefix) && p.barcode.length === 13)
+      .map(p => p.barcode!)
+  );
+
+  const maxAttempts = 2000; 
+
+  for (let i = 0; i < maxAttempts; i++) {
+    // Sinh 10 chữ số ngẫu nhiên
+    const randomDigits = Math.floor(Math.random() * 1_000_000_0000)
+      .toString()
+      .padStart(10, "0");
+
+    const newBarcode = prefix + randomDigits;
+
+    if (!existingBarcodes.has(newBarcode)) {
+      return newBarcode;
+    }
   }
-  
-  // Tìm barcode lớn nhất (chuyển phần số sau 890 thành số để so sánh)
-  const maxBarcode = validBarcodes.reduce((max, current) => {
-    const maxNum = parseInt(max.substring(3), 10);
-    const currentNum = parseInt(current.substring(3), 10);
-    return currentNum > maxNum ? current : max;
-  });
-  
-  // Lấy phần số sau 890, +1, và format lại
-  const maxNum = parseInt(maxBarcode.substring(3), 10);
-  const nextNum = maxNum + 1;
-  const nextDigits = nextNum.toString().padStart(10, "0");
-  
-  // Kiểm tra không vượt quá giới hạn (8909999999999)
-  if (nextNum > 9999999999) {
-    // Nếu vượt quá, tìm khoảng trống hoặc bắt đầu lại
-    return "8900000000001";
-  }
-  
-  return prefix + nextDigits;
+
+  // Nếu quá nhiều lần thử vẫn trùng -> fallback
+  console.warn("Không thể tạo barcode mới không trùng, fallback về 8900000000001");
+  return prefix + "0000000001";
 };
+
 
 const ProductList: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -509,23 +503,25 @@ const ProductList: React.FC = () => {
             ]}
           >
             <Input 
-              placeholder="890XXXXXXXXXX"
-              suffix={
-                !editingProduct && (
-                  <Button 
-                    type="link" 
-                    size="small"
-                    onClick={() => {
-                      const newBarcode = generateBarcode(products);
-                      form.setFieldsValue({ barcode: newBarcode });
-                    }}
-                    style={{ padding: 0, height: 'auto' }}
-                  >
-                    Tạo mới
-                  </Button>
-                )
-              }
-            />
+  placeholder="890XXXXXXXXXX"
+  disabled={editingProduct}
+  addonAfter={
+    !editingProduct && (
+      <Button 
+        type="link" 
+        size="small"
+        onClick={() => {
+          const newBarcode = generateBarcode(products);
+          form.setFieldsValue({ barcode: newBarcode });
+        }}
+        style={{ padding: 0, height: 'auto' }}
+      >
+        Tạo mới
+      </Button>
+    )
+  }
+/>
+
           </Form.Item>
 
           <Form.Item
