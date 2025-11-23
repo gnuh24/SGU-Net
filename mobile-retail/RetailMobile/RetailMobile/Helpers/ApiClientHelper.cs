@@ -3,6 +3,8 @@ using System.IO;
 using System.Net.Http;
 using Uno.Foundation;
 
+
+namespace RetailMobile.Helpers;
 public static class ApiClientHelper
 {
     public static string GetBaseUrl(ApiClientConfig config)
