@@ -95,7 +95,7 @@ public partial class App : Application
                     // Add CartService
                     services.AddSingleton<CartService>();
 
-                    // TokenService
+                    // Add TokenService
                     services.AddSingleton<ITokenService, TokenService>();
 
                     // ApiClientConfig từ appsettings.json

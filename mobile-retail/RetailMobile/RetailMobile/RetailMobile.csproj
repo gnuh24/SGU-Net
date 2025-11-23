@@ -31,6 +31,7 @@
       Configuration;
       HttpKiota;
       Serialization;
+      Storage;
       Localization;
       Navigation;
       ThemeService;

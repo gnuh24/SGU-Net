@@ -1,3 +1,4 @@
+namespace RetailMobile.Models;
 public record ApiClientConfig
 {
     public string? Url { get; init; }

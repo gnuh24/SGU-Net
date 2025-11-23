@@ -1,6 +1,9 @@
 using System.Text;
 using System.Text.Json;
+using RetailMobile.Models;
 using Microsoft.Extensions.Options;
+
+namespace RetailMobile.Services;
 public class ApiClient
 {
     private readonly HttpClient _http;
@@ -122,7 +125,6 @@ public class ApiClient
         await _tokenService.SaveTokensAsync(tokenResponse.AccessToken, tokenResponse.RefreshToken);
         return true;
     }
-    private record TokenResponse(string AccessToken, string RefreshToken);
 
     // ------------------- UTILITIES -------------------
 
