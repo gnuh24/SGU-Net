@@ -84,6 +84,9 @@ builder.Services.AddScoped<OrderItemRepository>();
 
 builder.Services.AddScoped<PaymentService>();
 builder.Services.AddScoped<PaymentRepository>();
+builder.Services.AddScoped<MoMoService>();
+builder.Services.AddScoped<VNPayService>();
+builder.Services.AddHttpClient();
 
 builder.Services.AddScoped<StatisticsRepository>();
 builder.Services.AddScoped<StatisticsService>();

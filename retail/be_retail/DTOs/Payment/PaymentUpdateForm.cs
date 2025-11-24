@@ -11,7 +11,7 @@ namespace be_retail.DTOs
         [Range(0.01, double.MaxValue)]
         public decimal Amount { get; set; }
 
-        [RegularExpression("cash|card|bank_transfer|e-wallet")]
+        [RegularExpression("cash|card|bank_transfer|e-wallet|momo|vnpay")]
         public string PaymentMethod { get; set; } = null!;
     }
 }

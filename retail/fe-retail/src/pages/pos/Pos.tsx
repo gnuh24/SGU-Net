@@ -72,7 +72,7 @@ const PosPageInternal: React.FC = () => {
   );
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<
-    "cash" | "card" | "transfer"
+    "cash" | "card" | "transfer" | "momo" | "vnpay"
   >("cash");
   const [paidAmount, setPaidAmount] = useState<number | null>(null);
   const [loadingCheckout, setLoadingCheckout] = useState(false);
@@ -397,6 +397,84 @@ const PosPageInternal: React.FC = () => {
     setLoadingCheckout(true);
     try {
       message.loading("Đang xử lý đơn hàng...", 0);
+      
+      // Nếu là MoMo, tạo order với status pending và redirect đến MoMo
+      if (paymentMethod === "momo") {
+        const payload = {
+          userId: user.id,
+          customerId: selectedCustomer?.customerId ?? selectedCustomer?.id,
+          promoId: appliedPromotion?.promoId,
+          paymentMethod: "momo" as const,
+          orderItems: cart.map((item) => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          status: "pending", // Chờ thanh toán MoMo
+        };
+
+        const createdOrder = await posApi.createFullOrder(payload);
+        message.destroy();
+
+        // Tạo MoMo payment request
+        message.loading("Đang tạo yêu cầu thanh toán MoMo...", 0);
+        const returnUrl = `${window.location.origin}/payment/momo/return?orderId=${createdOrder.orderId}`;
+        const momoPayment = await posApi.createMoMoPayment(
+          createdOrder.orderId,
+          total,
+          returnUrl
+        );
+
+        message.destroy();
+        
+        if (momoPayment.payUrl) {
+          // Redirect đến MoMo payment page
+          window.location.href = momoPayment.payUrl;
+        } else {
+          message.error("Không thể tạo link thanh toán MoMo!");
+        }
+        return;
+      }
+
+      // Nếu là VNPay, tạo order với status pending và redirect đến VNPay
+      if (paymentMethod === "vnpay") {
+        const payload = {
+          userId: user.id,
+          customerId: selectedCustomer?.customerId ?? selectedCustomer?.id,
+          promoId: appliedPromotion?.promoId,
+          paymentMethod: "vnpay" as const,
+          orderItems: cart.map((item) => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          status: "pending", // Chờ thanh toán VNPay
+        };
+
+        const createdOrder = await posApi.createFullOrder(payload);
+        message.destroy();
+
+        // Tạo VNPay payment request
+        message.loading("Đang tạo yêu cầu thanh toán VNPay...", 0);
+        const returnUrl = `${window.location.origin}/payment/vnpay/return?orderId=${createdOrder.orderId}`;
+        const vnpayPayment = await posApi.createVNPayPayment(
+          createdOrder.orderId,
+          total,
+          returnUrl
+        );
+
+        message.destroy();
+        
+        if (vnpayPayment.paymentUrl) {
+          // Redirect đến VNPay payment page
+          window.location.href = vnpayPayment.paymentUrl;
+        } else {
+          message.error("Không thể tạo link thanh toán VNPay!");
+        }
+        return;
+      }
+
+      // Các phương thức thanh toán khác (cash, card, transfer)
       const payload = {
         userId: user.id,
         customerId: selectedCustomer?.customerId ?? selectedCustomer?.id,
@@ -874,13 +952,15 @@ const PosPageInternal: React.FC = () => {
                   <Select
                     value={paymentMethod}
                     onChange={(v) =>
-                      setPaymentMethod(v as "cash" | "card" | "transfer")
+                      setPaymentMethod(v as "cash" | "card" | "transfer" | "momo" | "vnpay")
                     }
                     style={{ width: "100%" }}
                   >
                     <Option value="cash">Tiền mặt</Option>
                     <Option value="card">Thẻ</Option>
                     <Option value="transfer">Chuyển khoản</Option>
+                    <Option value="momo">MoMo</Option>
+                    <Option value="vnpay">VNPay</Option>
                   </Select>
                 </Form.Item>
                 {paymentMethod === "cash" && (
@@ -937,7 +1017,13 @@ const PosPageInternal: React.FC = () => {
             ? "Tiền mặt"
             : paymentMethod === "card"
             ? "Thẻ"
-            : "Chuyển khoản"}
+            : paymentMethod === "transfer"
+            ? "Chuyển khoản"
+            : paymentMethod === "momo"
+            ? "MoMo"
+            : paymentMethod === "vnpay"
+            ? "VNPay"
+            : "N/A"}
         </p>
         {paymentMethod === "cash" && (
           <>

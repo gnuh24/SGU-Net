@@ -12,7 +12,7 @@ namespace be_retail.DTOs
         public decimal Amount { get; set; }
 
         [Required]
-        [RegularExpression("cash|card|bank_transfer|e-wallet", ErrorMessage = "Invalid payment method")]
+        [RegularExpression("cash|card|bank_transfer|e-wallet|momo|vnpay", ErrorMessage = "Invalid payment method")]
         public string PaymentMethod { get; set; } = "cash";
     }
 }

@@ -160,7 +160,7 @@ export const posApi = {
     userId: number;
     customerId?: number | null;
     promoId?: number | null;
-    paymentMethod: "cash" | "card" | "transfer";
+    paymentMethod: "cash" | "card" | "transfer" | "momo" | "vnpay";
     orderItems: { productId: number; quantity: number; price: number }[];
     status?: string;
   }): Promise<Order> => {
@@ -183,6 +183,44 @@ export const posApi = {
       // Backend returns: { status: 200, message: "...", data: Order }
       const order = response.data?.data || response.data;
       return order;
+    } catch (error: any) {
+      throw error;
+    }
+  },
+
+  // Tạo payment request với MoMo
+  createMoMoPayment: async (orderId: number, amount: number, returnUrl?: string): Promise<{ payUrl: string; qrCodeUrl?: string }> => {
+    try {
+      const response = await apiClient.post(`/payments/momo/create`, {
+        orderId,
+        amount,
+        returnUrl: returnUrl || `${window.location.origin}/payment/momo/return`,
+        notifyUrl: `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5260'}/api/v1/payments/momo/callback`
+      });
+      const result = response.data?.data || response.data;
+      if (result?.payUrl) {
+        return result;
+      }
+      throw new Error(result?.message || "Không thể tạo payment URL");
+    } catch (error: any) {
+      throw error;
+    }
+  },
+
+  // Tạo payment request với VNPay
+  createVNPayPayment: async (orderId: number, amount: number, returnUrl?: string): Promise<{ paymentUrl: string }> => {
+    try {
+      const response = await apiClient.post(`/payments/vnpay/create`, {
+        orderId,
+        amount,
+        returnUrl: returnUrl || `${window.location.origin}/payment/vnpay/return`,
+        orderInfo: `Thanh toan don hang #${orderId}`
+      });
+      const result = response.data?.data || response.data;
+      if (result?.paymentUrl) {
+        return result;
+      }
+      throw new Error(result?.message || "Không thể tạo payment URL");
     } catch (error: any) {
       throw error;
     }
