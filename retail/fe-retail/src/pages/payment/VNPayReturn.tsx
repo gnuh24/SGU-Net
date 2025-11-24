@@ -165,7 +165,7 @@ const VNPayReturn: React.FC = () => {
           title="Thanh toán thành công!"
           subTitle={`Đơn hàng #${orderId} đã được thanh toán thành công qua VNPay.`}
           extra={[
-            <Button type="primary" key="orders" onClick={() => navigate("/orders")}>
+            <Button type="primary" key="orders" onClick={() => navigate("/orders?refresh=true")}>
               Xem đơn hàng
             </Button>,
             <Button key="pos" onClick={() => navigate("/pos")}>
@@ -185,7 +185,7 @@ const VNPayReturn: React.FC = () => {
           title="Đang xử lý thanh toán..."
           subTitle={errorMessage || "Vui lòng đợi trong giây lát, hệ thống đang kiểm tra trạng thái thanh toán."}
           extra={[
-            <Button key="orders" onClick={() => navigate("/orders")}>
+            <Button key="orders" onClick={() => navigate("/orders?refresh=true")}>
               Xem đơn hàng
             </Button>,
           ]}
@@ -200,14 +200,14 @@ const VNPayReturn: React.FC = () => {
         icon={<CloseCircleOutlined style={{ color: "#ff4d4f" }} />}
         title="Thanh toán thất bại"
         subTitle={errorMessage || "Đã xảy ra lỗi trong quá trình thanh toán. Vui lòng thử lại."}
-        extra={[
-          <Button type="primary" key="retry" onClick={() => navigate("/pos")}>
-            Thử lại
-          </Button>,
-          <Button key="orders" onClick={() => navigate("/orders")}>
-            Xem đơn hàng
-          </Button>,
-        ]}
+          extra={[
+            <Button type="primary" key="retry" onClick={() => navigate("/pos")}>
+              Thử lại
+            </Button>,
+            <Button key="orders" onClick={() => navigate("/orders?refresh=true")}>
+              Xem đơn hàng
+            </Button>,
+          ]}
       />
     </div>
   );
