@@ -127,7 +127,7 @@ export interface OrderItem {
 export interface Payment {
   id: number;
   order_id: number;
-  payment_method: "cash" | "card" | "transfer";
+  payment_method: "cash" | "card" | "transfer" | "momo";
   amount_paid: number;
   created_at: string;
 }
@@ -155,7 +155,7 @@ export interface CheckoutRequest {
     price: number;
   }[];
   payment: {
-    payment_method: "cash" | "card" | "transfer";
+    payment_method: "cash" | "card" | "transfer" | "momo";
     amount_paid: number;
   };
 }

@@ -20,6 +20,7 @@ import {
   ReloadOutlined,
   FileTextOutlined,
 } from "@ant-design/icons";
+import { useSearchParams, useLocation } from "react-router-dom";
 import { apiService } from "../../services/apiService";
 import dayjs from "dayjs";
 
@@ -77,10 +78,28 @@ const OrdersList: React.FC = () => {
     fromDate: "",
     toDate: "",
   });
+  const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
 
+  // Fetch orders on mount
   useEffect(() => {
     fetchOrders();
   }, []);
+
+  // Auto-refresh when coming from payment return page
+  useEffect(() => {
+    const refresh = searchParams.get("refresh");
+    if (refresh === "true") {
+      // Remove refresh param from URL
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete("refresh");
+      setSearchParams(newSearchParams, { replace: true });
+      // Refresh orders with current pagination
+      fetchOrders(pagination.current || 1, pagination.pageSize || 10);
+      message.success("Đã cập nhật danh sách hóa đơn", 2);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
 
   const unwrapResponse = (response: any): any => {
     if (response?.data?.data) return response.data.data;

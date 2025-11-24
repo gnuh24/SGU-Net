@@ -8,7 +8,7 @@ interface PosState {
   subtotal: number;
   discountAmount: number;
   total: number;
-  paymentMethod: "cash" | "card" | "transfer";
+  paymentMethod: "cash" | "card" | "transfer" | "momo";
   amountPaid: number;
   change: number;
   isProcessing: boolean;
@@ -87,7 +87,7 @@ const posSlice = createSlice({
     },
     setPaymentMethod: (
       state,
-      action: PayloadAction<"cash" | "card" | "transfer">
+      action: PayloadAction<"cash" | "card" | "transfer" | "momo">
     ) => {
       state.paymentMethod = action.payload;
     },
