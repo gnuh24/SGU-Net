@@ -79,11 +79,11 @@ public partial class App : Application
                 {
                     // Đường dẫn database platform-specific
 #if ANDROID
-                    string dbPath = Path.Combine(Android.App.Application.Context.FilesDir.Path, "app.db3");
+                    string dbPath = Path.Combine(Android.App.Application.Context!.FilesDir!.Path, "app.db3");
 #elif IOS
                     string dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "app.db3");
 #else
-    string dbPath = "app.db3"; // Desktop
+                    string dbPath = "app.db3"; // Desktop
 #endif
 
                     // Add DbContext
@@ -114,6 +114,61 @@ public partial class App : Application
         MainWindow.SetWindowIcon();
 
         Host = await builder.NavigateAsync<Shell>();
+
+        // Initialize database
+        await InitializeDatabaseAsync();
+    }
+
+    private async Task InitializeDatabaseAsync()
+    {
+        try
+        {
+            if (Host?.Services != null)
+            {
+                using var scope = Host.Services.CreateScope();
+                var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+                // Ensure database is created
+                await dbContext.Database.EnsureCreatedAsync();
+
+                // Seed data if empty
+                if (!await dbContext.Products.AnyAsync())
+                {
+                    System.Diagnostics.Debug.WriteLine("Seeding database...");
+                    var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+                    var resourceName = "RetailMobile.Assets.products.json";
+
+                    using var stream = assembly.GetManifestResourceStream(resourceName);
+                    if (stream != null)
+                    {
+                        using var reader = new StreamReader(stream);
+                        var json = await reader.ReadToEndAsync();
+                        var products = System.Text.Json.JsonSerializer.Deserialize<List<RetailMobile.Models.Product>>(json);
+
+                        if (products != null)
+                        {
+                            await dbContext.Products.AddRangeAsync(products);
+                            await dbContext.SaveChangesAsync();
+                            System.Diagnostics.Debug.WriteLine($"Seeded {products.Count} products.");
+                        }
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Resource not found: {resourceName}");
+                        // List available resources for debugging
+                        foreach (var res in assembly.GetManifestResourceNames())
+                        {
+                            System.Diagnostics.Debug.WriteLine($"Available resource: {res}");
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // Log the error
+            System.Diagnostics.Debug.WriteLine($"Database initialization failed: {ex.Message}");
+        }
     }
 
     private static void RegisterRoutes(IViewRegistry views, IRouteRegistry routes)
@@ -121,7 +176,8 @@ public partial class App : Application
         views.Register(
             new ViewMap(ViewModel: typeof(ShellViewModel)),
             new ViewMap<MainPage, MainViewModel>(),
-            new DataViewMap<SecondPage, SecondViewModel, Entity>()
+            new DataViewMap<SecondPage, SecondViewModel, Entity>(),
+            new ViewMap<ProductListPage, ProductListViewModel>()
         );
 
         routes.Register(
@@ -130,6 +186,7 @@ public partial class App : Application
                 [
                     new ("Main", View: views.FindByViewModel<MainViewModel>(), IsDefault:true),
                     new ("Second", View: views.FindByViewModel<SecondViewModel>()),
+                    new ("Products", View: views.FindByViewModel<ProductListViewModel>()),
                 ]
             )
         );
