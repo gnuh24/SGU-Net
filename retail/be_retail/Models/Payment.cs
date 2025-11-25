@@ -24,9 +24,6 @@ namespace be_retail.Models
         [Column("payment_date")]
         public DateTime PaymentDate { get; set; } = DateTime.Now;
 
-        [Column("payment_tranid")]
-        public long PaymentTranId { get; set; }
-
         // 🔗 Navigation property
         [ForeignKey("OrderId")]
         public Order? Order { get; set; }
