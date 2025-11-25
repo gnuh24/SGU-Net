@@ -116,6 +116,12 @@ namespace be_retail.Services
 
                 query = (form.SortBy?.ToLower(), form.SortDirection?.ToLower()) switch
                 {
+                    ("orderid", "asc") => query.OrderBy(o => o.OrderId),
+                    ("orderid", "desc") => query.OrderByDescending(o => o.OrderId),
+                    ("orderdate", "asc") => query.OrderBy(o => o.OrderDate),
+                    ("orderdate", "desc") => query.OrderByDescending(o => o.OrderDate),
+                    ("finalamount", "asc") => query.OrderBy(o => o.TotalAmount - o.DiscountAmount),
+                    ("finalamount", "desc") => query.OrderByDescending(o => o.TotalAmount - o.DiscountAmount),
                     ("total_amount", "asc") => query.OrderBy(o => o.TotalAmount),
                     ("total_amount", "desc") => query.OrderByDescending(o => o.TotalAmount),
                     ("order_date", "asc") => query.OrderBy(o => o.OrderDate),
@@ -210,7 +216,7 @@ namespace be_retail.Services
                         && promo.StartDate <= DateTime.Now
                         && promo.EndDate >= DateTime.Now
                         && totalAmount >= promo.MinOrderAmount
-                        && promo.UsedCount < promo.UsageLimit)
+                        && (promo.UsageLimit == 0 || promo.UsedCount < promo.UsageLimit))
                     {
                         discountAmount = promo.DiscountType == "percent" ?
                                          totalAmount * (promo.DiscountValue / 100) :

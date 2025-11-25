@@ -78,12 +78,14 @@ const OrdersList: React.FC = () => {
     fromDate: "",
     toDate: "",
   });
+  const [sortField, setSortField] = useState<string>("");
+  const [sortOrder, setSortOrder] = useState<string>("");
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
 
   // Fetch orders on mount
   useEffect(() => {
-    fetchOrders();
+    fetchOrders(pagination.current, pagination.pageSize);
   }, []);
 
   // Auto-refresh when coming from payment return page
@@ -102,12 +104,22 @@ const OrdersList: React.FC = () => {
   }, [location.search]);
 
   const unwrapResponse = (response: any): any => {
+    // If response.data has pagination structure (data + total), return the whole object
+    if (response?.data?.data && response?.data?.total !== undefined) {
+      return response.data;
+    }
+    // Otherwise, unwrap to just the data
     if (response?.data?.data) return response.data.data;
     if (response?.data) return response.data;
     return response;
   };
 
-  const fetchOrders = async (page: number = 1, pageSize: number = 10) => {
+  const fetchOrders = async (
+    page: number = 1,
+    pageSize: number = 10,
+    customSortField?: string,
+    customSortOrder?: string
+  ) => {
     setLoading(true);
     try {
       const params: any = {
@@ -120,26 +132,44 @@ const OrdersList: React.FC = () => {
       if (filters.fromDate) params.fromDate = filters.fromDate;
       if (filters.toDate) params.toDate = filters.toDate;
 
+      const activeSortField =
+        customSortField !== undefined ? customSortField : sortField;
+      const activeSortOrder =
+        customSortOrder !== undefined ? customSortOrder : sortOrder;
+
+      if (activeSortField) {
+        // Map frontend field names to backend field names
+        const fieldMapping: { [key: string]: string } = {
+          orderId: "orderId",
+          orderDate: "orderDate",
+          finalAmount: "finalAmount",
+        };
+        params.sortBy = fieldMapping[activeSortField] || activeSortField;
+      }
+      if (activeSortOrder) params.sortDirection = activeSortOrder;
+
       const response = await apiService.get("/orders", { params });
       const data = unwrapResponse(response);
 
-      let ordersList = [];
-      let total = 0;
-
-      if (Array.isArray(data)) {
-        ordersList = data;
-        total = data.length;
-      } else if (data.items) {
-        ordersList = data.items;
-        total = data.total || data.items.length;
-      } else if (data.data) {
-        ordersList = data.data;
-        total = data.total || data.data.length;
+      // Backend returns PagedResponse structure: { data: [...], total: X, page: Y, pageSize: Z }
+      if (
+        data &&
+        typeof data === "object" &&
+        "data" in data &&
+        "total" in data
+      ) {
+        setOrders(data.data || []);
+        setPagination({ current: page, pageSize, total: data.total || 0 });
+      } else if (Array.isArray(data)) {
+        // Fallback for direct array response
+        setOrders(data);
+        setPagination({ current: page, pageSize, total: data.length });
+      } else {
+        setOrders([]);
+        setPagination({ current: page, pageSize, total: 0 });
       }
-
-      setOrders(ordersList);
-      setPagination({ current: page, pageSize, total });
     } catch (error: any) {
+      console.error("Error fetching orders:", error);
       message.error("Lỗi khi tải danh sách hóa đơn");
     } finally {
       setLoading(false);
@@ -157,8 +187,36 @@ const OrdersList: React.FC = () => {
     }
   };
 
-  const handleTableChange = (paginationConfig: any) => {
-    fetchOrders(paginationConfig.current, paginationConfig.pageSize);
+  const handleTableChange = (
+    paginationConfig: any,
+    filters: any,
+    sorter: any
+  ) => {
+    // Handle sorting
+    let newSortField = "";
+    let newSortOrder = "";
+
+    if (sorter.field) {
+      newSortField = sorter.field;
+      newSortOrder =
+        sorter.order === "ascend"
+          ? "asc"
+          : sorter.order === "descend"
+          ? "desc"
+          : "";
+      setSortField(newSortField);
+      setSortOrder(newSortOrder);
+    } else {
+      setSortField("");
+      setSortOrder("");
+    }
+
+    fetchOrders(
+      paginationConfig.current,
+      paginationConfig.pageSize,
+      newSortField,
+      newSortOrder
+    );
   };
 
   const handleSearch = () => {
@@ -220,6 +278,13 @@ const OrdersList: React.FC = () => {
       dataIndex: "orderId",
       key: "orderId",
       width: 80,
+      sorter: true,
+      sortOrder:
+        sortField === "orderId"
+          ? sortOrder === "asc"
+            ? ("ascend" as const)
+            : ("descend" as const)
+          : undefined,
       render: (id: number) => `#${id}`,
     },
     {
@@ -227,6 +292,13 @@ const OrdersList: React.FC = () => {
       dataIndex: "orderDate",
       key: "orderDate",
       width: 150,
+      sorter: true,
+      sortOrder:
+        sortField === "orderDate"
+          ? sortOrder === "asc"
+            ? ("ascend" as const)
+            : ("descend" as const)
+          : undefined,
       render: (date: string) => dayjs(date).format("DD/MM/YYYY HH:mm"),
     },
     {
@@ -253,9 +325,17 @@ const OrdersList: React.FC = () => {
     },
     {
       title: "Thành tiền",
+      dataIndex: "finalAmount",
       key: "finalAmount",
       align: "right" as const,
       width: 130,
+      sorter: true,
+      sortOrder:
+        sortField === "finalAmount"
+          ? sortOrder === "asc"
+            ? ("ascend" as const)
+            : ("descend" as const)
+          : undefined,
       render: (_: any, record: Order) =>
         formatCurrency(record.totalAmount - (record.discountAmount || 0)),
     },

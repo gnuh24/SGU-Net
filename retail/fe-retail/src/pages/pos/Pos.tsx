@@ -17,6 +17,7 @@ import {
   Modal,
   Form,
   Space,
+  AutoComplete,
 } from "antd";
 import { DeleteOutlined, TagOutlined, SearchOutlined } from "@ant-design/icons";
 
@@ -30,6 +31,7 @@ import {
 } from "../../api/posApi";
 import { getImageUrl } from "../../utils/imageUtils";
 import { useAuth } from "@/hooks/useAuth";
+import { promotionService } from "../../services/promotionService";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 
 const formatCurrency = (value: string | number | bigint) => {
@@ -66,6 +68,8 @@ const PosPageInternal: React.FC = () => {
   const [appliedPromotion, setAppliedPromotion] = useState<Promotion | null>(
     null
   );
+  const [availablePromotions, setAvailablePromotions] = useState<any[]>([]);
+  const [loadingPromotions, setLoadingPromotions] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<
     "cash" | "card" | "transfer" | "momo" | "vnpay"
@@ -290,6 +294,44 @@ const PosPageInternal: React.FC = () => {
     return { subtotal: sub, discount: disc, total: finalTotal };
   }, [cart, appliedPromotion]);
 
+  // Load available promotions when subtotal changes
+  useEffect(() => {
+    const loadAvailablePromotions = async () => {
+      if (cart.length === 0 || subtotal === 0) {
+        setAvailablePromotions([]);
+        return;
+      }
+
+      try {
+        setLoadingPromotions(true);
+        const allPromotions = await promotionService.getPromotions();
+
+        // Filter active promotions that can be applied
+        const today = new Date();
+        const applicable = allPromotions.filter((promo: any) => {
+          if (promo.status !== "active") return false;
+
+          const startDate = new Date(promo.start_date);
+          const endDate = new Date(promo.end_date);
+          if (today < startDate || today > endDate) return false;
+
+          const minAmount = promo.min_order_amount || 0;
+          if (subtotal < minAmount) return false;
+
+          return true;
+        });
+
+        setAvailablePromotions(applicable);
+      } catch (error) {
+        console.error("Error loading promotions:", error);
+      } finally {
+        setLoadingPromotions(false);
+      }
+    };
+
+    loadAvailablePromotions();
+  }, [subtotal, cart.length]);
+
   const applyPromotion = async () => {
     if (!promoCode.trim()) {
       message.warning("Vui lòng nhập mã khuyến mãi!");
@@ -399,7 +441,7 @@ const PosPageInternal: React.FC = () => {
     setLoadingCheckout(true);
     try {
       message.loading("Đang xử lý đơn hàng...", 0);
-      
+
       // Nếu là MoMo, tạo order với status pending và redirect đến MoMo
       if (paymentMethod === "momo") {
         const payload = {
@@ -428,7 +470,7 @@ const PosPageInternal: React.FC = () => {
         );
 
         message.destroy();
-        
+
         if (momoPayment.payUrl) {
           // Redirect đến MoMo payment page
           window.location.href = momoPayment.payUrl;
@@ -466,7 +508,7 @@ const PosPageInternal: React.FC = () => {
         );
 
         message.destroy();
-        
+
         if (vnpayPayment.paymentUrl) {
           // Redirect đến VNPay payment page
           window.location.href = vnpayPayment.paymentUrl;
@@ -506,6 +548,7 @@ const PosPageInternal: React.FC = () => {
     } catch (err: any) {
       message.destroy();
       console.error("Lỗi thanh toán:", err);
+      console.error("Error response:", err.response?.data);
       const errorMsg =
         err.response?.data?.message || "Lỗi khi xử lý thanh toán!";
       message.error(`Thanh toán thất bại: ${errorMsg}`);
@@ -957,15 +1000,59 @@ const PosPageInternal: React.FC = () => {
                 <TagOutlined /> Khuyến mãi
               </Title>
               <Space.Compact style={{ width: "100%" }}>
-                <Input
-                  placeholder="Nhập mã khuyến mãi"
+                <AutoComplete
+                  style={{ flex: 1 }}
+                  placeholder="Nhập hoặc chọn mã khuyến mãi"
                   value={promoCode}
-                  onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                  onPressEnter={applyPromotion}
+                  onChange={(value) => setPromoCode(value.toUpperCase())}
+                  onSelect={(value) => {
+                    setPromoCode(value);
+                    // Auto apply when selecting from dropdown
+                    setTimeout(() => applyPromotion(), 100);
+                  }}
                   disabled={cart.length === 0}
-                  prefix={<TagOutlined />}
-                  allowClear
-                />
+                  options={availablePromotions.map((promo) => {
+                    const discountText =
+                      promo.discount_type === "percent" ||
+                      promo.discount_type === "percentage"
+                        ? `${promo.discount_value}%`
+                        : formatCurrency(promo.discount_value);
+                    const minOrderText =
+                      promo.min_order_amount > 0
+                        ? ` (Đơn tối thiểu: ${formatCurrency(
+                            promo.min_order_amount
+                          )})`
+                        : "";
+
+                    return {
+                      value: promo.promo_code,
+                      label: (
+                        <div>
+                          <div style={{ fontWeight: "bold" }}>
+                            {promo.promo_code}
+                          </div>
+                          <div style={{ fontSize: "0.9em", color: "#666" }}>
+                            {promo.description} - Giảm {discountText}
+                            {minOrderText}
+                          </div>
+                        </div>
+                      ),
+                    };
+                  })}
+                  notFoundContent={
+                    loadingPromotions ? (
+                      <Spin size="small" />
+                    ) : availablePromotions.length === 0 ? (
+                      "Không có mã khuyến mãi khả dụng"
+                    ) : null
+                  }
+                >
+                  <Input
+                    prefix={<TagOutlined />}
+                    allowClear
+                    onPressEnter={applyPromotion}
+                  />
+                </AutoComplete>
                 <Button
                   type="primary"
                   onClick={applyPromotion}
@@ -1046,7 +1133,9 @@ const PosPageInternal: React.FC = () => {
                   <Select
                     value={paymentMethod}
                     onChange={(v) =>
-                      setPaymentMethod(v as "cash" | "card" | "transfer" | "momo" | "vnpay")
+                      setPaymentMethod(
+                        v as "cash" | "card" | "transfer" | "momo" | "vnpay"
+                      )
                     }
                     style={{ width: "100%" }}
                   >

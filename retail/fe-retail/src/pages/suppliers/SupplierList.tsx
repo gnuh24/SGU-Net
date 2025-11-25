@@ -20,24 +20,31 @@ const SupplierList: React.FC = () => {
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
     fetchSuppliers();
-  }, []);
+  }, [page, pageSize]);
 
   const fetchSuppliers = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API_URL}?pageSize=50`);
-      if (Array.isArray(res.data?.data)) {
+      const params = new URLSearchParams({
+        page: String(page),
+        pageSize: String(pageSize),
+      });
+      const res = await axios.get(`${API_URL}?${params.toString()}`);
+      const data = res.data?.data || [];
+      const totalCount = res.data?.total || res.data?.totalCount || data.length;
 
-        const sorted = [...res.data.data].sort(
-          (a: Supplier, b: Supplier) => a.supplierId - b.supplierId
-        );
-        setSuppliers(sorted);
+      if (Array.isArray(data)) {
+        setSuppliers(data);
+        setTotal(totalCount);
       } else {
         setSuppliers([]);
+        setTotal(0);
       }
     } catch (err) {
       console.error("Lỗi khi fetch suppliers:", err);
@@ -83,11 +90,9 @@ const SupplierList: React.FC = () => {
       const values = await form.validateFields();
 
       if (editingSupplier) {
-
         await axios.put(`${API_URL}/${editingSupplier.supplierId}`, values);
         message.success("Cập nhật thành công");
       } else {
-
         await axios.post(API_URL, values);
         message.success("Thêm mới thành công");
       }
@@ -146,11 +151,27 @@ const SupplierList: React.FC = () => {
         rowKey="supplierId"
         bordered
         loading={loading}
-        pagination={{ pageSize: 5 }}
+        pagination={{
+          current: page,
+          pageSize,
+          total,
+          showSizeChanger: true,
+          pageSizeOptions: ["10", "20", "50"],
+          showTotal: (t) => `Tổng ${t} nhà cung cấp`,
+          onChange: (p, ps) => {
+            setPage(p);
+            if (ps !== pageSize) {
+              setPageSize(ps);
+              setPage(1);
+            }
+          },
+        }}
       />
 
       <Modal
-        title={editingSupplier ? "Chỉnh sửa nhà cung cấp" : "Thêm nhà cung cấp mới"}
+        title={
+          editingSupplier ? "Chỉnh sửa nhà cung cấp" : "Thêm nhà cung cấp mới"
+        }
         open={isModalOpen}
         onCancel={() => setIsModalOpen(false)}
         onOk={handleSubmit}
@@ -158,7 +179,11 @@ const SupplierList: React.FC = () => {
         cancelText="Hủy"
       >
         <Form form={form} layout="vertical">
-          <Form.Item label="Tên nhà cung cấp" name="name" rules={[{ required: true, message: "Nhập tên nhà cung cấp" }]}>
+          <Form.Item
+            label="Tên nhà cung cấp"
+            name="name"
+            rules={[{ required: true, message: "Nhập tên nhà cung cấp" }]}
+          >
             <Input />
           </Form.Item>
           <Form.Item label="Địa chỉ" name="address">
