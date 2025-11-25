@@ -66,7 +66,8 @@ namespace be_retail.Services
                         OrderId = order.Payment.OrderId,
                         Amount = order.Payment.Amount,
                         PaymentMethod = order.Payment.PaymentMethod,
-                        PaymentDate = order.Payment.PaymentDate
+                        PaymentDate = order.Payment.PaymentDate,
+                        PaymentTranId = order.Payment.PaymentTranId
                     }
                 };
 
@@ -252,7 +253,7 @@ namespace be_retail.Services
                 };
                 if (form.Status == "pending")
                 {
-                    payment.PaymentDate = DateTime.MinValue;
+                    payment.PaymentDate = null; // Chưa thanh toán, để null
                 }
                 else if (form.Status == "paid")
                 {
@@ -293,7 +294,8 @@ namespace be_retail.Services
                         OrderId = createdOrder.Payment.OrderId,
                         Amount = createdOrder.Payment.Amount,
                         PaymentMethod = createdOrder.Payment.PaymentMethod,
-                        PaymentDate = createdOrder.Payment.PaymentDate
+                        PaymentDate = createdOrder.Payment.PaymentDate,
+                        PaymentTranId = createdOrder.Payment.PaymentTranId
                     }
                 };
 
@@ -468,7 +470,7 @@ namespace be_retail.Services
                 };
                 if (order.Status == "pending")
                 {
-                    payment.PaymentDate = DateTime.MinValue;
+                    payment.PaymentDate = null; // Chưa thanh toán, để null
                 }
                 else if (order.Status == "paid")
                 {

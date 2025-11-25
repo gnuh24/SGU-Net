@@ -18,11 +18,7 @@ import {
   Form,
   Space,
 } from "antd";
-import {
-  DeleteOutlined,
-  TagOutlined,
-  SearchOutlined,
-} from "@ant-design/icons";
+import { DeleteOutlined, TagOutlined, SearchOutlined } from "@ant-design/icons";
 
 import {
   posApi,
@@ -50,7 +46,7 @@ const { Option } = Select;
 
 type StockFilter = "all" | "in" | "out";
 
-const GRID_CARD_WIDTH = 180; 
+const GRID_CARD_WIDTH = 180;
 
 const PosPageInternal: React.FC = () => {
   const { user } = useAuth();
@@ -72,7 +68,7 @@ const PosPageInternal: React.FC = () => {
   );
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<
-    "cash" | "card" | "transfer"
+    "cash" | "card" | "transfer" | "momo" | "vnpay"
   >("cash");
   const [paidAmount, setPaidAmount] = useState<number | null>(null);
   const [loadingCheckout, setLoadingCheckout] = useState(false);
@@ -177,10 +173,12 @@ const PosPageInternal: React.FC = () => {
             catMap.set(p.categoryId, p.categoryName ?? undefined);
           }
         });
-        const cats = Array.from(catMap.entries()).map(([categoryId, categoryName]) => ({
-          categoryId,
-          categoryName,
-        }));
+        const cats = Array.from(catMap.entries()).map(
+          ([categoryId, categoryName]) => ({
+            categoryId,
+            categoryName,
+          })
+        );
         setCategories(cats);
       } catch (err) {
         console.error("Lỗi tải dữ liệu:", err);
@@ -262,11 +260,13 @@ const PosPageInternal: React.FC = () => {
       }
     }
 
-    setGridLimit(30); 
+    setGridLimit(30);
     setLoadingSearch(false);
   };
 
-  const [paidAmountLocalSetter, setPaidAmountLocalSetter] = useState<number | null>(null); 
+  const [paidAmountLocalSetter, setPaidAmountLocalSetter] = useState<
+    number | null
+  >(null);
   const { subtotal, discount, total } = useMemo(() => {
     const sub = cart.reduce((s, i) => s + i.price * i.quantity, 0);
     let disc = 0;
@@ -377,8 +377,7 @@ const PosPageInternal: React.FC = () => {
     customer: Customer | null,
     totalAmount: number,
     cash: number
-  ) => {
-  };
+  ) => {};
 
   const handleCheckout = async () => {
     if (!user) {
@@ -389,7 +388,10 @@ const PosPageInternal: React.FC = () => {
       message.error("Giỏ hàng trống!");
       return;
     }
-    if (paymentMethod === "cash" && (paidAmount === null || paidAmount < total)) {
+    if (
+      paymentMethod === "cash" &&
+      (paidAmount === null || paidAmount < total)
+    ) {
       message.error("Số tiền khách trả không hợp lệ!");
       return;
     }
@@ -397,6 +399,84 @@ const PosPageInternal: React.FC = () => {
     setLoadingCheckout(true);
     try {
       message.loading("Đang xử lý đơn hàng...", 0);
+      
+      // Nếu là MoMo, tạo order với status pending và redirect đến MoMo
+      if (paymentMethod === "momo") {
+        const payload = {
+          userId: user.id,
+          customerId: selectedCustomer?.customerId ?? selectedCustomer?.id,
+          promoId: appliedPromotion?.promoId,
+          paymentMethod: "momo" as const,
+          orderItems: cart.map((item) => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          status: "pending", // Chờ thanh toán MoMo
+        };
+
+        const createdOrder = await posApi.createFullOrder(payload);
+        message.destroy();
+
+        // Tạo MoMo payment request
+        message.loading("Đang tạo yêu cầu thanh toán MoMo...", 0);
+        const returnUrl = `${window.location.origin}/payment/momo/return?orderId=${createdOrder.orderId}`;
+        const momoPayment = await posApi.createMoMoPayment(
+          createdOrder.orderId,
+          total,
+          returnUrl
+        );
+
+        message.destroy();
+        
+        if (momoPayment.payUrl) {
+          // Redirect đến MoMo payment page
+          window.location.href = momoPayment.payUrl;
+        } else {
+          message.error("Không thể tạo link thanh toán MoMo!");
+        }
+        return;
+      }
+
+      // Nếu là VNPay, tạo order với status pending và redirect đến VNPay
+      if (paymentMethod === "vnpay") {
+        const payload = {
+          userId: user.id,
+          customerId: selectedCustomer?.customerId ?? selectedCustomer?.id,
+          promoId: appliedPromotion?.promoId,
+          paymentMethod: "vnpay" as const,
+          orderItems: cart.map((item) => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          status: "pending", // Chờ thanh toán VNPay
+        };
+
+        const createdOrder = await posApi.createFullOrder(payload);
+        message.destroy();
+
+        // Tạo VNPay payment request
+        message.loading("Đang tạo yêu cầu thanh toán VNPay...", 0);
+        const returnUrl = `${window.location.origin}/payment/vnpay/return?orderId=${createdOrder.orderId}`;
+        const vnpayPayment = await posApi.createVNPayPayment(
+          createdOrder.orderId,
+          total,
+          returnUrl
+        );
+
+        message.destroy();
+        
+        if (vnpayPayment.paymentUrl) {
+          // Redirect đến VNPay payment page
+          window.location.href = vnpayPayment.paymentUrl;
+        } else {
+          message.error("Không thể tạo link thanh toán VNPay!");
+        }
+        return;
+      }
+
+      // Các phương thức thanh toán khác (cash, card, transfer)
       const payload = {
         userId: user.id,
         customerId: selectedCustomer?.customerId ?? selectedCustomer?.id,
@@ -415,12 +495,19 @@ const PosPageInternal: React.FC = () => {
       message.destroy();
       message.success("Thanh toán thành công!");
 
-      printReceipt(createdOrder, cart, selectedCustomer, total, paidAmount ?? total);
+      printReceipt(
+        createdOrder,
+        cart,
+        selectedCustomer,
+        total,
+        paidAmount ?? total
+      );
       resetPos();
     } catch (err: any) {
       message.destroy();
       console.error("Lỗi thanh toán:", err);
-      const errorMsg = err.response?.data?.message || "Lỗi khi xử lý thanh toán!";
+      const errorMsg =
+        err.response?.data?.message || "Lỗi khi xử lý thanh toán!";
       message.error(`Thanh toán thất bại: ${errorMsg}`);
     } finally {
       setLoadingCheckout(false);
@@ -490,9 +577,13 @@ const PosPageInternal: React.FC = () => {
     }
 
     if (stockFilter === "in") {
-      items = items.filter((p) => (p.currentStock ?? p.inventory?.quantity ?? 0) > 0);
+      items = items.filter(
+        (p) => (p.currentStock ?? p.inventory?.quantity ?? 0) > 0
+      );
     } else if (stockFilter === "out") {
-      items = items.filter((p) => (p.currentStock ?? p.inventory?.quantity ?? 0) <= 0);
+      items = items.filter(
+        (p) => (p.currentStock ?? p.inventory?.quantity ?? 0) <= 0
+      );
     }
 
     if (minPrice !== null) {
@@ -503,15 +594,24 @@ const PosPageInternal: React.FC = () => {
     }
 
     return items;
-  }, [allProducts, productQuery, selectedCategoryId, stockFilter, minPrice, maxPrice]);
+  }, [
+    allProducts,
+    productQuery,
+    selectedCategoryId,
+    stockFilter,
+    minPrice,
+    maxPrice,
+  ]);
 
-  const slicedProducts = useMemo(() => displayedProducts.slice(0, gridLimit), [displayedProducts, gridLimit]);
+  const slicedProducts = useMemo(
+    () => displayedProducts.slice(0, gridLimit),
+    [displayedProducts, gridLimit]
+  );
 
   useEffect(() => {
     setGridLimit(30);
   }, [selectedCategoryId, stockFilter, minPrice, maxPrice]);
 
- 
   return (
     <div style={{ padding: 24 }}>
       <Card>
@@ -532,7 +632,11 @@ const PosPageInternal: React.FC = () => {
                 prefix={<SearchOutlined />}
                 allowClear
               />
-              <Button type="primary" onClick={handleSearch} loading={loadingSearch}>
+              <Button
+                type="primary"
+                onClick={handleSearch}
+                loading={loadingSearch}
+              >
                 Tìm / Thêm
               </Button>
               <Button
@@ -544,61 +648,76 @@ const PosPageInternal: React.FC = () => {
                 icon={<SearchOutlined />}
               >
                 Quét mã
-              </Button>             
+              </Button>
             </Space>
 
-          
-
-              {/* Row with dropdown + price filters */}
-              <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
-                <Select
-                  placeholder="Chọn danh mục"
-                  style={{ minWidth: 220 }}
-                  value={selectedCategoryId === 0 ? undefined : selectedCategoryId}
-                  onChange={(v) => setSelectedCategoryId(Number(v) ?? 0)}
-                  allowClear
-                >
-                  <Option key="all" value={0}>
-                    Tất cả
+            {/* Row with dropdown + price filters */}
+            <div
+              style={{
+                marginTop: 8,
+                display: "flex",
+                gap: 8,
+                alignItems: "center",
+              }}
+            >
+              <Select
+                placeholder="Chọn danh mục"
+                style={{ minWidth: 220 }}
+                value={
+                  selectedCategoryId === 0 ? undefined : selectedCategoryId
+                }
+                onChange={(v) => setSelectedCategoryId(Number(v) ?? 0)}
+                allowClear
+              >
+                <Option key="all" value={0}>
+                  Tất cả
+                </Option>
+                {categories.map((c) => (
+                  <Option key={c.categoryId} value={c.categoryId}>
+                    {c.categoryName ?? `Category ${c.categoryId}`}
                   </Option>
-                  {categories.map((c) => (
-                    <Option key={c.categoryId} value={c.categoryId}>
-                      {c.categoryName ?? `Category ${c.categoryId}`}
-                    </Option>
-                  ))}
-                </Select>
+                ))}
+              </Select>
 
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <InputNumber
-                    placeholder="Giá từ"
-                    min={0}
-                    style={{ width: 120 }}
-                    value={minPrice ?? undefined}
-                    onChange={(v) => setMinPrice(v === null || v === undefined ? null : Number(v))}
-                  />
-                  <InputNumber
-                    placeholder="Đến"
-                    min={0}
-                    style={{ width: 120 }}
-                    value={maxPrice ?? undefined}
-                    onChange={(v) => setMaxPrice(v === null || v === undefined ? null : Number(v))}
-                  />
-                 <Button type="primary"
-                    onClick={() => {
-                      // reset filters quickly
-                      setSelectedCategoryId(0);
-                      setStockFilter("all");
-                      setMinPrice(null);
-                      setMaxPrice(null);
-                      setProductQuery("");
-                      setGridLimit(30);
-                    }}
-                  >
-                    RESET
-                  </Button>
-                </div>              
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <InputNumber
+                  placeholder="Giá từ"
+                  min={0}
+                  style={{ width: 120 }}
+                  value={minPrice ?? undefined}
+                  onChange={(v) =>
+                    setMinPrice(
+                      v === null || v === undefined ? null : Number(v)
+                    )
+                  }
+                />
+                <InputNumber
+                  placeholder="Đến"
+                  min={0}
+                  style={{ width: 120 }}
+                  value={maxPrice ?? undefined}
+                  onChange={(v) =>
+                    setMaxPrice(
+                      v === null || v === undefined ? null : Number(v)
+                    )
+                  }
+                />
+                <Button
+                  type="primary"
+                  onClick={() => {
+                    // reset filters quickly
+                    setSelectedCategoryId(0);
+                    setStockFilter("all");
+                    setMinPrice(null);
+                    setMaxPrice(null);
+                    setProductQuery("");
+                    setGridLimit(30);
+                  }}
+                >
+                  RESET
+                </Button>
               </div>
-            
+            </div>
 
             <Divider />
 
@@ -626,7 +745,8 @@ const PosPageInternal: React.FC = () => {
                   >
                     {slicedProducts.length > 0 ? (
                       slicedProducts.map((p) => {
-                        const stock = p.currentStock ?? p.inventory?.quantity ?? 0;
+                        const stock =
+                          p.currentStock ?? p.inventory?.quantity ?? 0;
                         const isOutOfStock = stock <= 0;
                         const imgUrl = getImageUrl(p.imageUrl, p.image);
 
@@ -638,25 +758,45 @@ const PosPageInternal: React.FC = () => {
                               cursor: isOutOfStock ? "not-allowed" : "pointer",
                               borderRadius: 8,
                               overflow: "hidden",
-                              border: isOutOfStock ? "1px solid #ffccc7" : "1px solid #e8e8e8",
+                              border: isOutOfStock
+                                ? "1px solid #ffccc7"
+                                : "1px solid #e8e8e8",
                               background: "#fff",
                               boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-                              transition: "transform 120ms ease, box-shadow 120ms ease",
+                              transition:
+                                "transform 120ms ease, box-shadow 120ms ease",
                               display: "flex",
                               flexDirection: "column",
                               height: 260,
                               opacity: isOutOfStock ? 0.6 : 1,
                             }}
                             onMouseEnter={(e) => {
-                              (e.currentTarget as HTMLDivElement).style.transform = "translateY(-4px)";
-                              (e.currentTarget as HTMLDivElement).style.boxShadow = "0 6px 18px rgba(0,0,0,0.08)";
+                              (
+                                e.currentTarget as HTMLDivElement
+                              ).style.transform = "translateY(-4px)";
+                              (
+                                e.currentTarget as HTMLDivElement
+                              ).style.boxShadow = "0 6px 18px rgba(0,0,0,0.08)";
                             }}
                             onMouseLeave={(e) => {
-                              (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)";
-                              (e.currentTarget as HTMLDivElement).style.boxShadow = "0 1px 3px rgba(0,0,0,0.04)";
+                              (
+                                e.currentTarget as HTMLDivElement
+                              ).style.transform = "translateY(0)";
+                              (
+                                e.currentTarget as HTMLDivElement
+                              ).style.boxShadow = "0 1px 3px rgba(0,0,0,0.04)";
                             }}
                           >
-                            <div style={{ width: "100%", height: 140, background: "#fafafa", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <div
+                              style={{
+                                width: "100%",
+                                height: 140,
+                                background: "#fafafa",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
                               {imgUrl ? (
                                 <img
                                   alt={p.productName}
@@ -672,19 +812,47 @@ const PosPageInternal: React.FC = () => {
                                   }}
                                 />
                               ) : (
-                                <div style={{ color: "#999", fontSize: 12 }}>No Image</div>
+                                <div style={{ color: "#999", fontSize: 12 }}>
+                                  No Image
+                                </div>
                               )}
                             </div>
 
-                            <div style={{ padding: 10, display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
-                              <div style={{ fontWeight: 600, fontSize: 13, lineHeight: "1.2em", height: 34, overflow: "hidden" }} title={p.productName}>
+                            <div
+                              style={{
+                                padding: 10,
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 6,
+                                flex: 1,
+                              }}
+                            >
+                              <div
+                                style={{
+                                  fontWeight: 600,
+                                  fontSize: 13,
+                                  lineHeight: "1.2em",
+                                  height: 34,
+                                  overflow: "hidden",
+                                }}
+                                title={p.productName}
+                              >
                                 {p.productName}
                               </div>
-                              <div style={{ color: "#1890ff", fontWeight: 700 }}>{formatCurrency(p.price)}</div>
-                              <div style={{ color: stock > 0 ? "#666" : "red", fontSize: 12 }}>
+                              <div
+                                style={{ color: "#1890ff", fontWeight: 700 }}
+                              >
+                                {formatCurrency(p.price)}
+                              </div>
+                              <div
+                                style={{
+                                  color: stock > 0 ? "#666" : "red",
+                                  fontSize: 12,
+                                }}
+                              >
                                 Tồn: {stock}
                               </div>
-                                {/* <Button size="small" type="text" onClick={(e) => { e.stopPropagation(); setProductQuery(String(p.barcode ?? "")); }}>
+                              {/* <Button size="small" type="text" onClick={(e) => { e.stopPropagation(); setProductQuery(String(p.barcode ?? "")); }}>
                                   Mã: {p.barcode ?? "-"}
                                 </Button> */}
                             </div>
@@ -693,7 +861,9 @@ const PosPageInternal: React.FC = () => {
                       })
                     ) : (
                       <div style={{ padding: 12 }}>
-                        <Text type="secondary">Không tìm thấy sản phẩm nào.</Text>
+                        <Text type="secondary">
+                          Không tìm thấy sản phẩm nào.
+                        </Text>
                       </div>
                     )}
                   </div>
@@ -701,7 +871,9 @@ const PosPageInternal: React.FC = () => {
                   {/* Load more if items exceed limit */}
                   {displayedProducts.length > gridLimit && (
                     <div style={{ textAlign: "center", marginTop: 12 }}>
-                      <Button onClick={() => setGridLimit((prev) => prev + 30)}>Xem thêm</Button>
+                      <Button onClick={() => setGridLimit((prev) => prev + 30)}>
+                        Xem thêm
+                      </Button>
                     </div>
                   )}
 
@@ -874,13 +1046,15 @@ const PosPageInternal: React.FC = () => {
                   <Select
                     value={paymentMethod}
                     onChange={(v) =>
-                      setPaymentMethod(v as "cash" | "card" | "transfer")
+                      setPaymentMethod(v as "cash" | "card" | "transfer" | "momo" | "vnpay")
                     }
                     style={{ width: "100%" }}
                   >
                     <Option value="cash">Tiền mặt</Option>
                     <Option value="card">Thẻ</Option>
                     <Option value="transfer">Chuyển khoản</Option>
+                    <Option value="momo">MoMo</Option>
+                    <Option value="vnpay">VNPay</Option>
                   </Select>
                 </Form.Item>
                 {paymentMethod === "cash" && (
@@ -937,7 +1111,13 @@ const PosPageInternal: React.FC = () => {
             ? "Tiền mặt"
             : paymentMethod === "card"
             ? "Thẻ"
-            : "Chuyển khoản"}
+            : paymentMethod === "transfer"
+            ? "Chuyển khoản"
+            : paymentMethod === "momo"
+            ? "MoMo"
+            : paymentMethod === "vnpay"
+            ? "VNPay"
+            : "N/A"}
         </p>
         {paymentMethod === "cash" && (
           <>
@@ -971,7 +1151,11 @@ const PosPageInternal: React.FC = () => {
             }}
           />
           <div style={{ marginTop: 12 }}>
-            {scanning ? <Spin tip="Đang quét..." /> : <Button onClick={() => setScannerOpen(false)}>Đóng</Button>}
+            {scanning ? (
+              <Spin tip="Đang quét..." />
+            ) : (
+              <Button onClick={() => setScannerOpen(false)}>Đóng</Button>
+            )}
           </div>
         </div>
       </Modal>

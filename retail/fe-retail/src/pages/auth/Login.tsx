@@ -116,9 +116,6 @@ const Login: React.FC = () => {
                 >
                   Ghi nhớ đăng nhập
                 </Checkbox>
-                <Button type="link" className="p-0">
-                  Quên mật khẩu?
-                </Button>
               </div>
             </Form.Item>
 
@@ -134,7 +131,7 @@ const Login: React.FC = () => {
             </Form.Item>
           </Form>
 
-          <div className="mt-6 text-center">
+          {/* <div className="mt-6 text-center">
             <div className="mb-4">
               <span className="text-gray-600">Chưa có tài khoản? </span>
               <Link
@@ -149,7 +146,7 @@ const Login: React.FC = () => {
               <div>Admin: admin / password</div>
               <div>Staff: staff / password</div>
             </div>
-          </div>
+          </div> */}
         </Card>
       </div>
     </div>

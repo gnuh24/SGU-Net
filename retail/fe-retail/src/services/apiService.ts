@@ -39,10 +39,15 @@ class ApiService {
       },
       (error) => {
         if (error.response?.status === 401) {
-          // Unauthorized - clear token and redirect to login
-          localStorage.removeItem(STORAGE_KEYS.TOKEN);
-          localStorage.removeItem(STORAGE_KEYS.USER);
-          window.location.href = "/login";
+          // Only redirect if already logged in (token exists but expired)
+          // Don't redirect on login page errors
+          const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
+          if (token && !error.config?.url?.includes("/auth/")) {
+            // Token expired - clear and redirect
+            localStorage.removeItem(STORAGE_KEYS.TOKEN);
+            localStorage.removeItem(STORAGE_KEYS.USER);
+            window.location.href = "/login";
+          }
         }
         return Promise.reject(this.handleError(error));
       }

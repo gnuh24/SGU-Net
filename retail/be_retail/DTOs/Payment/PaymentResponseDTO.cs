@@ -6,7 +6,7 @@ namespace be_retail.DTOs
         public int OrderId { get; set; }
         public decimal Amount { get; set; }
         public string PaymentMethod { get; set; } = "cash";
-        public DateTime PaymentDate { get; set; }
-
+        public DateTime? PaymentDate { get; set; }
+        public long PaymentTranId { get; set; }
     }
 }

@@ -125,8 +125,9 @@ CREATE TABLE payments (
     payment_id INT AUTO_INCREMENT PRIMARY KEY,
     order_id INT NOT NULL,
     amount DECIMAL(10,2) NOT NULL,
-    payment_method ENUM('cash','card','bank_transfer','e-wallet') DEFAULT 'cash',
-    payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    payment_method ENUM('cash','card','bank_transfer','e-wallet','momo','vnpay') DEFAULT 'cash',
+    payment_date TIMESTAMP NULL DEFAULT NULL,
+    payment_tranid BIGINT DEFAULT 0
 );
 
 -- DATA CUSTOMERS
@@ -179,3 +180,38 @@ INSERT INTO order_items (order_id,product_id,quantity,price,subtotal) VALUES
 -- DATA PAYMENTS
 INSERT INTO payments (order_id,amount,payment_method) VALUES
 (1, 1192330, 'cash'),(2, 1731608, 'e-wallet'),(3, 720782, 'e-wallet'),(4, 0, 'card'),(5, 94180, 'cash'),(6, 3788671, 'cash'),(7, 410075.2, 'e-wallet'),(8, 1543526.1, 'cash'),(9, 2484051, 'cash'),(10, 970239, 'card'),(11, 1532741, 'e-wallet'),(12, 1785354, 'card'),(13, 1488276, 'card'),(14, 2846096, 'cash'),(15, 158100.0, 'card'),(16, 974090, 'cash'),(17, 467148, 'cash'),(18, 394342, 'e-wallet'),(19, 1670791.45, 'card'),(20, 2889813, 'card'),(21, 2288406, 'cash'),(22, 331008, 'e-wallet'),(23, 1831623.35, 'cash'),(24, 967883.1, 'e-wallet'),(25, 293847, 'cash'),(26, 208526.4, 'cash'),(27, 933199, 'cash'),(28, 2609123, 'card'),(29, 1925033.6, 'cash'),(30, 2912134, 'card');
+
+
+-- ================================================
+-- UPDATE PAYMENT METHOD ENUM (Include momo and vnpay)
+-- ================================================
+ALTER TABLE payments 
+MODIFY COLUMN payment_method ENUM('cash','card','bank_transfer','e-wallet','momo','vnpay') DEFAULT 'cash';
+
+-- ================================================
+-- ENSURE PAYMENT_DATE IS NULLABLE (for pending payments)
+-- ================================================
+ALTER TABLE payments 
+MODIFY COLUMN payment_date TIMESTAMP NULL DEFAULT NULL;
+
+-- ================================================
+-- ENSURE PAYMENT_TRANID EXISTS (for transaction IDs from payment gateways)
+-- ================================================
+-- Add payment_tranid column if it doesn't exist (safe check)
+SET @dbname = DATABASE();
+SET @tablename = 'payments';
+SET @columnname = 'payment_tranid';
+SET @preparedStatement = (SELECT IF(
+  (
+    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE
+      (TABLE_SCHEMA = @dbname)
+      AND (TABLE_NAME = @tablename)
+      AND (COLUMN_NAME = @columnname)
+  ) > 0,
+  'SELECT 1',
+  CONCAT('ALTER TABLE ', @tablename, ' ADD COLUMN ', @columnname, ' BIGINT DEFAULT 0')
+));
+PREPARE alterIfNotExists FROM @preparedStatement;
+EXECUTE alterIfNotExists;
+DEALLOCATE PREPARE alterIfNotExists;
