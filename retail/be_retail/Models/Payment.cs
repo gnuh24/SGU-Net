@@ -19,10 +19,10 @@ namespace be_retail.Models
 
         [Column("payment_method")]
         [Required]
-        public string PaymentMethod { get; set; } = "cash"; // 'cash','card','bank_transfer','e-wallet'
+        public string PaymentMethod { get; set; } = "cash"; // 'cash','card','bank_transfer','e-wallet','momo','vnpay'
 
         [Column("payment_date")]
-        public DateTime PaymentDate { get; set; } = DateTime.Now;
+        public DateTime? PaymentDate { get; set; }
 
         // 🔗 Navigation property
         [ForeignKey("OrderId")]

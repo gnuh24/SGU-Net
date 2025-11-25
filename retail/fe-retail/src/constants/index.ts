@@ -28,6 +28,7 @@ export const PAYMENT_METHODS = {
     CASH: "cash",
     CARD: "card",
     TRANSFER: "transfer",
+    MOMO: "momo",
 } as const;
 
 // Discount Types

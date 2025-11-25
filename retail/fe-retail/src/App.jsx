@@ -39,6 +39,8 @@ import SupplierList from "./pages/suppliers/SupplierList";
 import InventoryList from "./pages/inventories/InventoryList";
 import Customers from "./pages/customers/Customers";
 import Pos from "./pages/pos/Pos";
+import MoMoReturn from "./pages/payment/MoMoReturn";
+import VNPayReturn from "./pages/payment/VNPayReturn";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -77,6 +79,8 @@ const AppContent = () => {
         {/* Public routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/payment/momo/return" element={<MoMoReturn />} />
+        <Route path="/payment/vnpay/return" element={<VNPayReturn />} />
 
         {/* Protected routes */}
         <Route path="/" element={<AppLayout />}>
