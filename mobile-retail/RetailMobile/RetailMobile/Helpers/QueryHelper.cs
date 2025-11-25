@@ -16,15 +16,15 @@ public static class QueryHelper
 
         foreach (PropertyInfo props in obj.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
-            var value =  props.GetValue(obj);
+            var value = props.GetValue(obj);
             if (value != null)
             {
-                dict[props.Name] = value.ToString();
-            }    
-            
+                dict[props.Name] = value.ToString()!;
+            }
+
         }
 
-        return dict; 
+        return dict;
     }
 
     public static Dictionary<string, string> ToQueryParams(params (string Key, object? Value)[] items)

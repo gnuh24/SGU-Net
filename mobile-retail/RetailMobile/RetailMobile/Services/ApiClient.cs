@@ -8,8 +8,13 @@ namespace RetailMobile.Services;
 public class ApiClient
 {
     private readonly HttpClient _http;
-    private readonly JsonSerializerOptions _jsonOptions;
+    private readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        WriteIndented = true
+    };
     private readonly ITokenService _tokenService;
+
     public ApiClient(IOptions<ApiClientConfig> config, ITokenService tokenService)
     {
         _tokenService = tokenService;
@@ -19,23 +24,14 @@ public class ApiClient
 #if ANDROID
         if (cfg.UseNativeHandler)
         {
-            _http = new HttpClient(new Xamarin.Android.Net.AndroidMessageHandler())
-            {
-                BaseAddress = new Uri(baseUrl)
-            };
-            return;
+            var handler = new Xamarin.Android.Net.AndroidMessageHandler();
+            _http = new HttpClient(handler) { BaseAddress = new Uri(baseUrl) };
         }
+        else
 #endif
-        _http = new HttpClient()
         {
-            BaseAddress = new Uri(baseUrl)
-        };
-
-        _jsonOptions = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true,
-            WriteIndented = true
-        };
+            _http = new HttpClient { BaseAddress = new Uri(baseUrl) };
+        }
     }
 
 
