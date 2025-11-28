@@ -9,7 +9,6 @@ interface Supplier {
   address: string;
   phone: string;
   email: string;
-  createdAt?: string;
 }
 
 const API_URL = "http://localhost:5260/api/v1/suppliers";
@@ -35,16 +34,20 @@ const SupplierList: React.FC = () => {
         page: String(page),
         pageSize: String(pageSize),
       });
-      const res = await axios.get(`${API_URL}?${params.toString()}`);
-      const data = res.data?.data || [];
-      const totalCount = res.data?.total || res.data?.totalCount || data.length;
-
-      if (Array.isArray(data)) {
-        setSuppliers(data);
+      const res = await fetch(`${API_URL}?${params.toString()}`);
+      const data =await res.json();
+      const totalCount = data.total;
+      let list: Supplier[] = [];
+      list = data.data.data;
+      console.log("Fetched suppliers:", list);
+      if (Array.isArray(list)) {
+        setSuppliers(list);
         setTotal(totalCount);
+        console.log("array :", list);
       } else {
         setSuppliers([]);
         setTotal(0);
+        console.log("kh array :",list);
       }
     } catch (err) {
       console.error("Lỗi khi fetch suppliers:", err);

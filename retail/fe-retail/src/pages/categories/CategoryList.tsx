@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Table, Button, Space, Modal, Form, Input, message } from "antd";
 import axios from "axios";
 import { SearchOutlined, PlusOutlined } from "@ant-design/icons";
+import { da } from "date-fns/locale";
 
 interface Category {
   categoryId: number;
@@ -33,15 +34,18 @@ const CategoryList: React.FC = () => {
       });
       if (search) params.append("search", search);
 
-      const res = await axios.get(`${API_URL}?${params.toString()}`);
-      const data = res.data?.data || [];
-      const totalCount = res.data?.total || res.data?.totalCount || data.length;
-
-      if (Array.isArray(data)) {
-        setCategories(data);
+      const res = await fetch(`${API_URL}?${params.toString()}`);
+      const data =await res.json()
+      const totalCount = data.total;
+      let list: Category[] = [];
+      list = data.data.data;
+      if (Array.isArray(list)) {
+        setCategories(list);
+        console.log("Fetched categories:", data);
         setTotal(totalCount);
       } else {
         setCategories([]);
+        console.log("Fetched find categories: []");
         setTotal(0);
       }
     } catch (error) {
