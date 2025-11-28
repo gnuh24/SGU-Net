@@ -105,30 +105,30 @@ const CategoryList: React.FC = () => {
   const columns = [
     { title: "Mã danh mục", dataIndex: "categoryId", key: "categoryId" },
     { title: "Tên danh mục", dataIndex: "name", key: "name" },
-    {
-      title: "Hành động",
-      key: "action",
-      render: (_: unknown, record: Category) => (
-        <Space>
-          <Button
-            type="link"
-            onClick={() => {
-              form.setFieldsValue(record);
-              setIsModalOpen(true);
-            }}
-          >
-            Sửa
-          </Button>
-          <Button
-            danger
-            type="link"
-            onClick={() => handleDelete(record.categoryId)}
-          >
-            Xóa
-          </Button>
-        </Space>
-      ),
-    },
+    // {
+    //   title: "Hành động",
+    //   key: "action",
+    //   render: (_: unknown, record: Category) => (
+    //     <Space>
+    //       <Button
+    //         type="link"
+    //         onClick={() => {
+    //           form.setFieldsValue(record);
+    //           setIsModalOpen(true);
+    //         }}
+    //       >
+    //         Sửa
+    //       </Button>
+    //       <Button
+    //         danger
+    //         type="link"
+    //         onClick={() => handleDelete(record.categoryId)}
+    //       >
+    //         Xóa
+    //       </Button>
+    //     </Space>
+    //   ),
+    // },
   ];
 
   return (
