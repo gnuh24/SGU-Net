@@ -154,7 +154,6 @@ const CustomersPage: React.FC = () => {
       width: 180,
       render: (_, record) => (
         <Space>
-                   {" "}
           <Button
             icon={<EyeOutlined />}
             onClick={() => {
@@ -163,7 +162,6 @@ const CustomersPage: React.FC = () => {
               fetchOrders(record.customerId);
             }}
           />
-                   {" "}
           <Button
             icon={<EditOutlined />}
             onClick={() => {
@@ -172,13 +170,11 @@ const CustomersPage: React.FC = () => {
               setOpenModal(true);
             }}
           />
-                   {" "}
           <Button
             icon={<DeleteOutlined />}
             danger
             onClick={() => handleDelete(record.customerId)}
           />
-                 {" "}
         </Space>
       ),
     },
@@ -203,17 +199,15 @@ const CustomersPage: React.FC = () => {
 
   return (
     <div className="p-6">
-           {" "}
       <Card
         title={
           <div className="flex justify-between items-center">
-                       {" "}
             <Title level={4} className="!mb-0 text-[#1677ff]">
-                            Quản lý Khách hàng            {" "}
+                            Quản lý Khách hàng      
             </Title>
-                       {" "}
+
             <div className="flex gap-2">
-                           {" "}
+
               <Input
                 prefix={<SearchOutlined />}
                 placeholder="Tìm theo tên hoặc SĐT..."
@@ -222,7 +216,6 @@ const CustomersPage: React.FC = () => {
                 onChange={(e) => setSearch(e.target.value)}
                 style={{ width: 240 }}
               />
-                           {" "}
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
@@ -232,11 +225,9 @@ const CustomersPage: React.FC = () => {
                   setOpenModal(true);
                 }}
               >
-                                Thêm khách hàng              {" "}
+                                Thêm khách hàng       
               </Button>
-                         {" "}
             </div>
-                     {" "}
           </div>
         }
         className="shadow-md rounded-xl"
@@ -263,7 +254,7 @@ const CustomersPage: React.FC = () => {
           }}
         />
       </Card>
-            {/* Add/Edit Modal */}     {" "}
+            {/* Add/Edit Modal */}
       <Modal
         open={openModal}
         title={editingCustomer ? "Cập nhật khách hàng" : "Thêm khách hàng mới"}
@@ -276,7 +267,6 @@ const CustomersPage: React.FC = () => {
         }}
         onOk={handleSubmit}
       >
-               {" "}
         <Form form={form} layout="vertical">
                    {" "}
           <Form.Item
@@ -284,9 +274,9 @@ const CustomersPage: React.FC = () => {
             label="Tên khách hàng"
             rules={[{ required: true, message: "Nhập tên khách hàng!" }]}
           >
-                        <Input />         {" "}
+          <Input />
           </Form.Item>
-                   {" "}
+                  
           <Form.Item
             name="phone"
             label="Số điện thoại"
@@ -298,30 +288,33 @@ const CustomersPage: React.FC = () => {
               },
             ]}
           >
-                        <Input />         {" "}
+          <Input />
           </Form.Item>
-                   {" "}
+                 
           <Form.Item
             name="email"
             label="Email"
             rules={[
+              { required: true, message: "Vui lòng nhập email!" },
               {
                 type: "email",
                 message: "Email không đúng định dạng!",
               },
             ]}
           >
-                        <Input type="email" />         {" "}
+            <Input type="email" />
           </Form.Item>
-                   {" "}
-          <Form.Item name="address" label="Địa chỉ">
-                        <Input />         {" "}
+
+          <Form.Item
+            name="address"
+            label="Địa chỉ"
+            rules={[{ required: true, message: "Vui lòng nhập địa chỉ!" }]}
+          >
+            <Input />
           </Form.Item>
-                 {" "}
         </Form>
-             {" "}
       </Modal>
-            {/* Customer Detail Modal */}     {" "}
+            {/* Customer Detail Modal */}
       <Modal
         open={openDetail}
         title="Chi tiết khách hàng"
@@ -332,48 +325,34 @@ const CustomersPage: React.FC = () => {
           setOrders([]);
         }}
       >
-               {" "}
         {editingCustomer ? (
           <>
-                       {" "}
             <Card title="Thông tin khách hàng" style={{ marginBottom: 16 }}>
-                           {" "}
               <Descriptions bordered column={2}>
-                               {" "}
                 <Descriptions.Item label="Mã khách hàng">
-                                    {editingCustomer.customerId}               {" "}
+                                    {editingCustomer.customerId}
                 </Descriptions.Item>
-                               {" "}
                 <Descriptions.Item label="Tên khách hàng">
-                                    {editingCustomer.name}               {" "}
+                                    {editingCustomer.name}
                 </Descriptions.Item>
-                               {" "}
                 <Descriptions.Item label="Email">
                   {editingCustomer.email}
                 </Descriptions.Item>
-                               {" "}
                 <Descriptions.Item label="SĐT">
                   {editingCustomer.phone}
                 </Descriptions.Item>
-                               {" "}
                 <Descriptions.Item label="Địa chỉ" span={2}>
-                                    {editingCustomer.address}               {" "}
+                                    {editingCustomer.address}
                 </Descriptions.Item>
-                               {" "}
                 <Descriptions.Item label="Ngày tạo" span={2}>
-                                   {" "}
                   {editingCustomer.createdAt
                     ? new Date(editingCustomer.createdAt).toLocaleString()
                     : "—"}
-                                 {" "}
+
                 </Descriptions.Item>
-                             {" "}
               </Descriptions>
-                         {" "}
             </Card>
-                       {" "}
             <Card title="Danh sách đơn hàng đã mua">
-                           {" "}
               {ordersLoading ? (
                 <Spin />
               ) : (
@@ -385,16 +364,12 @@ const CustomersPage: React.FC = () => {
                   locale={{ emptyText: "Chưa có đơn hàng nào." }}
                 />
               )}
-                         {" "}
             </Card>
-                     {" "}
           </>
         ) : (
           <Spin />
         )}
-             {" "}
       </Modal>
-         {" "}
     </div>
   );
 };
