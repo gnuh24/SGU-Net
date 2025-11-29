@@ -32,7 +32,8 @@ namespace be_retail.Controllers
                         UserId = u.UserId,
                         Username = u.Username!,
                         FullName = u.FullName!,
-                        Role = u.Role!
+                        Role = u.Role!,
+                        Status = u.Status!
                     }).ToList();
 
                     var response = new PagedResponse<UserResponseDTO>(data, total, page.Value, pageSize);
@@ -53,7 +54,8 @@ namespace be_retail.Controllers
                         UserId = u.UserId,
                         Username = u.Username!,
                         FullName = u.FullName!,
-                        Role = u.Role!
+                        Role = u.Role!,
+                        Status = u.Status!
                     }).ToList();
 
                     return Ok(new ApiResponse<object>
@@ -96,7 +98,8 @@ namespace be_retail.Controllers
                     UserId = user.UserId,
                     Username = user.Username!,
                     FullName = user.FullName!,
-                    Role = user.Role!
+                    Role = user.Role!,
+                    Status = user.Status!
                 };
 
                 return Ok(new ApiResponse<UserResponseDTO>

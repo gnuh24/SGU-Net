@@ -56,7 +56,7 @@ const UserForm: React.FC = () => {
           name="username"
           rules={[{ required: true }]}
         >
-          <Input />
+          <Input disabled={isEdit} />
         </Form.Item>
 
         {!isEdit && (
@@ -76,9 +76,20 @@ const UserForm: React.FC = () => {
         <Form.Item label="Role" name="role" rules={[{ required: true }]}>
           <Select>
             <Option value="staff">Nhân viên</Option>
+            <Option value="manager">Quản lý</Option>
             <Option value="admin">Quản trị viên</Option>
           </Select>
         </Form.Item>
+
+        {isEdit && (
+          <Form.Item label="Trạng thái" name="status" rules={[{ required: true }]}>
+            <Select>
+              <Option value="active">Hoạt động</Option>
+              <Option value="inactive">Không hoạt động</Option>
+              <Option value="banned">Đã khóa</Option>
+            </Select>
+          </Form.Item>
+        )}
 
         <Form.Item>
           <Button type="primary" htmlType="submit">

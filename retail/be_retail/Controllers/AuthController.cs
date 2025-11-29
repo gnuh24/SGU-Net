@@ -135,7 +135,7 @@ namespace be_retail.Controllers
 
 
         [HttpPost("refresh-token")]
-        [Authorize(Roles = "admin,staff")]
+        [Authorize(Roles = "admin,manager,staff")]
         public IActionResult RefreshToken([FromBody] RefreshTokenRequest request)
         {
             try

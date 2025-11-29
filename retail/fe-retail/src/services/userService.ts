@@ -92,6 +92,7 @@ class UserService {
     if (userData.password) backendData.password = userData.password;
     if (userData.full_name) backendData.fullName = userData.full_name;
     if (userData.role) backendData.role = userData.role;
+    if (userData.status) backendData.status = userData.status;
 
     const response = await apiService.put(`/users/${id}`, backendData);
     return this.mapUserToFrontend(response.data);

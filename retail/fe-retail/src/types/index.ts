@@ -2,8 +2,8 @@ export interface User {
   id: number;
   username: string;
   full_name: string;
-  role: "admin" | "staff";
-  status?: "active" | "inactive";
+  role: "admin" | "manager" | "staff";
+  status?: "active" | "inactive" | "banned";
   created_at?: string;
   updated_at?: string;
 }
@@ -187,7 +187,8 @@ export interface UserFormData {
   username: string;
   password?: string;
   full_name: string;
-  role: "admin" | "staff";
+  role: "admin" | "manager" | "staff";
+  status?: "active" | "inactive" | "banned";
 }
 
 export interface ProductFormData {
