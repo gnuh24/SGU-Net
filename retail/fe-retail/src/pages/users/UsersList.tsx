@@ -44,7 +44,11 @@ const UsersList: React.FC = () => {
       onOk: async () => {
         try {
           await userService.updateUser(record.id, { status: newStatus });
-          message.success(`${action.charAt(0).toUpperCase() + action.slice(1)} tài khoản thành công`);
+          message.success(
+            `${
+              action.charAt(0).toUpperCase() + action.slice(1)
+            } tài khoản thành công`
+          );
           fetchUsers();
         } catch (err: any) {
           message.error(err.message || `Không thể ${action} tài khoản`);
@@ -100,7 +104,7 @@ const UsersList: React.FC = () => {
       title: "Actions",
       key: "actions",
       width: 200,
-      render: (_: any, record: User) => (
+      render: (_: any, record: User) =>
         record.role === "admin" ? null : (
           <Space>
             <Button onClick={() => handleEdit(record)}>Sửa</Button>
@@ -115,8 +119,7 @@ const UsersList: React.FC = () => {
               Xóa
             </Button> */}
           </Space>
-        )
-      ),
+        ),
     },
   ];
 

@@ -52,13 +52,17 @@ namespace be_retail.Services
                     TotalAmount = order.TotalAmount,
                     DiscountAmount = order.DiscountAmount,
                     OrderDate = order.OrderDate,
+                    UserName = order.User?.FullName,           // ✅ THÊM: Tên người lập hoá đơn
+                    PromoCode = order.Promotion?.PromoCode,    // ✅ THÊM: Mã khuyến mãi
                     OrderItems = order.OrderItems.Select(oi => new OrderItemResponseDTO
                     {
                         OrderItemId = oi.OrderItemId,
                         ProductId = oi.ProductId,
                         Quantity = oi.Quantity,
                         Price = oi.Price,
-                        Subtotal = oi.Subtotal
+                        Subtotal = oi.Subtotal,
+                        ProductName = oi.Product?.Name,
+                        ProductImage = oi.Product?.Image
                     }).ToList(),
                     Payment = new PaymentResponseDTO
                     {

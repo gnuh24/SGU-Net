@@ -22,6 +22,7 @@ import {
 } from "@ant-design/icons";
 import { useSearchParams, useLocation } from "react-router-dom";
 import { apiService } from "../../services/apiService";
+import { getImageUrl } from "../../utils/imageUtils";
 import dayjs from "dayjs";
 
 const { RangePicker } = DatePicker;
@@ -36,7 +37,7 @@ interface Order {
   discountAmount: number;
   status: string;
   userName?: string;
-  promoName?: string;
+  promoCode?: string;  // ✅ Đổi từ promoName thành promoCode để match API
   orderItems?: OrderItem[];
   payment?: Payment;
 }
@@ -44,6 +45,7 @@ interface Order {
 interface OrderItem {
   orderItemId: number;
   productName: string;
+  productImage?: string;
   quantity: number;
   price: number;
 }
@@ -180,6 +182,7 @@ const OrdersList: React.FC = () => {
     try {
       const response = await apiService.get(`/orders/${orderId}`);
       const data = unwrapResponse(response);
+
       setSelectedOrder(data);
       setDetailModalVisible(true);
     } catch (error: any) {
@@ -501,7 +504,7 @@ const OrdersList: React.FC = () => {
                   </Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="Khuyến mãi">
-                  {selectedOrder.promoName || "Không có"}
+                  {selectedOrder.promoCode || "Không có"}
                 </Descriptions.Item>
               </Descriptions>
             </Card>
@@ -516,8 +519,21 @@ const OrdersList: React.FC = () => {
                 columns={[
                   {
                     title: "Sản phẩm",
-                    dataIndex: "productName",
-                    key: "productName",
+                    key: "product",
+                    width: 250,
+                    render: (_: any, record: OrderItem) => (
+                      <div className="flex items-center space-x-3">
+                        <img
+                          src={getImageUrl(undefined, record.productImage) || "/placeholder-product.png"}
+                          alt={record.productName}
+                          className="w-10 h-10 object-cover rounded border"
+                          onError={(e) => {
+                            e.currentTarget.src = "/placeholder-product.png";
+                          }}
+                        />
+                        <span className="font-medium">{record.productName}</span>
+                      </div>
+                    ),
                   },
                   {
                     title: "Số lượng",

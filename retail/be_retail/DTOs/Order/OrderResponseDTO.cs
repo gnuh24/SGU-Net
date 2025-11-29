@@ -12,5 +12,9 @@ namespace be_retail.DTOs
         public DateTime OrderDate { get; set; }
         public List<OrderItemResponseDTO> OrderItems { get; set; } = new List<OrderItemResponseDTO>();
         public PaymentResponseDTO Payment { get; set; } = null!;
+
+        // ✅ THÊM: Thông tin bổ sung cho chi tiết hoá đơn (không ảnh hưởng đến logic bán hàng)
+        public string? UserName { get; set; }      // Tên người lập hoá đơn
+        public string? PromoCode { get; set; }     // Mã khuyến mãi đã áp dụng
     }
 }
