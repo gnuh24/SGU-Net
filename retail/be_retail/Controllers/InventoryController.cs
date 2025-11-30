@@ -6,12 +6,12 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace be_retail.Controllers
 {
-    
+
     [ApiController]
     [Route("api/v1/inventories")]
     public class InventoryController : ControllerBase
     {
-        private readonly InventoryService _inventoryService; 
+        private readonly InventoryService _inventoryService;
 
         public InventoryController(InventoryService inventoryService)
         {
@@ -104,8 +104,8 @@ namespace be_retail.Controllers
             }
 
             var result = await _inventoryService.StockInAsync(form);
-            
-            if (result.Status == 1) 
+
+            if (result.Status == 1)
             {
                 return Ok(new ApiResponse<InventoryResponseDTO>
                 {
@@ -139,30 +139,6 @@ namespace be_retail.Controllers
         }
 
         // Các filter theo categoryId/supplierId đã được tích hợp vào GET /inventories
-
-        // 🟢 Lấy danh sách sản phẩm sắp hết hàng
-        [HttpGet("low-stock")]
-        public async Task<IActionResult> GetLowStockProducts(
-            [FromQuery] int threshold = 10,
-            [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 10)
-        {
-            var result = await _inventoryService.GetLowStockProductsAsync(threshold, page, pageSize);
-
-            return Ok(new ApiResponse<object>
-            {
-                Status = 200,
-                Message = "Get low stock products successfully.",
-                Data = new
-                {
-                    total = result.Total,
-                    page = result.Page,
-                    pageSize = result.PageSize,
-                    totalPages = result.TotalPages,
-                    data = result.Data
-                }
-            });
-        }
 
         // 🟢 Cập nhật số lượng tồn kho theo InventoryId (giá trị tuyệt đối)
         [HttpPut("{id}")]

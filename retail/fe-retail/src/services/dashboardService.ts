@@ -78,7 +78,7 @@ class DashboardService {
       const yesterdayData = this.unwrapResponse(yesterdayRes);
 
       // Get low stock products count
-      const lowStockRes = await apiService.get("/inventories/low-stock");
+      const lowStockRes = await apiService.get("/products/low-stock");
       const lowStockData = this.unwrapResponse(lowStockRes);
       const lowStockCount = Array.isArray(lowStockData)
         ? lowStockData.length
@@ -88,22 +88,22 @@ class DashboardService {
       const revenueGrowth =
         yesterdayData.totalRevenue > 0
           ? ((todayData.totalRevenue - yesterdayData.totalRevenue) /
-              yesterdayData.totalRevenue) *
-            100
+            yesterdayData.totalRevenue) *
+          100
           : 0;
 
       const ordersGrowth =
         yesterdayData.totalOrders > 0
           ? ((todayData.totalOrders - yesterdayData.totalOrders) /
-              yesterdayData.totalOrders) *
-            100
+            yesterdayData.totalOrders) *
+          100
           : 0;
 
       const customersGrowth =
         yesterdayData.totalCustomers > 0
           ? ((todayData.totalCustomers - yesterdayData.totalCustomers) /
-              yesterdayData.totalCustomers) *
-            100
+            yesterdayData.totalCustomers) *
+          100
           : 0;
 
       return {
@@ -155,15 +155,15 @@ class DashboardService {
         // Backend returns orderDate field
         const orderDate = new Date(
           order.orderDate ||
-            order.order_date ||
-            order.createdAt ||
-            order.created_at
+          order.order_date ||
+          order.createdAt ||
+          order.created_at
         );
         const timeStr = !isNaN(orderDate.getTime())
           ? orderDate.toLocaleTimeString("vi-VN", {
-              hour: "2-digit",
-              minute: "2-digit",
-            })
+            hour: "2-digit",
+            minute: "2-digit",
+          })
           : "N/A";
 
         return {
@@ -186,7 +186,7 @@ class DashboardService {
    */
   async getLowStockProducts(limit: number = 5): Promise<LowStockProduct[]> {
     try {
-      const response = await apiService.get("/inventories/low-stock", {
+      const response = await apiService.get("/products/low-stock", {
         params: { limit },
       });
 
