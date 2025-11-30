@@ -8,7 +8,7 @@ using System.Linq.Expressions;
 namespace be_retail.Repositories
 {
     public class InventoryRepository
-{
+    {
         private readonly AppDbContext _context;
 
         public InventoryRepository(AppDbContext context)
@@ -27,7 +27,7 @@ namespace be_retail.Repositories
 
             if (!string.IsNullOrEmpty(search))
             {
-                query = query.Where(i => i.Product.Name.Contains(search) || 
+                query = query.Where(i => i.Product.Name.Contains(search) ||
                                         i.Product.Barcode!.Contains(search) ||
                                         (i.Product.Category != null && i.Product.Category.Name.Contains(search)) ||
                                         (i.Product.Supplier != null && i.Product.Supplier.Name.Contains(search)));
@@ -310,11 +310,11 @@ namespace be_retail.Repositories
                 .ToListAsync();
         }
 
-        public async Task<(bool IsSufficient, List<(int InventoryId, int QuantityToDeduct)> InventoryDeductions, int TotalAvailable)> 
+        public async Task<(bool IsSufficient, List<(int InventoryId, int QuantityToDeduct)> InventoryDeductions, int TotalAvailable)>
             CheckAndGetInventoryForSaleAsync(int productId, int requestedQuantity)
         {
             var inventories = await GetInventoriesByProductIdFIFOAsync(productId);
-            
+
             var totalAvailable = inventories.Sum(i => i.Quantity);
             if (totalAvailable < requestedQuantity)
             {
@@ -355,6 +355,57 @@ namespace be_retail.Repositories
             return await _context.Inventories
                 .Where(i => i.ProductId == productId)
                 .SumAsync(i => i.Quantity);
+        }
+        public async Task<List<ProductResponseDTO>> GetProductsWithLowTotalStockAsync(int threshold)
+        {
+            var lowStockProductIds = await _context.Inventories
+                .GroupBy(i => i.ProductId)
+                .Select(g => new
+                {
+                    ProductId = g.Key,
+                    TotalQuantity = g.Sum(i => i.Quantity)
+                })
+                .Where(x => x.TotalQuantity < threshold)
+                .Select(x => x.ProductId)
+                .ToListAsync();
+
+            if (!lowStockProductIds.Any())
+            {
+                return new List<ProductResponseDTO>();
+            }
+
+            var products = await _context.Products
+                .Include(p => p.Category)
+                .Include(p => p.Supplier)
+                .Where(p => lowStockProductIds.Contains(p.ProductId) && !p.IsDeleted)
+                .ToListAsync();
+
+            var result = new List<ProductResponseDTO>();
+            foreach (var p in products)
+            {
+                var totalStock = await _context.Inventories
+                    .Where(i => i.ProductId == p.ProductId)
+                    .SumAsync(i => i.Quantity);
+
+                result.Add(new ProductResponseDTO
+                {
+                    ProductId = p.ProductId,
+                    CategoryId = p.CategoryId,
+                    SupplierId = p.SupplierId,
+                    ProductName = p.Name,
+                    Barcode = p.Barcode,
+                    Image = p.Image,
+                    Price = p.Price,
+                    Unit = p.Unit,
+                    CreatedAt = p.CreatedAt,
+                    IsDeleted = p.IsDeleted,
+                    CategoryName = p.Category?.Name,
+                    SupplierName = p.Supplier?.Name,
+                    CurrentStock = totalStock
+                });
+            }
+
+            return result;
         }
     }
 }

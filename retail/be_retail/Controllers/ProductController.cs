@@ -65,6 +65,26 @@ namespace be_retail.Controllers
             });
         }
 
+        // 🟢 Lấy danh sách sản phẩm sắp hết hàng (tổng tồn kho < threshold)
+        [HttpGet("low-stock")]
+        public async Task<IActionResult> GetLowStockProducts([FromQuery] int threshold = 20)
+        {
+            var products = await _inventoryService.GetProductsWithLowTotalStockAsync(threshold);
+
+            // Map ImageUrl
+            foreach (var p in products)
+            {
+                p.ImageUrl = BuildImageUrl(p.Image);
+            }
+
+            return Ok(new ApiResponse<List<ProductResponseDTO>>
+            {
+                Status = 200,
+                Message = "Get low stock products successfully.",
+                Data = products
+            });
+        }
+
         // 🟢 Lấy danh sách sản phẩm cho Public User (không cần authentication)
         [HttpGet("public")]
         [AllowAnonymous]
