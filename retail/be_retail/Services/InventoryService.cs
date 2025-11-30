@@ -156,22 +156,14 @@ namespace be_retail.Services
             }
         }
 
-        public async Task<PagedResponse<InventoryResponseDTO>> GetLowStockProductsAsync(
-            int threshold,
-            int page,
-            int pageSize)
-        {
-            return await _inventoryRepository.GetLowStockProductsAsync(threshold, page, pageSize);
-        }
-
         public async Task<int> GetTotalStockAsync(int productId)
         {
             return await _inventoryRepository.GetTotalStockByProductIdAsync(productId);
         }
 
-        public async Task<List<ProductResponseDTO>> GetProductsWithLowTotalStockAsync(int threshold)
+        public async Task<PagedResponse<ProductResponseDTO>> GetProductsWithLowTotalStockAsync(int threshold, int page, int pageSize)
         {
-            return await _inventoryRepository.GetProductsWithLowTotalStockAsync(threshold);
+            return await _inventoryRepository.GetProductsWithLowTotalStockAsync(threshold, page, pageSize);
         }
     }
 }
