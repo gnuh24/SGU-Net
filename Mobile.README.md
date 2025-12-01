@@ -54,6 +54,8 @@ Dưới đây là hướng dẫn chi tiết các bước chuẩn bị môi trư�
 
 ---
 
+## Chạy lệnh CLI ở folder này mobile-retail\RetailMobile\RetailMobile
+
 ## 3. Cài Workloads cần thiết (dotnet CLI)
 
 Chạy terminal hoặc PowerShell:
