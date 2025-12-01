@@ -130,7 +130,7 @@ CREATE TABLE payments (
     order_id INT NOT NULL,
     amount DECIMAL(10,2) NOT NULL,
     payment_method ENUM('cash','card','bank_transfer','e-wallet','momo','vnpay') DEFAULT 'cash',
-    payment_date TIMESTAMP NULL DEFAULT NULL,
+    payment_date TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     payment_tranid BIGINT DEFAULT 0
 );
 
@@ -167,7 +167,7 @@ INSERT INTO products (category_id,supplier_id,product_name,barcode,image,price,u
 
 -- DATA INVENTORY
 INSERT INTO inventory (product_id,quantity) VALUES
-(1, 25),(2, 169),(3, 77),(4, 169),(5, 90),(6, 105),(7, 125),(8, 37),(9, 74),(10, 149),(11, 69),(12, 23),(13, 46),(14, 144),(15, 134),(16, 182),(17, 99),(18, 72),(19, 128),(20, 123),(21, 155),(22, 78),(23, 166),(24, 117),(25, 168),(26, 197),(27, 36),(28, 145),(29, 61),(30, 139),(31, 47),(32, 154),(33, 194),(34, 41),(35, 154),(36, 71),(37, 49),(38, 165),(39, 73),(40, 176),(41, 41),(42, 34),(43, 175),(44, 59),(45, 198),(46, 106),(47, 99),(48, 55),(49, 62),(50, 33);
+(1, 10),(1, 25),(2, 9),(3, 2),(3, 6),(3, 6),(4, 1),(5, 0),(6, 105),(7, 125),(8, 37),(9, 74),(10, 149),(11, 69),(12, 23),(13, 46),(14, 144),(15, 134),(16, 182),(17, 99),(18, 72),(19, 128),(20, 123),(21, 155),(22, 78),(23, 166),(24, 117),(25, 168),(26, 197),(27, 36),(28, 145),(29, 61),(30, 139),(31, 47),(32, 154),(33, 194),(34, 41),(35, 154),(36, 71),(37, 49),(38, 165),(39, 73),(40, 176),(41, 41),(42, 34),(43, 175),(44, 59),(45, 198),(46, 106),(47, 99),(48, 55),(49, 62),(50, 33);
 
 -- DATA PROMOTIONS
 INSERT INTO promotions (promo_code,description,discount_type,discount_value,start_date,end_date,min_order_amount,usage_limit,status) VALUES
