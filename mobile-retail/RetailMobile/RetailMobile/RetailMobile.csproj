@@ -49,6 +49,7 @@
     </PackageReference>
     <PackageReference Include="Refit" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" />
+    <PackageReference Include="Uno.Toolkit" />
   </ItemGroup>
 
   <ItemGroup>

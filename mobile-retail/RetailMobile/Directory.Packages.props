@@ -15,5 +15,8 @@
     <PackageVersion Include="Refit" Version="8.0.0" />
     <PackageVersion Include="SecureStorage" Version="1.24.3.14" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
+    <PackageVersion Include="SkiaSharp.Views.Uno.WinUI" Version="3.119.1" />
+    <PackageVersion Include="Uno.Toolkit" Version="8.3.2" />
+    <PackageVersion Include="Uno.Toolkit.WinUI.Material" Version="8.3.2" />
   </ItemGroup>
 </Project>
