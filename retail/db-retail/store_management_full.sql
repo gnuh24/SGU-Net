@@ -10,6 +10,10 @@ CREATE DATABASE store_management
 CHARACTER SET utf8mb4
 COLLATE utf8mb4_unicode_ci;
 
+-- Set timezone cho MySQL về +7
+SET GLOBAL time_zone = '+07:00';
+SET time_zone = '+07:00';
+
 -- Sử dụng database này
 USE store_management;
 
@@ -170,8 +174,41 @@ INSERT INTO promotions (promo_code,description,discount_type,discount_value,star
 ('SALE10', 'Giảm 10% cho mọi đơn hàng', 'percent', 10, '2025-01-01', '2025-12-31', 0, 0, 'active'),('FREESHIP50K', 'Giảm 50,000 cho đơn từ 300,000 trở lên', 'fixed', 50000, '2025-03-01', '2025-12-31', 300000, 500, 'active'),('NEWUSER', 'Giảm 20% cho khách hàng mới', 'percent', 20, '2025-01-01', '2025-06-30', 0, 1, 'active'),('SUMMER15', 'Giảm 15% mùa hè', 'percent', 15, '2025-06-01', '2025-08-31', 50000, 1000, 'active'),('VIP100K', 'Giảm 100,000 cho đơn từ 1 triệu', 'fixed', 100000, '2025-01-01', '2025-12-31', 1000000, 200, 'active');
 
 -- DATA ORDERS
-INSERT INTO orders (customer_id,user_id,promo_id,status,total_amount,discount_amount) VALUES
-(5, 3, 5, 'paid', 1292330, 100000),(17, 3, NULL, 'paid', 1731608, 0),(8, 3, NULL, 'paid', 720782, 0),(20, 3, 5, 'paid', 21686, 21686),(1, 2, NULL, 'paid', 94180, 0),(5, 3, 2, 'paid', 3888671, 100000),(9, 3, 4, 'paid', 512594, 102518.8),(11, 3, 3, 'paid', 1715029, 171502.90000000002),(11, 3, NULL, 'paid', 2484051, 0),(11, 3, 2, 'paid', 1070239, 100000),(20, 3, NULL, 'paid', 1532741, 0),(10, 2, NULL, 'paid', 1785354, 0),(10, 3, 2, 'paid', 1588276, 100000),(6, 2, 2, 'paid', 2896096, 50000),(10, 2, 3, 'paid', 186000, 27900.0),(10, 2, 5, 'paid', 1024090, 50000),(19, 3, NULL, 'paid', 467148, 0),(10, 2, NULL, 'paid', 394342, 0),(8, 3, 4, 'paid', 1965637, 294845.55),(3, 3, NULL, 'paid', 2889813, 0),(9, 2, NULL, 'paid', 2288406, 0),(17, 3, NULL, 'paid', 331008, 0),(6, 3, 1, 'paid', 2154851, 323227.64999999997),(1, 3, 1, 'paid', 1138686, 170802.9),(2, 2, 5, 'paid', 393847, 100000),(15, 3, 1, 'paid', 260658, 52131.600000000006),(4, 2, NULL, 'paid', 933199, 0),(16, 2, NULL, 'paid', 2609123, 0),(4, 3, 4, 'paid', 2406292, 481258.4),(1, 3, NULL, 'paid', 2912134, 0);
+-- DATA ORDERS
+INSERT INTO orders (customer_id, user_id, promo_id, status, total_amount, discount_amount, order_date) VALUES
+(5, 3, 5, 'paid', 1292330, 100000, CURRENT_DATE - INTERVAL 1 DAY),
+(17, 3, NULL, 'paid', 1731608, 0, CURRENT_DATE - INTERVAL 1 DAY),
+(8, 3, NULL, 'paid', 720782, 0, CURRENT_DATE - INTERVAL 1 DAY),
+(20, 3, 5, 'paid', 21686, 21686, CURRENT_DATE - INTERVAL 1 DAY),
+(1, 2, NULL, 'paid', 94180, 0, CURRENT_DATE - INTERVAL 1 DAY),
+(5, 3, 2, 'paid', 3888671, 100000, CURRENT_DATE - INTERVAL 1 DAY),
+(9, 3, 4, 'paid', 512594, 102518.8, CURRENT_DATE - INTERVAL 1 DAY),
+(11, 3, 3, 'paid', 1715029, 171502.90000000002, CURRENT_DATE - INTERVAL 1 DAY),
+(11, 3, NULL, 'paid', 2484051, 0, CURRENT_DATE - INTERVAL 1 DAY),
+(11, 3, 2, 'paid', 1070239, 100000, CURRENT_DATE - INTERVAL 1 DAY),
+(20, 3, NULL, 'paid', 1532741, 0, CURRENT_DATE - INTERVAL 1 DAY),
+(10, 2, NULL, 'paid', 1785354, 0, CURRENT_DATE - INTERVAL 1 DAY),
+(10, 3, 2, 'paid', 1588276, 100000, CURRENT_DATE - INTERVAL 1 DAY),
+(6, 2, 2, 'paid', 2896096, 50000, CURRENT_DATE - INTERVAL 1 DAY),
+(10, 2, 3, 'paid', 186000, 27900.0, CURRENT_DATE - INTERVAL 1 DAY),
+(10, 2, 5, 'paid', 1024090, 50000, CURRENT_DATE - INTERVAL 1 DAY),
+(19, 3, NULL, 'paid', 467148, 0, CURRENT_DATE - INTERVAL 1 DAY),
+(10, 2, NULL, 'paid', 394342, 0, CURRENT_DATE - INTERVAL 1 DAY),
+(8, 3, 4, 'paid', 1965637, 294845.55, CURRENT_DATE - INTERVAL 1 DAY),
+(3, 3, NULL, 'paid', 2889813, 0, CURRENT_DATE - INTERVAL 1 DAY),
+(9, 2, NULL, 'paid', 2288406, 0, CURRENT_DATE - INTERVAL 1 DAY),
+(17, 3, NULL, 'paid', 331008, 0, CURRENT_DATE - INTERVAL 1 DAY),
+
+-- 9 đơn hôm nay
+(6, 3, 1, 'paid', 2154851, 323227.64999999997, CURRENT_DATE),
+(1, 3, 1, 'paid', 1138686, 170802.9, CURRENT_DATE),
+(2, 2, 5, 'paid', 393847, 100000, CURRENT_DATE),
+(15, 3, 1, 'paid', 260658, 52131.600000000006, CURRENT_DATE),
+(4, 2, NULL, 'paid', 933199, 0, CURRENT_DATE),
+(16, 2, NULL, 'paid', 2609123, 0, CURRENT_DATE),
+(4, 3, 4, 'paid', 2406292, 481258.4, CURRENT_DATE),
+(1, 3, NULL, 'paid', 2912134, 0, CURRENT_DATE),
+(20, 3, NULL, 'paid', 1532741, 0, CURRENT_DATE);
 
 -- DATA ORDER_ITEMS
 INSERT INTO order_items (order_id,product_id,quantity,price,subtotal) VALUES
