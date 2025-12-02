@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Table, Button, Space, Modal, Form, Input, message } from "antd";
 import axios from "axios";
-import { SearchOutlined, PlusOutlined } from "@ant-design/icons";
+import { SearchOutlined, PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { da } from "date-fns/locale";
 
 interface Category {
@@ -103,32 +103,36 @@ const CategoryList: React.FC = () => {
   };
 
   const columns = [
-    { title: "Mã danh mục", dataIndex: "categoryId", key: "categoryId" },
+    { title: "Mã danh mục", dataIndex: "categoryId", key: "categoryId",sorter: (a: Category, b: Category) => a.categoryId - b.categoryId,
+      defaultSortOrder: "ascend", },
     { title: "Tên danh mục", dataIndex: "name", key: "name" },
-    // {
-    //   title: "Hành động",
-    //   key: "action",
-    //   render: (_: unknown, record: Category) => (
-    //     <Space>
-    //       <Button
-    //         type="link"
-    //         onClick={() => {
-    //           form.setFieldsValue(record);
-    //           setIsModalOpen(true);
-    //         }}
-    //       >
-    //         Sửa
-    //       </Button>
-    //       <Button
-    //         danger
-    //         type="link"
-    //         onClick={() => handleDelete(record.categoryId)}
-    //       >
-    //         Xóa
-    //       </Button>
-    //     </Space>
-    //   ),
-    // },
+    {
+  title: "Hành động",
+  key: "action",
+  render: (_: unknown, record: Category) => {
+    
+    if (record.categoryId === 1) {
+      return null; 
+    }
+
+    return (
+      <Space>
+        <Button
+          icon={<EditOutlined />}
+          onClick={() => {
+            form.setFieldsValue(record);
+            setIsModalOpen(true);
+          }}
+        />
+        <Button
+          danger
+          icon={<DeleteOutlined />}
+          onClick={() => handleDelete(record.categoryId)}
+        />
+      </Space>
+    );
+  },
+},
   ];
 
   return (
