@@ -332,8 +332,12 @@ const PosPageInternal: React.FC = () => {
     loadAvailablePromotions();
   }, [subtotal, cart.length]);
 
-  const applyPromotion = async () => {
-    if (!promoCode.trim()) {
+  const applyPromotion = async (codeOverride?: string) => {
+    // const codeToCheck = typeof codeOverride === "string" ? codeOverride : promoCode;
+    const codeToCheck = (typeof codeOverride === "string" ? codeOverride : promoCode)
+    .trim()
+    .toUpperCase();
+    if (!codeToCheck.trim()) {
       message.warning("Vui lòng nhập mã khuyến mãi!");
       return;
     }
@@ -347,12 +351,14 @@ const PosPageInternal: React.FC = () => {
         content: "Đang kiểm tra mã khuyến mãi...",
         key: "promo",
       });
-      const res = await posApi.validatePromotion(promoCode.trim(), subtotal);
+      // const res = await posApi.validatePromotion(promoCode.trim(), subtotal);
+      const res = await posApi.validatePromotion(codeToCheck, subtotal);
 
       if (res.valid) {
         const promotion = res.promo ?? res.promotion;
         if (promotion) {
           setAppliedPromotion(promotion);
+          setPromoCode(codeToCheck);
           message.success({
             content: `✅ Áp dụng mã "${promotion.promoCode}" thành công!`,
             key: "promo",
@@ -1001,15 +1007,13 @@ const PosPageInternal: React.FC = () => {
               </Title>
               <Space.Compact style={{ width: "100%" }}>
                 <AutoComplete
-                  style={{ flex: 1 }}
-                  placeholder="Nhập hoặc chọn mã khuyến mãi"
-                  value={promoCode}
-                  onChange={(value) => setPromoCode(value.toUpperCase())}
-                  onSelect={(value) => {
-                    setPromoCode(value);
-                    // Auto apply when selecting from dropdown
-                    setTimeout(() => applyPromotion(), 100);
-                  }}
+                 style={{ flex: 1 }}
+                value={promoCode}
+                onChange={(value) => setPromoCode(value)} // Giữ nguyên input người dùng nhập
+                onSelect={(value) => {
+                  setPromoCode(value);
+                  applyPromotion(value); // 👇 TRUYỀN THẲNG GIÁ TRỊ VÀO ĐÂY
+                }}
                   disabled={cart.length === 0}
                   options={availablePromotions.map((promo) => {
                     const discountText =
@@ -1049,13 +1053,14 @@ const PosPageInternal: React.FC = () => {
                 >
                   <Input
                     prefix={<TagOutlined />}
+                    placeholder="Nhập hoặc chọn mã khuyến mãi"
                     allowClear
-                    onPressEnter={applyPromotion}
+                    onPressEnter={() => applyPromotion()}
                   />
                 </AutoComplete>
                 <Button
                   type="primary"
-                  onClick={applyPromotion}
+                  onClick={() => applyPromotion()}
                   disabled={cart.length === 0 || !promoCode.trim()}
                 >
                   Áp dụng
@@ -1140,10 +1145,7 @@ const PosPageInternal: React.FC = () => {
                     style={{ width: "100%" }}
                   >
                     <Option value="cash">Tiền mặt</Option>
-                    <Option value="card">Thẻ</Option>
-                    <Option value="transfer">Chuyển khoản</Option>
                     <Option value="momo">MoMo</Option>
-                    <Option value="vnpay">VNPay</Option>
                   </Select>
                 </Form.Item>
                 {paymentMethod === "cash" && (

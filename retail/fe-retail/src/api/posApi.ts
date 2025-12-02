@@ -100,7 +100,7 @@ export const posApi = {
     apiClient.get(`/products?pageSize=1000`).then(unwrapData),
 
   getCustomers: (): Promise<Customer[]> =>
-    apiClient.get(`/customers`).then(unwrapData),
+    apiClient.get(`/customers?pageSize=1000`).then(unwrapData),
 
   validatePromotion: async (
     promoCode: string,
