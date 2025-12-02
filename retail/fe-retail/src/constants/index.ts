@@ -1,6 +1,15 @@
-// API Base URL
-export const API_BASE_URL =
+// Frontend & Backend Base URLs (for easy deploy)
+export const FRONTEND_BASE_URL =
+  import.meta.env.VITE_FRONTEND_BASE_URL || "http://localhost:3000";
+
+const RAW_API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5260/api/v1";
+
+// Public API base URL (v1)
+export const API_BASE_URL = RAW_API_BASE_URL;
+
+// Backend root URL (without /api/v1 suffix) – used for images, callbacks, etc.
+export const BACKEND_BASE_URL = RAW_API_BASE_URL.replace(/\/api\/v1$/, "");
 
 // Local Storage Keys
 export const STORAGE_KEYS = {
