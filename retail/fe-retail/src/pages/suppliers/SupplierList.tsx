@@ -121,20 +121,25 @@ const SupplierList: React.FC = () => {
     { title: "Địa chỉ", dataIndex: "address", key: "address" },
     { title: "Số điện thoại", dataIndex: "phone", key: "phone" },
     { title: "Email", dataIndex: "email", key: "email" },
-    // {
-    //   title: "Hành động",
-    //   key: "action",
-    //   render: (_: unknown, record: Supplier) => (
-    //     <Space>
-    //       <Button icon={<EditOutlined />} onClick={() => handleEdit(record)} />
-    //       <Button
-    //         danger
-    //         icon={<DeleteOutlined />}
-    //         onClick={() => handleDelete(record.supplierId)}
-    //       />
-    //     </Space>
-    //   ),
-    // },
+    {
+      title: "Hành động",
+      key: "action",
+      render: (_: unknown, record: Supplier) => {
+         if (record.supplierId === 1) {
+      return null; 
+    }
+    return (
+        <Space>
+          <Button icon={<EditOutlined />} onClick={() => handleEdit(record)} />
+          <Button
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() => handleDelete(record.supplierId)}
+          />
+        </Space>
+    );
+      },
+    },
   ];
 
   return (
