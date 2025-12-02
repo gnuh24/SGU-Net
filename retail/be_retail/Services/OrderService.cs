@@ -113,6 +113,13 @@ namespace be_retail.Services
                 if (form.ToDate.HasValue)
                     query = query.Where(o => o.OrderDate <= form.ToDate.Value);
 
+                // Tìm kiếm theo mã HĐ (chuỗi nhập phải xuất hiện trong OrderId)
+                if (!string.IsNullOrWhiteSpace(form.Search))
+                {
+                    var search = form.Search.Trim();
+                    query = query.Where(o => o.OrderId.ToString().Contains(search));
+                }
+
                 var total = await query.CountAsync();
 
                 int pageSize = form.PageSize > 0 ? form.PageSize : 10;

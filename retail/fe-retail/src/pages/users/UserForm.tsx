@@ -75,22 +75,21 @@ const UserForm: React.FC = () => {
                     <Input />
                 </Form.Item>
 
-                <Form form={form} layout="vertical">
-                    <Form.Item
-                        label="Role"
-                        name="role"
-                        rules={[{ required: true, message: "Vui lòng chọn role" }]}
-                    >
-                        <Select disabled={currentRole === "customer"}>
-                            <Option value="customer" disabled={currentRole !== "customer"}>
-                                Khách hàng
-                            </Option>
-                            <Option value="staff">Nhân viên</Option>
-                            <Option value="manager">Quản lý</Option>
-                            <Option value="admin">Quản trị viên</Option>
-                        </Select>
-                    </Form.Item>
-                </Form>
+                {/* Role - KHÔNG bọc Form lồng trong Form để tránh lỗi validateDOMNesting */}
+                <Form.Item
+                    label="Role"
+                    name="role"
+                    rules={[{ required: true, message: "Vui lòng chọn role" }]}
+                >
+                    <Select disabled={currentRole === "customer"}>
+                        <Option value="customer" disabled={currentRole !== "customer"}>
+                            Khách hàng
+                        </Option>
+                        <Option value="staff">Nhân viên</Option>
+                        <Option value="manager">Quản lý</Option>
+                        <Option value="admin">Quản trị viên</Option>
+                    </Select>
+                </Form.Item>
 
                 {isEdit && (
                     <Form.Item label="Trạng thái" name="status" rules={[{ required: true }]}>

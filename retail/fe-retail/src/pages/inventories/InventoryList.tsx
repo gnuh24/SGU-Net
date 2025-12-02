@@ -12,6 +12,7 @@ import {
 } from "antd";
 import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
+import { API_BASE_URL } from "../../constants";
 
 interface Inventory { /* giữ nguyên */ }
 interface Category { /* giữ nguyên */ }
@@ -43,7 +44,7 @@ const InventoryList: React.FC = () => {
   // Fetch danh mục, nhà cung cấp, kho
   const fetchCategories = async () => {
     try {
-      const res = await fetch("http://localhost:5260/api/v1/categories?pageSize=100");
+      const res = await fetch(`${API_BASE_URL}/categories?pageSize=100`);
       const data = await res.json();
       if (Array.isArray(data.data)) setCategories(data.data);
     } catch (error) { console.error(error); }
@@ -51,7 +52,7 @@ const InventoryList: React.FC = () => {
 
   const fetchSuppliers = async () => {
     try {
-      const res = await fetch("http://localhost:5260/api/v1/suppliers?pageSize=100");
+      const res = await fetch(`${API_BASE_URL}/suppliers?pageSize=100`);
       const data = await res.json();
       if (Array.isArray(data.data)) setSuppliers(data.data);
     } catch (error) { console.error(error); }
@@ -60,7 +61,7 @@ const InventoryList: React.FC = () => {
   const fetchProducts = async () => {
     try {
       const params = new URLSearchParams({ pageSize: "9999", isDeleted: "false" });
-      const res = await fetch("http://localhost:5260/api/v1/products?" + params.toString());
+      const res = await fetch(`${API_BASE_URL}/products?` + params.toString());
       const data = await res.json();
 
       let list: Product[] = [];
@@ -87,7 +88,7 @@ const InventoryList: React.FC = () => {
       if (categoryId && categoryId !== 0) params.append("categoryId", String(categoryId));
       if (supplierId && supplierId !== 0) params.append("supplierId", String(supplierId));
 
-      const res = await fetch(`http://localhost:5260/api/v1/inventories?${params.toString()}`);
+      const res = await fetch(`${API_BASE_URL}/inventories?${params.toString()}`);
       const data = await res.json();
       const list = Array.isArray(data.data?.data) ? data.data.data : Array.isArray(data.data) ? data.data : [];
       const sorted = [...list].sort((a, b) => a.inventoryId - b.inventoryId);
@@ -108,7 +109,7 @@ const InventoryList: React.FC = () => {
   const handleAddQuantity = async () => {
     try {
       const values = await form.validateFields();
-      await fetch("http://localhost:5260/api/v1/inventories/add-quantity", {
+      await fetch(`${API_BASE_URL}/inventories/add-quantity`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -24,6 +24,7 @@ import { useSearchParams, useLocation } from "react-router-dom";
 import { apiService } from "../../services/apiService";
 import { getImageUrl } from "../../utils/imageUtils";
 import dayjs from "dayjs";
+import { useAuth } from "../../hooks/useAuth";
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -37,7 +38,7 @@ interface Order {
   discountAmount: number;
   status: string;
   userName?: string;
-  promoCode?: string;  // ✅ Đổi từ promoName thành promoCode để match API
+  promoCode?: string; // ✅ Đổi từ promoName thành promoCode để match API
   orderItems?: OrderItem[];
   payment?: Payment;
 }
@@ -84,11 +85,23 @@ const OrdersList: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<string>("");
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
+  const { user, hasRole } = useAuth();
 
-  // Fetch orders on mount
+  // Fetch lần đầu
   useEffect(() => {
     fetchOrders(pagination.current, pagination.pageSize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Tự động lọc lại khi bộ lọc thay đổi (search, status, ngày)
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      fetchOrders(1, pagination.pageSize);
+    }, 400);
+
+    return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters]);
 
   // Auto-refresh when coming from payment return page
   useEffect(() => {
@@ -128,6 +141,11 @@ const OrdersList: React.FC = () => {
         page,
         pageSize,
       };
+
+      // Staff chỉ xem hóa đơn của chính mình
+      if (user && hasRole("staff")) {
+        params.userId = user.id;
+      }
 
       if (filters.search) params.search = filters.search;
       if (filters.status) params.status = filters.status;
@@ -233,7 +251,6 @@ const OrdersList: React.FC = () => {
       fromDate: "",
       toDate: "",
     });
-    setTimeout(() => fetchOrders(1, pagination.pageSize), 100);
   };
 
   const getStatusColor = (status: string) => {
@@ -242,6 +259,7 @@ const OrdersList: React.FC = () => {
         return "green";
       case "pending":
         return "orange";
+      case "canceled":
       case "cancelled":
         return "red";
       default:
@@ -255,6 +273,7 @@ const OrdersList: React.FC = () => {
         return "Đã thanh toán";
       case "pending":
         return "Chờ thanh toán";
+      case "canceled":
       case "cancelled":
         return "Đã hủy";
       default:
@@ -406,7 +425,7 @@ const OrdersList: React.FC = () => {
               >
                 <Option value="paid">Đã thanh toán</Option>
                 <Option value="pending">Chờ thanh toán</Option>
-                <Option value="cancelled">Đã hủy</Option>
+                <Option value="canceled">Đã hủy</Option>
               </Select>
             </Col>
             <Col xs={24} sm={12} lg={8}>
@@ -524,14 +543,19 @@ const OrdersList: React.FC = () => {
                     render: (_: any, record: OrderItem) => (
                       <div className="flex items-center space-x-3">
                         <img
-                          src={getImageUrl(undefined, record.productImage) || "/placeholder-product.png"}
+                          src={
+                            getImageUrl(undefined, record.productImage) ||
+                            "/placeholder-product.png"
+                          }
                           alt={record.productName}
                           className="w-10 h-10 object-cover rounded border"
                           onError={(e) => {
                             e.currentTarget.src = "/placeholder-product.png";
                           }}
                         />
-                        <span className="font-medium">{record.productName}</span>
+                        <span className="font-medium">
+                          {record.productName}
+                        </span>
                       </div>
                     ),
                   },

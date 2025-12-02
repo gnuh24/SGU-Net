@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Table, Button, Space, Modal, Form, Input, message } from "antd";
 import axios from "axios";
+import { API_BASE_URL } from "../../constants";
 import { SearchOutlined, PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { da } from "date-fns/locale";
 
@@ -9,7 +10,7 @@ interface Category {
   name: string;
 }
 
-const API_URL = "http://localhost:5260/api/v1/categories";
+const API_URL = `${API_BASE_URL}/categories`;
 
 const CategoryList: React.FC = () => {
   const [form] = Form.useForm();

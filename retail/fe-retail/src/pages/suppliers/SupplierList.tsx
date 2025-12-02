@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Table, Button, Space, Modal, Form, Input, message } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import axios from "axios";
+import { API_BASE_URL } from "../../constants";
 
 interface Supplier {
   supplierId: number;
@@ -11,7 +12,7 @@ interface Supplier {
   email: string;
 }
 
-const API_URL = "http://localhost:5260/api/v1/suppliers";
+const API_URL = `${API_BASE_URL}/suppliers`;
 
 const SupplierList: React.FC = () => {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);

@@ -22,6 +22,7 @@ import {
 import type { UploadFile } from "antd";
 import dayjs from "dayjs";
 import { getImageUrl } from "../../utils/imageUtils";
+import { API_BASE_URL } from "../../constants";
 
 interface Product {
   productId: number;
@@ -50,7 +51,7 @@ interface Supplier {
   name: string;
 }
 
-const API_URL = "http://localhost:5260/api/v1/products";
+const API_URL = `${API_BASE_URL}/products`;
 
 const generateBarcode = (products: Product[]): string => {
   const prefix = "890";
@@ -105,17 +106,13 @@ const ProductList: React.FC = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const fetchCategories = async () => {
-    const res = await fetch(
-      "http://localhost:5260/api/v1/categories?pageSize=100"
-    );
+    const res = await fetch(`${API_BASE_URL}/categories?pageSize=100`);
     const data = await res.json();
     if (Array.isArray(data.data)) setCategories(data.data);
   };
 
   const fetchSuppliers = async () => {
-    const res = await fetch(
-      "http://localhost:5260/api/v1/suppliers?pageSize=100"
-    );
+    const res = await fetch(`${API_BASE_URL}/suppliers?pageSize=100`);
     const data = await res.json();
     if (Array.isArray(data.data)) setSuppliers(data.data);
   };

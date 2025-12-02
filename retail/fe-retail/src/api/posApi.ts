@@ -1,4 +1,5 @@
 import axios from "axios";
+import { API_BASE_URL, BACKEND_BASE_URL } from "../constants";
 import { mockPromotionService } from "@/services/mock/mockPromotionService";
 
 export interface SwaggerProduct {
@@ -52,7 +53,6 @@ export interface Order {
   status?: string;
 }
 
-const API_BASE_URL = "http://localhost:5260/api/v1";
 const apiClient = axios.create({ baseURL: API_BASE_URL });
 
 const unwrapData = (response: any): any[] => {
@@ -195,7 +195,7 @@ export const posApi = {
         orderId,
         amount,
         returnUrl: returnUrl || `${window.location.origin}/payment/momo/return`,
-        notifyUrl: `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5260'}/api/v1/payments/momo/callback`
+        notifyUrl: `${BACKEND_BASE_URL}/api/v1/payments/momo/callback`
       });
       const result = response.data?.data || response.data;
       if (result?.payUrl) {

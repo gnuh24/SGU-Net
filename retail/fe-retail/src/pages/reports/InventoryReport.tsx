@@ -93,19 +93,6 @@ const InventoryReport: React.FC = () => {
         ).toLocaleString(),
     },
     {
-      title: "Mức tồn tối thiểu",
-      dataIndex: "minStock",
-      key: "minStock",
-      align: "right" as const,
-      render: (text: any, record: any) =>
-        (
-          record.minStock ||
-          record.min_stock ||
-          record.threshold ||
-          0
-        ).toLocaleString(),
-    },
-    {
       title: "Trạng thái",
       key: "status",
       render: (_: any, record: any) => {

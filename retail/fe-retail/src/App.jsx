@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -7,7 +7,7 @@ import {
 } from "react-router-dom";
 import { Provider } from "react-redux";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ConfigProvider } from "antd";
+import { ConfigProvider, Spin } from "antd";
 import viVN from "antd/locale/vi_VN";
 import { store } from "./store";
 import { useAppDispatch } from "./hooks/redux";
@@ -55,6 +55,7 @@ const queryClient = new QueryClient({
 
 const AppContent = () => {
   const dispatch = useAppDispatch();
+  const [bootstrapped, setBootstrapped] = useState(false);
 
   useEffect(() => {
     // Check if user is already logged in
@@ -72,6 +73,8 @@ const AppContent = () => {
         localStorage.removeItem(STORAGE_KEYS.USER);
       }
     }
+    // Đánh dấu đã khởi tạo xong (dù có token hay không)
+    setBootstrapped(true);
   }, [dispatch]);
 
   // Default route component based on user role
@@ -84,6 +87,22 @@ const AppContent = () => {
 
     return <Navigate to="/dashboard" replace />;
   };
+
+  // Trong lúc đang khởi tạo auth từ localStorage, chưa render router
+  if (!bootstrapped) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Spin size="large" tip="Đang tải..." />
+      </div>
+    );
+  }
 
   return (
     <Router>
@@ -168,7 +187,7 @@ const AppContent = () => {
             }
           />
 
-          {/* Reports (Admin & Manager) */}
+          {/* Reports (Admin & Manager, Inventory also for Staff) */}
           <Route
             path="reports"
             element={
@@ -212,7 +231,7 @@ const AppContent = () => {
           <Route
             path="reports/inventory"
             element={
-              <RoleGuard allowedRoles={["admin", "manager"]}>
+              <RoleGuard allowedRoles={["admin", "manager", "staff"]}>
                 <InventoryReport />
               </RoleGuard>
             }

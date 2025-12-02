@@ -2,11 +2,10 @@ import { apiService } from "./apiService";
 
 // Separate axios for statistics API
 import axios from "axios";
+import { API_BASE_URL, STORAGE_KEYS } from "../constants";
 
 const statsApi = axios.create({
-  baseURL:
-    import.meta.env.VITE_API_BASE_URL?.replace("/v1", "") ||
-    "http://localhost:5260/api",
+  baseURL: API_BASE_URL.replace(/\/v1$/, ""),
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
@@ -15,7 +14,7 @@ const statsApi = axios.create({
 
 // Add token to statistics API
 statsApi.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -30,13 +29,6 @@ interface DashboardStats {
   revenueGrowth: number;
   ordersGrowth: number;
   customersGrowth: number;
-}
-
-interface RecentOrder {
-  id: number;
-  customer: string;
-  amount: number;
-  time: string;
 }
 
 interface LowStockProduct {
@@ -77,12 +69,15 @@ class DashboardService {
       );
       const yesterdayData = this.unwrapResponse(yesterdayRes);
 
-      // Get low stock products count
-      const lowStockRes = await apiService.get("/products/low-stock");
+      // Get low stock products count (threshold=20)
+      const lowStockRes = await apiService.get("/products/low-stock", {
+        params: { threshold: 20, page: 1, pageSize: 100 },
+      });
       const lowStockData = this.unwrapResponse(lowStockRes);
-      const lowStockCount = Array.isArray(lowStockData)
-        ? lowStockData.length
-        : lowStockData?.items?.length || 0;
+      const lowStockItems = Array.isArray(lowStockData)
+        ? lowStockData
+        : lowStockData.data || lowStockData.items || [];
+      const lowStockCount = lowStockItems.length;
 
       // Calculate growth percentages
       const revenueGrowth =
@@ -129,53 +124,42 @@ class DashboardService {
     }
   }
 
+  // (Giữ lại getRecentOrders nếu cần dùng ở nơi khác)
+
   /**
-   * Get recent orders (today)
+   * Get top selling products today
    */
-  async getRecentOrders(limit: number = 5): Promise<RecentOrder[]> {
+  async getTopSellingProductsToday(
+    limit: number = 5
+  ): Promise<
+    {
+      productId: number;
+      productName: string;
+      totalQuantitySold: number;
+      totalRevenue: number;
+    }[]
+  > {
     try {
       const now = new Date();
-      const today = now.toLocaleDateString("en-CA");
+      const today = now.toLocaleDateString("en-CA"); // YYYY-MM-DD
 
-      const response = await apiService.get("/orders", {
-        params: {
-          fromDate: today, // Backend uses fromDate/toDate not startDate/endDate
-          toDate: today,
-          pageSize: limit,
-          page: 1,
-        },
-      });
+      const res = await statsApi.get(
+        `/statistics/products?startDate=${today}&endDate=${today}&top=${limit}`
+      );
 
-      const data = this.unwrapResponse(response);
-      const orders = Array.isArray(data)
+      const data = this.unwrapResponse(res);
+      const items = Array.isArray(data)
         ? data
-        : data?.items || data?.data || [];
+        : data.Data || data.data || data.items || [];
 
-      return orders.map((order: any) => {
-        // Backend returns orderDate field
-        const orderDate = new Date(
-          order.orderDate ||
-          order.order_date ||
-          order.createdAt ||
-          order.created_at
-        );
-        const timeStr = !isNaN(orderDate.getTime())
-          ? orderDate.toLocaleTimeString("vi-VN", {
-            hour: "2-digit",
-            minute: "2-digit",
-          })
-          : "N/A";
-
-        return {
-          id: order.orderId || order.order_id || order.id,
-          customer:
-            order.customerName || order.customer_name || "Khách vãng lai",
-          amount:
-            (order.totalAmount || order.total_amount || 0) -
-            (order.discountAmount || order.discount_amount || 0),
-          time: timeStr,
-        };
-      });
+      return items.map((item: any) => ({
+        productId: item.productId || item.ProductId,
+        productName: item.productName || item.ProductName || "N/A",
+        totalQuantitySold:
+          item.totalQuantitySold || item.TotalQuantitySold || 0,
+        totalRevenue:
+          item.totalRevenue || item.TotalRevenue || 0,
+      }));
     } catch (error) {
       return [];
     }
@@ -187,11 +171,14 @@ class DashboardService {
   async getLowStockProducts(limit: number = 5): Promise<LowStockProduct[]> {
     try {
       const response = await apiService.get("/products/low-stock", {
-        params: { limit },
+        // Đúng API: ?threshold=20
+        params: { threshold: 20, page: 1, pageSize: limit },
       });
 
       const data = this.unwrapResponse(response);
-      const items = Array.isArray(data) ? data : data?.items || [];
+      const items = Array.isArray(data)
+        ? data
+        : data.data || data.items || [];
 
       return items.slice(0, limit).map((item: any) => ({
         productId: item.productId || item.product_id || item.id,

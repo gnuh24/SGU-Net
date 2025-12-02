@@ -22,6 +22,7 @@ import {
 import type { ColumnsType } from "antd/es/table";
 import axios from "axios";
 import { ordersApi } from "../../api/orderApi";
+import { API_BASE_URL } from "../../constants";
 
 const { Title } = Typography;
 
@@ -41,7 +42,7 @@ interface Order {
   orderDate: string;
 }
 
-const API_CUSTOMERS = "http://localhost:5260/api/v1/customers";
+const API_CUSTOMERS = `${API_BASE_URL}/customers`;
 
 const CustomersPage: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);

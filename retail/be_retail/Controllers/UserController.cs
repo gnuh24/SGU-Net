@@ -166,22 +166,16 @@ namespace be_retail.Controllers
         {
             try
             {
-                var user = new User
-                {
-                    Username = request.Username!,
-                    Password = request.Password,
-                    FullName = request.FullName!,
-                    Role = request.Role!
-                };
-
-                var updated = await _userService.UpdateAsync(id, user);
+                // Truyền DTO trực tiếp vào service để xử lý partial update
+                var updated = await _userService.UpdateAsync(id, request);
 
                 var data = new UserResponseDTO
                 {
                     UserId = updated.UserId,
                     Username = updated.Username!,
                     FullName = updated.FullName!,
-                    Role = updated.Role!
+                    Role = updated.Role!,
+                    Status = updated.Status!
                 };
 
                 return Ok(new ApiResponse<UserResponseDTO>

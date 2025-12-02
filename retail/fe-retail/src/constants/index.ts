@@ -153,22 +153,25 @@ export const MENU_ITEMS = [
     label: "Báo cáo & Thống kê",
     icon: "FileText",
     path: "/reports",
-    roles: ["manager"],
+    roles: ["manager", "staff"],
     children: [
       {
         key: "sales-report",
         label: "Báo cáo doanh thu",
         path: "/reports/sales",
+        roles: ["manager"],
       },
       {
         key: "product-report",
         label: "Sản phẩm bán chạy",
         path: "/reports/products",
+        roles: ["manager"],
       },
       {
         key: "inventory-report",
         label: "Báo cáo tồn kho",
         path: "/reports/inventory",
+        roles: ["manager", "staff"],
       },
     ],
   },
