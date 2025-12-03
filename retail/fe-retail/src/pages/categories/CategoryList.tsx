@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Table, Button, Space, Modal, Form, Input, message } from "antd";
+import { Table, Button, Space, Modal, Form, Input, message, Tag } from "antd";
 import axios from "axios";
 import { API_BASE_URL } from "../../constants";
 import { SearchOutlined, PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
@@ -113,7 +113,7 @@ const CategoryList: React.FC = () => {
   render: (_: unknown, record: Category) => {
     
     if (record.categoryId === 1) {
-      return null; 
+      return <Tag color="blue">Mặc định</Tag>; 
     }
 
     return (

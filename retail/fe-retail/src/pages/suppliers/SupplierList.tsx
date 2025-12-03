@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Table, Button, Space, Modal, Form, Input, message } from "antd";
+import { Table, Button, Space, Modal, Form, Input, message, Tag } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import axios from "axios";
 import { API_BASE_URL } from "../../constants";
@@ -127,7 +127,7 @@ const SupplierList: React.FC = () => {
       key: "action",
       render: (_: unknown, record: Supplier) => {
          if (record.supplierId === 1) {
-      return null; 
+     return <Tag color="blue">Mặc định</Tag>;  
     }
     return (
         <Space>
