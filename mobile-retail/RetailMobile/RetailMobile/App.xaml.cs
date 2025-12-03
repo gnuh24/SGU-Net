@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using RetailMobile.Data;
 using RetailMobile.Presentation.ViewModels;
+using RetailMobile.Presentation.Views;
 using RetailMobile.Services;
 using Uno.Resizetizer;
 
@@ -78,19 +79,22 @@ public partial class App : Application
                 .ConfigureServices((context, services) =>
                 {
                     // Đường dẫn database platform-specific
-#if ANDROID
-                    string dbPath = Path.Combine(Android.App.Application.Context.FilesDir.Path, "app.db3");
-#elif IOS
-                    string dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "app.db3");
-#else
-    string dbPath = "app.db3"; // Desktop
-#endif
+//#if ANDROID
+//                    string dbPath = Path.Combine(Android.App.Application.Context.FilesDir.Path, "app.db3");
+//#elif IOS
+//                    string dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "app.db3");
+//#else
+//                    string dbPath = "app.db3"; // Desktop
+//#endif
 
-                    // Add DbContext
-                    services.AddDbContext<AppDbContext>(options =>
-                    {
-                        options.UseSqlite($"Filename={dbPath}");
-                    });
+//                    // Add DbContext
+//                    services.AddDbContext<AppDbContext>(options =>
+//                    {
+//                        options.UseSqlite($"Filename={dbPath}");
+//                    });
+
+                    // Add DatabaseService
+                    services.AddSingleton<DatabaseService>();
 
                     // Add CartService
                     services.AddSingleton<CartService>();
@@ -114,6 +118,13 @@ public partial class App : Application
         MainWindow.SetWindowIcon();
 
         Host = await builder.NavigateAsync<Shell>();
+
+
+        //using (var scope = Host.Services.CreateScope())
+        //{
+        //    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        //    db.Database.EnsureCreated();
+        //}
     }
 
     private static void RegisterRoutes(IViewRegistry views, IRouteRegistry routes)
@@ -121,15 +132,17 @@ public partial class App : Application
         views.Register(
             new ViewMap(ViewModel: typeof(ShellViewModel)),
             new ViewMap<MainPage, MainViewModel>(),
-            new DataViewMap<SecondPage, SecondViewModel, Entity>()
+            new DataViewMap<SecondPage, SecondViewModel, Entity>(),
+            new ViewMap<CheckoutPage, CheckoutViewModel>()
         );
 
         routes.Register(
             new RouteMap("", View: views.FindByViewModel<ShellViewModel>(),
                 Nested:
                 [
-                    new ("Main", View: views.FindByViewModel<MainViewModel>(), IsDefault:true),
+                    new ("Main", View: views.FindByViewModel<MainViewModel>()),
                     new ("Second", View: views.FindByViewModel<SecondViewModel>()),
+                    new ("Checkout", View: views.FindByViewModel<CheckoutViewModel>(), IsDefault:true)
                 ]
             )
         );

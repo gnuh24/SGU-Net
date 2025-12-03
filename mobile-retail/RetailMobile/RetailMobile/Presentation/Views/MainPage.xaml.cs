@@ -1,4 +1,4 @@
-﻿namespace RetailMobile.Presentation;
+namespace RetailMobile.Presentation.Views;
 
 public sealed partial class MainPage : Page
 {

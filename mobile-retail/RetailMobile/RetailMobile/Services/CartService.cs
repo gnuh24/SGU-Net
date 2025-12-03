@@ -1,37 +1,31 @@
 using Microsoft.EntityFrameworkCore;
 using RetailMobile.Data;
+using SQLite;
 
 namespace RetailMobile.Services;
 public class CartService
 {
-    private readonly AppDbContext _context;
+    private readonly SQLiteAsyncConnection _db;
 
-    public CartService(AppDbContext context)
+    public CartService(DatabaseService database)
     {
-        _context = context;
+        _db = database.Db;
     }
 
-    public async Task AddItemAsync(CartItem item)
-    {
-        _context.CartItems.Add(item);
-        await _context.SaveChangesAsync();
-    }
+    public async Task<int> AddItemAsync(CartItem item)
+    => await _db.InsertAsync(item);
 
-    public async Task UpdateItemAsync(CartItem item)
-    {
-        _context.CartItems.Update(item);
-        await _context.SaveChangesAsync();
-    }
+    public async Task<int> UpdateItemAsync(CartItem item)
+    => await _db.UpdateAsync(item);
 
     public async Task<List<CartItem>> GetCartAsync()
-    {
-        return await _context.CartItems.ToListAsync();
-    }
+    => await _db.Table<CartItem>().ToListAsync();
 
-    public async Task RemoveItemAsync(CartItem item)
-    {
-        _context.CartItems.Remove(item);
-        await _context.SaveChangesAsync();
-    }
+    public async Task<int> RemoveItemAsync(CartItem item)
+    => await _db.DeleteAsync(item);
+
+    public Task ClearCart()
+    => _db.DeleteAllAsync<CartItem>();
+
 }
 
