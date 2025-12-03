@@ -207,6 +207,28 @@ export const posApi = {
     }
   },
 
+  // Cập nhật đơn hàng (sử dụng cho việc chuyển trạng thái pending → paid tại POS)
+  updateOrder: async (
+    orderId: number,
+    payload: {
+      status?: string;
+      paymentMethod?: "cash" | "card" | "transfer" | "momo" | "vnpay";
+    }
+  ): Promise<boolean> => {
+    const body: any = {};
+    if (payload.status !== undefined) body.status = payload.status;
+    if (payload.paymentMethod !== undefined)
+      body.paymentMethod = payload.paymentMethod;
+
+    const response = await apiClient.patch(`/orders/update/${orderId}`, body);
+    const data = response.data?.data ?? response.data;
+    // Backend trả về ApiResponse<bool> → data là true/false
+    if (typeof data === "object" && "data" in data) {
+      return Boolean((data as any).data);
+    }
+    return Boolean(data);
+  },
+
   // Tạo payment request với VNPay
   createVNPayPayment: async (orderId: number, amount: number, returnUrl?: string): Promise<{ paymentUrl: string }> => {
     try {

@@ -33,6 +33,8 @@ import { getImageUrl } from "../../utils/imageUtils";
 import { useAuth } from "@/hooks/useAuth";
 import { promotionService } from "../../services/promotionService";
 import { BrowserMultiFormatReader } from "@zxing/browser";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 const formatCurrency = (value: string | number | bigint) => {
   const numValue = Number(value);
@@ -90,6 +92,20 @@ const PosPageInternal: React.FC = () => {
   const [maxPrice, setMaxPrice] = useState<number | null>(null);
 
   const [gridLimit, setGridLimit] = useState<number>(30);
+  const [draftOrder, setDraftOrder] = useState<Order | null>(null);
+
+  type PrintData = {
+    order: Order;
+    items: CartItem[];
+    customer: Customer | null;
+    totalAmount: number;
+    cash: number;
+    discountAmount: number;
+    paymentMethod: string;
+  };
+
+  const [printData, setPrintData] = useState<PrintData | null>(null);
+  const printAreaRef = React.useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let reader: BrowserMultiFormatReader | null = null;
@@ -332,6 +348,23 @@ const PosPageInternal: React.FC = () => {
     loadAvailablePromotions();
   }, [subtotal, cart.length]);
 
+  const getPaymentMethodText = (method: string) => {
+    switch (method) {
+      case "cash":
+        return "Tiền mặt";
+      case "card":
+        return "Thẻ";
+      case "transfer":
+        return "Chuyển khoản";
+      case "momo":
+        return "MoMo";
+      case "vnpay":
+        return "VNPay";
+      default:
+        return method;
+    }
+  };
+
   const applyPromotion = async (codeOverride?: string) => {
     // const codeToCheck = typeof codeOverride === "string" ? codeOverride : promoCode;
     const codeToCheck = (typeof codeOverride === "string" ? codeOverride : promoCode)
@@ -417,6 +450,7 @@ const PosPageInternal: React.FC = () => {
     setMinPrice(null);
     setMaxPrice(null);
     setGridLimit(30);
+    setDraftOrder(null);
   };
 
   const printReceipt = (
@@ -424,8 +458,87 @@ const PosPageInternal: React.FC = () => {
     items: CartItem[],
     customer: Customer | null,
     totalAmount: number,
-    cash: number
-  ) => {};
+    cash: number,
+    discountAmount: number
+  ) => {
+    // Lưu data để render HTML chi tiết hóa đơn và chụp lại bằng html2canvas
+    setPrintData({
+      order,
+      items,
+      customer,
+      totalAmount,
+      cash,
+      discountAmount,
+      paymentMethod,
+    });
+  };
+
+  const handlePrintInvoice = async () => {
+    if (!user) {
+      message.error("Lỗi xác thực, vui lòng đăng nhập lại!");
+      return;
+    }
+
+    if (cart.length === 0) {
+      message.error("Giỏ hàng trống!");
+      return;
+    }
+
+    // Hạn chế in tạm tính cho các phương thức thanh toán online
+    if (paymentMethod === "momo" || paymentMethod === "vnpay") {
+      message.warning(
+        "In hóa đơn tạm tính hiện chỉ hỗ trợ cho thanh toán tại quầy (tiền mặt/thẻ/chuyển khoản)."
+      );
+      return;
+    }
+
+    setLoadingCheckout(true);
+    try {
+      message.loading("Đang tạo hóa đơn chờ thanh toán...", 0);
+
+      let orderForReceipt = draftOrder;
+
+      if (!orderForReceipt) {
+        const payload = {
+          userId: user.id,
+          customerId:
+            selectedCustomer?.customerId ?? selectedCustomer?.id ?? 0,
+          promoId: appliedPromotion?.promoId ?? null,
+          paymentMethod: paymentMethod,
+          orderItems: cart.map((item) => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          status: "pending" as const,
+        };
+
+        const createdOrder = await posApi.createFullOrder(payload);
+        orderForReceipt = createdOrder;
+        setDraftOrder(createdOrder);
+      }
+
+      message.destroy();
+      message.success("Đã tạo hóa đơn chờ thanh toán!");
+
+      printReceipt(
+        orderForReceipt,
+        cart,
+        selectedCustomer,
+        total,
+        paidAmount ?? total,
+        discount
+      );
+    } catch (err: any) {
+      message.destroy();
+      console.error("Lỗi khi tạo hóa đơn chờ thanh toán:", err);
+      const errorMsg =
+        err.response?.data?.message || "Lỗi khi tạo hóa đơn chờ thanh toán!";
+      message.error(errorMsg);
+    } finally {
+      setLoadingCheckout(false);
+    }
+  };
 
   const handleCheckout = async () => {
     if (!user) {
@@ -525,31 +638,48 @@ const PosPageInternal: React.FC = () => {
       }
 
       // Các phương thức thanh toán khác (cash, card, transfer)
-      const payload = {
-        userId: user.id,
-        customerId: selectedCustomer?.customerId ?? selectedCustomer?.id,
-        promoId: appliedPromotion?.promoId,
-        paymentMethod: paymentMethod,
-        orderItems: cart.map((item) => ({
-          productId: item.productId,
-          quantity: item.quantity,
-          price: item.price,
-        })),
-        status: "paid",
-      };
+      let orderForReceipt: Order;
 
-      const createdOrder = await posApi.createFullOrder(payload);
+      if (draftOrder && (draftOrder.status || "").toLowerCase() === "pending") {
+        // Nếu đã tạo hóa đơn chờ thanh toán trước đó → chỉ cần cập nhật sang paid
+        const idForUpdate =
+          draftOrder.orderId ?? (draftOrder as any).OrderId ?? draftOrder.id;
+
+        if (!idForUpdate) {
+          throw new Error("Không xác định được mã hóa đơn để cập nhật.");
+        }
+
+        await posApi.updateOrder(idForUpdate, {
+          status: "paid",
+          paymentMethod,
+        });
+
+        orderForReceipt = {
+          ...draftOrder,
+          status: "paid",
+        };
+      } else {
+        const payload = {
+          userId: user.id,
+          customerId: selectedCustomer?.customerId ?? selectedCustomer?.id,
+          promoId: appliedPromotion?.promoId,
+          paymentMethod: paymentMethod,
+          orderItems: cart.map((item) => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          status: "paid" as const,
+        };
+
+        const createdOrder = await posApi.createFullOrder(payload);
+        orderForReceipt = createdOrder;
+      }
 
       message.destroy();
       message.success("Thanh toán thành công!");
 
-      printReceipt(
-        createdOrder,
-        cart,
-        selectedCustomer,
-        total,
-        paidAmount ?? total
-      );
+      // Sau khi thanh toán chỉ reset POS, không tự động in hóa đơn
       resetPos();
     } catch (err: any) {
       message.destroy();
@@ -660,6 +790,61 @@ const PosPageInternal: React.FC = () => {
   useEffect(() => {
     setGridLimit(30);
   }, [selectedCategoryId, stockFilter, minPrice, maxPrice]);
+
+  useEffect(() => {
+    const generatePdf = async () => {
+      if (!printData || !printAreaRef.current) return;
+
+      try {
+        const canvas = await html2canvas(printAreaRef.current, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+          onclone: (clonedDoc) => {
+            // Xóa mọi màu oklch trong document đã clone để tránh html2canvas lỗi
+            const all = clonedDoc.querySelectorAll<HTMLElement>("*");
+            all.forEach((el) => {
+              const style = clonedDoc.defaultView?.getComputedStyle(el);
+              if (!style) return;
+
+              const bg = style.backgroundColor || "";
+              const color = style.color || "";
+
+              if (bg.includes("oklch(")) {
+                el.style.backgroundColor = "#ffffff";
+              }
+              if (color.includes("oklch(")) {
+                el.style.color = "#000000";
+              }
+            });
+          },
+        });
+
+        const imgData = canvas.toDataURL("image/png");
+        const pdf = new jsPDF("p", "mm", "a4");
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+
+        const imgProps = pdf.getImageProperties(imgData);
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+        pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+
+        const orderIdText =
+          printData.order.orderId ??
+          (printData.order as any).OrderId ??
+          printData.order.id;
+
+        pdf.save(`hoa_don_${orderIdText || Date.now()}.pdf`);
+      } catch (error) {
+        console.error("Lỗi khi tạo PDF hóa đơn:", error);
+        message.error("Không thể tạo file PDF hóa đơn!");
+      } finally {
+        setPrintData(null);
+      }
+    };
+
+    generatePdf();
+  }, [printData, message]);
 
   return (
     <div style={{ padding: 24 }}>
@@ -1164,16 +1349,31 @@ const PosPageInternal: React.FC = () => {
                     />
                   </Form.Item>
                 )}
-                <Button
-                  type="primary"
-                  size="large"
-                  block
-                  onClick={() => setPaymentModalOpen(true)}
-                  disabled={cart.length === 0 || loadingCheckout}
-                  loading={loadingCheckout}
+                <Space
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    justifyContent: "flex-end",
+                  }}
                 >
-                  Xác nhận & Thanh toán
-                </Button>
+                  <Button
+                    size="large"
+                    onClick={handlePrintInvoice}
+                    disabled={cart.length === 0 || loadingCheckout}
+                    loading={loadingCheckout && !paymentModalOpen}
+                  >
+                    In hóa đơn
+                  </Button>
+                  <Button
+                    type="primary"
+                    size="large"
+                    onClick={() => setPaymentModalOpen(true)}
+                    disabled={cart.length === 0 || loadingCheckout}
+                    loading={loadingCheckout && paymentModalOpen}
+                  >
+                    Xác nhận & Thanh toán
+                  </Button>
+                </Space>
               </Form>
             </Card>
           </Col>
@@ -1250,6 +1450,413 @@ const PosPageInternal: React.FC = () => {
           </div>
         </div>
       </Modal>
+
+      {/* Hidden invoice layout for PDF generation */}
+      <div
+        id="pos-print-area"
+        ref={printAreaRef}
+        style={{
+          position: "fixed",
+          top: -10000,
+          left: -10000,
+          width: "800px",
+          padding: "24px",
+          background: "#ffffff",
+          color: "#000000",
+          fontFamily: "Arial, sans-serif",
+        }}
+      >
+        {printData && (
+          <div>
+            {/* Header with logo R and title */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 24,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: "50%",
+                    backgroundColor: "#1677ff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#fff",
+                    fontWeight: 700,
+                    fontSize: 22,
+                  }}
+                >
+                  R
+                </div>
+                <div>
+                  <div style={{ fontSize: 18, fontWeight: 600 }}>
+                    Chi tiết hóa đơn #{printData.order.orderId}
+                  </div>
+                  <div style={{ fontSize: 12, color: "#666" }}>
+                    Hệ thống bán lẻ SGU-Net
+                  </div>
+                </div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>
+                  {new Date().toLocaleDateString("vi-VN")}
+                </div>
+              </div>
+            </div>
+
+            {/* Order info table (similar to OrdersList modal, without status) */}
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                fontSize: 12,
+                marginBottom: 16,
+              }}
+            >
+              <tbody>
+                <tr>
+                  <td
+                    style={{
+                      border: "1px solid #f0f0f0",
+                      padding: "8px 12px",
+                      width: "25%",
+                      background: "#fafafa",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Mã hóa đơn
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid #f0f0f0",
+                      padding: "8px 12px",
+                      width: "25%",
+                    }}
+                  >
+                    #{printData.order.orderId}
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid #f0f0f0",
+                      padding: "8px 12px",
+                      width: "25%",
+                      background: "#fafafa",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Ngày tạo
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid #f0f0f0",
+                      padding: "8px 12px",
+                      width: "25%",
+                    }}
+                  >
+                    {new Date(
+                      (printData.order as any).orderDate ||
+                        (printData.order as any).OrderDate ||
+                        printData.order.createdAt ||
+                        new Date().toISOString()
+                    ).toLocaleString("vi-VN")}
+                  </td>
+                </tr>
+                <tr>
+                  <td
+                    style={{
+                      border: "1px solid #f0f0f0",
+                      padding: "8px 12px",
+                      background: "#fafafa",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Khách hàng
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid #f0f0f0",
+                      padding: "8px 12px",
+                    }}
+                  >
+                    {printData.customer?.customerName ||
+                      printData.customer?.name ||
+                      "Khách vãng lai"}
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid #f0f0f0",
+                      padding: "8px 12px",
+                      background: "#fafafa",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Nhân viên
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid #f0f0f0",
+                      padding: "8px 12px",
+                    }}
+                  >
+                    {user?.fullName || user?.username || "N/A"}
+                  </td>
+                </tr>
+                <tr>
+                  <td
+                    style={{
+                      border: "1px solid #f0f0f0",
+                      padding: "8px 12px",
+                      background: "#fafafa",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Khuyến mãi
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid #f0f0f0",
+                      padding: "8px 12px",
+                    }}
+                  >
+                    {appliedPromotion?.promoCode || "Không có"}
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid #f0f0f0",
+                      padding: "8px 12px",
+                      background: "#fafafa",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Phương thức
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid #f0f0f0",
+                      padding: "8px 12px",
+                    }}
+                  >
+                    {getPaymentMethodText(printData.paymentMethod)}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            {/* Products table */}
+            <div style={{ marginTop: 8, marginBottom: 16 }}>
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 600,
+                  marginBottom: 8,
+                }}
+              >
+                Sản phẩm
+              </div>
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  fontSize: 12,
+                }}
+              >
+                <thead>
+                  <tr>
+                    <th
+                      style={{
+                        border: "1px solid #f0f0f0",
+                        padding: "8px 8px",
+                        textAlign: "left",
+                        background: "#1677ff",
+                        color: "#fff",
+                      }}
+                    >
+                      Sản phẩm
+                    </th>
+                    <th
+                      style={{
+                        border: "1px solid #f0f0f0",
+                        padding: "8px 8px",
+                        textAlign: "center",
+                        width: "10%",
+                        background: "#1677ff",
+                        color: "#fff",
+                      }}
+                    >
+                      SL
+                    </th>
+                    <th
+                      style={{
+                        border: "1px solid #f0f0f0",
+                        padding: "8px 8px",
+                        textAlign: "right",
+                        width: "20%",
+                        background: "#1677ff",
+                        color: "#fff",
+                      }}
+                    >
+                      Đơn giá
+                    </th>
+                    <th
+                      style={{
+                        border: "1px solid #f0f0f0",
+                        padding: "8px 8px",
+                        textAlign: "right",
+                        width: "20%",
+                        background: "#1677ff",
+                        color: "#fff",
+                      }}
+                    >
+                      Thành tiền
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {printData.items.map((item) => (
+                    <tr key={item.productId}>
+                      <td
+                        style={{
+                          border: "1px solid #f0f0f0",
+                          padding: "6px 8px",
+                        }}
+                      >
+                        {item.productName}
+                      </td>
+                      <td
+                        style={{
+                          border: "1px solid #f0f0f0",
+                          padding: "6px 8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {item.quantity}
+                      </td>
+                      <td
+                        style={{
+                          border: "1px solid #f0f0f0",
+                          padding: "6px 8px",
+                          textAlign: "right",
+                        }}
+                      >
+                        {formatCurrency(item.price)}
+                      </td>
+                      <td
+                        style={{
+                          border: "1px solid #f0f0f0",
+                          padding: "6px 8px",
+                          textAlign: "right",
+                        }}
+                      >
+                        {formatCurrency(item.price * item.quantity)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Summary and payment info */}
+            <div style={{ marginTop: 16 }}>
+              <div
+                style={{
+                  maxWidth: 360,
+                  marginLeft: "auto",
+                  fontSize: 13,
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginBottom: 4,
+                  }}
+                >
+                  <span>Tổng tiền hàng:</span>
+                  <span style={{ fontWeight: 600 }}>
+                    {formatCurrency(
+                      printData.items.reduce(
+                        (sum, i) => sum + i.price * i.quantity,
+                        0
+                      )
+                    )}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginBottom: 4,
+                    color: "#ff4d4f",
+                  }}
+                >
+                  <span>Giảm giá:</span>
+                  <span style={{ fontWeight: 600 }}>
+                    - {formatCurrency(printData.discountAmount || 0)}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginTop: 8,
+                    paddingTop: 8,
+                    borderTop: "1px solid #f0f0f0",
+                    fontWeight: 700,
+                    fontSize: 15,
+                    color: "#52c41a",
+                  }}
+                >
+                  <span>Thành tiền:</span>
+                  <span>{formatCurrency(printData.totalAmount)}</span>
+                </div>
+
+                <div style={{ marginTop: 8, fontSize: 12 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      marginBottom: 4,
+                    }}
+                  >
+                    <span>Khách đưa:</span>
+                    <span>{formatCurrency(printData.cash)}</span>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <span>Tiền thối lại:</span>
+                    <span>
+                      {formatCurrency(
+                        Math.max(printData.cash - printData.totalAmount, 0)
+                      )}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                marginTop: 32,
+                textAlign: "center",
+                fontSize: 11,
+                color: "#888",
+              }}
+            >
+              Cảm ơn quý khách đã mua hàng!
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
