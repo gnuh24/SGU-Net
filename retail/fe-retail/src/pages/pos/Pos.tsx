@@ -19,7 +19,12 @@ import {
   Space,
   AutoComplete,
 } from "antd";
-import { DeleteOutlined, TagOutlined, SearchOutlined } from "@ant-design/icons";
+import {
+  DeleteOutlined,
+  TagOutlined,
+  SearchOutlined,
+  QrcodeOutlined, 
+} from "@ant-design/icons";
 
 import {
   posApi,
@@ -49,6 +54,7 @@ const { Title, Text } = Typography;
 const { Option } = Select;
 
 type StockFilter = "all" | "in" | "out";
+type ScanMode = "product" | "customer"; 
 
 const GRID_CARD_WIDTH = 180;
 
@@ -81,12 +87,13 @@ const PosPageInternal: React.FC = () => {
 
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanning, setScanning] = useState(false);
+  const [scanMode, setScanMode] = useState<ScanMode>("product"); 
   const videoRef = React.useRef<HTMLVideoElement>(null);
 
   const [categories, setCategories] = useState<
     { categoryId: number; categoryName?: string }[]
   >([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number>(0); // 0 = all
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number>(0);
   const [stockFilter, setStockFilter] = useState<StockFilter>("all");
   const [minPrice, setMinPrice] = useState<number | null>(null);
   const [maxPrice, setMaxPrice] = useState<number | null>(null);
@@ -119,17 +126,37 @@ const PosPageInternal: React.FC = () => {
         .decodeOnceFromVideoDevice(undefined, videoRef.current!)
         .then(async (result) => {
           const code = result.getText();
-          message.success(`Đã quét QR: ${code}`);
+          // Đóng modal sau khi quét thành công
           setScannerOpen(false);
           setScanning(false);
 
-          try {
-            const product = await posApi.scanBarcode(code);
-            addProductToCart(product);
-            message.success(`Đã thêm sản phẩm: ${product.productName}`);
-          } catch (error) {
-            console.error(error);
-            message.error("Không tìm thấy sản phẩm tương ứng!");
+          if (scanMode === "product") {
+            // --- LOGIC QUÉT SẢN PHẨM ---
+            message.success(`Đã quét mã sản phẩm: ${code}`);
+            try {
+              const product = await posApi.scanBarcode(code);
+              addProductToCart(product);
+              message.success(`Đã thêm sản phẩm: ${product.productName}`);
+            } catch (error) {
+              console.error(error);
+              message.error("Không tìm thấy sản phẩm tương ứng!");
+            }
+          } else {
+            // --- LOGIC QUÉT KHÁCH HÀNG ---
+            message.success(`Đã quét mã khách hàng: ${code}`);
+            const foundCustomer = customers.find((c) => {
+                // So sánh số điện thoại (xóa khoảng trắng nếu có để chính xác hơn)
+                const phoneInDb = (c.phoneNumber || c.phone || "").replace(/\s/g, "");
+                const codeClean = code.replace(/\s/g, "");
+                return phoneInDb === codeClean || phoneInDb.endsWith(codeClean);
+            });
+
+            if (foundCustomer) {
+                setSelectedCustomer(foundCustomer);
+                message.success(`Đã chọn khách hàng: ${foundCustomer.customerName}`);
+            } else {
+                message.warning(`Không tìm thấy khách hàng có SĐT: ${code}`);
+            }
           }
         })
         .catch((err) => {
@@ -154,7 +181,7 @@ const PosPageInternal: React.FC = () => {
       }
       reader = null;
     };
-  }, [scannerOpen, message]);
+  }, [scannerOpen, message, scanMode, customers]); 
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -284,9 +311,6 @@ const PosPageInternal: React.FC = () => {
     setLoadingSearch(false);
   };
 
-  const [paidAmountLocalSetter, setPaidAmountLocalSetter] = useState<
-    number | null
-  >(null);
   const { subtotal, discount, total } = useMemo(() => {
     const sub = cart.reduce((s, i) => s + i.price * i.quantity, 0);
     let disc = 0;
@@ -310,7 +334,6 @@ const PosPageInternal: React.FC = () => {
     return { subtotal: sub, discount: disc, total: finalTotal };
   }, [cart, appliedPromotion]);
 
-  // Load available promotions when subtotal changes
   useEffect(() => {
     const loadAvailablePromotions = async () => {
       if (cart.length === 0 || subtotal === 0) {
@@ -322,7 +345,6 @@ const PosPageInternal: React.FC = () => {
         setLoadingPromotions(true);
         const allPromotions = await promotionService.getPromotions();
 
-        // Filter active promotions that can be applied
         const today = new Date();
         const applicable = allPromotions.filter((promo: any) => {
           if (promo.status !== "active") return false;
@@ -366,10 +388,9 @@ const PosPageInternal: React.FC = () => {
   };
 
   const applyPromotion = async (codeOverride?: string) => {
-    // const codeToCheck = typeof codeOverride === "string" ? codeOverride : promoCode;
     const codeToCheck = (typeof codeOverride === "string" ? codeOverride : promoCode)
-    .trim()
-    .toUpperCase();
+      .trim()
+      .toUpperCase();
     if (!codeToCheck.trim()) {
       message.warning("Vui lòng nhập mã khuyến mãi!");
       return;
@@ -384,7 +405,6 @@ const PosPageInternal: React.FC = () => {
         content: "Đang kiểm tra mã khuyến mãi...",
         key: "promo",
       });
-      // const res = await posApi.validatePromotion(promoCode.trim(), subtotal);
       const res = await posApi.validatePromotion(codeToCheck, subtotal);
 
       if (res.valid) {
@@ -461,7 +481,6 @@ const PosPageInternal: React.FC = () => {
     cash: number,
     discountAmount: number
   ) => {
-    // Lưu data để render HTML chi tiết hóa đơn và chụp lại bằng html2canvas
     setPrintData({
       order,
       items,
@@ -484,7 +503,6 @@ const PosPageInternal: React.FC = () => {
       return;
     }
 
-    // Hạn chế in tạm tính cho các phương thức thanh toán online
     if (paymentMethod === "momo" || paymentMethod === "vnpay") {
       message.warning(
         "In hóa đơn tạm tính hiện chỉ hỗ trợ cho thanh toán tại quầy (tiền mặt/thẻ/chuyển khoản)."
@@ -561,7 +579,6 @@ const PosPageInternal: React.FC = () => {
     try {
       message.loading("Đang xử lý đơn hàng...", 0);
 
-      // Nếu là MoMo, tạo order với status pending và redirect đến MoMo
       if (paymentMethod === "momo") {
         const payload = {
           userId: user.id,
@@ -573,13 +590,12 @@ const PosPageInternal: React.FC = () => {
             quantity: item.quantity,
             price: item.price,
           })),
-          status: "pending", // Chờ thanh toán MoMo
+          status: "pending",
         };
 
         const createdOrder = await posApi.createFullOrder(payload);
         message.destroy();
 
-        // Tạo MoMo payment request
         message.loading("Đang tạo yêu cầu thanh toán MoMo...", 0);
         const returnUrl = `${window.location.origin}/payment/momo/return?orderId=${createdOrder.orderId}`;
         const momoPayment = await posApi.createMoMoPayment(
@@ -591,7 +607,6 @@ const PosPageInternal: React.FC = () => {
         message.destroy();
 
         if (momoPayment.payUrl) {
-          // Redirect đến MoMo payment page
           window.location.href = momoPayment.payUrl;
         } else {
           message.error("Không thể tạo link thanh toán MoMo!");
@@ -599,7 +614,6 @@ const PosPageInternal: React.FC = () => {
         return;
       }
 
-      // Nếu là VNPay, tạo order với status pending và redirect đến VNPay
       if (paymentMethod === "vnpay") {
         const payload = {
           userId: user.id,
@@ -611,13 +625,12 @@ const PosPageInternal: React.FC = () => {
             quantity: item.quantity,
             price: item.price,
           })),
-          status: "pending", // Chờ thanh toán VNPay
+          status: "pending",
         };
 
         const createdOrder = await posApi.createFullOrder(payload);
         message.destroy();
 
-        // Tạo VNPay payment request
         message.loading("Đang tạo yêu cầu thanh toán VNPay...", 0);
         const returnUrl = `${window.location.origin}/payment/vnpay/return?orderId=${createdOrder.orderId}`;
         const vnpayPayment = await posApi.createVNPayPayment(
@@ -629,7 +642,6 @@ const PosPageInternal: React.FC = () => {
         message.destroy();
 
         if (vnpayPayment.paymentUrl) {
-          // Redirect đến VNPay payment page
           window.location.href = vnpayPayment.paymentUrl;
         } else {
           message.error("Không thể tạo link thanh toán VNPay!");
@@ -637,11 +649,9 @@ const PosPageInternal: React.FC = () => {
         return;
       }
 
-      // Các phương thức thanh toán khác (cash, card, transfer)
       let orderForReceipt: Order;
 
       if (draftOrder && (draftOrder.status || "").toLowerCase() === "pending") {
-        // Nếu đã tạo hóa đơn chờ thanh toán trước đó → chỉ cần cập nhật sang paid
         const idForUpdate =
           draftOrder.orderId ?? (draftOrder as any).OrderId ?? draftOrder.id;
 
@@ -679,7 +689,6 @@ const PosPageInternal: React.FC = () => {
       message.destroy();
       message.success("Thanh toán thành công!");
 
-      // Sau khi thanh toán chỉ reset POS, không tự động in hóa đơn
       resetPos();
     } catch (err: any) {
       message.destroy();
@@ -801,7 +810,6 @@ const PosPageInternal: React.FC = () => {
           useCORS: true,
           backgroundColor: "#ffffff",
           onclone: (clonedDoc) => {
-            // Xóa mọi màu oklch trong document đã clone để tránh html2canvas lỗi
             const all = clonedDoc.querySelectorAll<HTMLElement>("*");
             all.forEach((el) => {
               const style = clonedDoc.defaultView?.getComputedStyle(el);
@@ -876,7 +884,7 @@ const PosPageInternal: React.FC = () => {
               <Button
                 type="default"
                 onClick={() => {
-                  // open scanner modal
+                  setScanMode("product"); // Set mode quét sản phẩm
                   setScannerOpen(true);
                 }}
                 icon={<SearchOutlined />}
@@ -1086,9 +1094,6 @@ const PosPageInternal: React.FC = () => {
                               >
                                 Tồn: {stock}
                               </div>
-                              {/* <Button size="small" type="text" onClick={(e) => { e.stopPropagation(); setProductQuery(String(p.barcode ?? "")); }}>
-                                  Mã: {p.barcode ?? "-"}
-                                </Button> */}
                             </div>
                           </div>
                         );
@@ -1137,54 +1142,65 @@ const PosPageInternal: React.FC = () => {
           <Col xs={24} md={9}>
             <Card style={{ position: "sticky", top: 24 }}>
               <Title level={5}>Khách hàng</Title>
-              <Select
-                style={{ width: "100%" }}
-                placeholder="Chọn khách hàng (có thể tìm kiếm)"
-                value={
-                  selectedCustomer
-                    ? selectedCustomer.customerId ?? selectedCustomer.id
-                    : 0
-                }
-                onChange={(selectedValue) => {
-                  if (selectedValue === 0) {
-                    setSelectedCustomer(null);
-                  } else {
-                    const c = customers.find(
-                      (x) => (x.customerId ?? x.id) === selectedValue
-                    );
-                    setSelectedCustomer(c ?? null);
+              {/* Sửa phần chọn khách hàng để thêm nút quét QR */}
+              <div style={{ display: "flex", gap: 8 }}>
+                <Select
+                  style={{ flex: 1 }}
+                  placeholder="Chọn khách hàng"
+                  value={
+                    selectedCustomer
+                      ? selectedCustomer.customerId ?? selectedCustomer.id
+                      : 0
                   }
-                }}
-                showSearch
-                optionFilterProp="label"
-                filterOption={(input, option) =>
-                  (option?.label ?? "")
-                    .toString()
-                    .toLowerCase()
-                    .includes(input.toLowerCase())
-                }
-                loading={loadingCustomers}
-                notFoundContent={
-                  loadingCustomers ? <Spin size="small" /> : "Không tìm thấy"
-                }
-              >
-                <Option key="guest" value={0} label="Khách vãng lai">
-                  Khách vãng lai
-                </Option>
-                {customers.map((c) => (
-                  <Option
-                    key={c.customerId ?? c.id}
-                    value={c.customerId ?? c.id!}
-                    label={`${c.customerName ?? c.name} - ${
-                      c.phoneNumber ?? c.phone
-                    }`}
-                  >
-                    {`${c.customerName ?? c.name} - ${
-                      c.phoneNumber ?? c.phone
-                    }`}
+                  onChange={(selectedValue) => {
+                    if (selectedValue === 0) {
+                      setSelectedCustomer(null);
+                    } else {
+                      const c = customers.find(
+                        (x) => (x.customerId ?? x.id) === selectedValue
+                      );
+                      setSelectedCustomer(c ?? null);
+                    }
+                  }}
+                  showSearch
+                  optionFilterProp="label"
+                  filterOption={(input, option) =>
+                    (option?.label ?? "")
+                      .toString()
+                      .toLowerCase()
+                      .includes(input.toLowerCase())
+                  }
+                  loading={loadingCustomers}
+                  notFoundContent={
+                    loadingCustomers ? <Spin size="small" /> : "Không tìm thấy"
+                  }
+                >
+                  <Option key="guest" value={0} label="Khách vãng lai">
+                    Khách vãng lai
                   </Option>
-                ))}
-              </Select>
+                  {customers.map((c) => (
+                    <Option
+                      key={c.customerId ?? c.id}
+                      value={c.customerId ?? c.id!}
+                      label={`${c.customerName ?? c.name} - ${
+                        c.phoneNumber ?? c.phone
+                      }`}
+                    >
+                      {`${c.customerName ?? c.name} - ${
+                        c.phoneNumber ?? c.phone
+                      }`}
+                    </Option>
+                  ))}
+                </Select>
+                <Button
+                    icon={<QrcodeOutlined />}
+                    onClick={() => {
+                        setScanMode("customer"); // Chế độ quét khách hàng
+                        setScannerOpen(true);
+                    }}
+                    title="Quét QR khách hàng"
+                />
+              </div>
 
               <Divider />
               <Title level={5}>
@@ -1192,13 +1208,13 @@ const PosPageInternal: React.FC = () => {
               </Title>
               <Space.Compact style={{ width: "100%" }}>
                 <AutoComplete
-                 style={{ flex: 1 }}
-                value={promoCode}
-                onChange={(value) => setPromoCode(value)} // Giữ nguyên input người dùng nhập
-                onSelect={(value) => {
-                  setPromoCode(value);
-                  applyPromotion(value); // 👇 TRUYỀN THẲNG GIÁ TRỊ VÀO ĐÂY
-                }}
+                  style={{ flex: 1 }}
+                  value={promoCode}
+                  onChange={(value) => setPromoCode(value)}
+                  onSelect={(value) => {
+                    setPromoCode(value);
+                    applyPromotion(value);
+                  }}
                   disabled={cart.length === 0}
                   options={availablePromotions.map((promo) => {
                     const discountText =
@@ -1426,7 +1442,7 @@ const PosPageInternal: React.FC = () => {
       {/* Scanner modal */}
       <Modal
         open={scannerOpen}
-        title="Quét mã vạch sản phẩm"
+        title={scanMode === 'product' ? "Quét mã vạch sản phẩm" : "Quét mã QR khách hàng"}
         onCancel={() => setScannerOpen(false)}
         footer={null}
         width={600}
@@ -1443,7 +1459,7 @@ const PosPageInternal: React.FC = () => {
           />
           <div style={{ marginTop: 12 }}>
             {scanning ? (
-              <Spin tip="Đang quét..." />
+              <Spin tip={scanMode === 'product' ? "Đang quét sản phẩm..." : "Đang tìm số điện thoại..."} />
             ) : (
               <Button onClick={() => setScannerOpen(false)}>Đóng</Button>
             )}
@@ -1604,7 +1620,7 @@ const PosPageInternal: React.FC = () => {
                       padding: "8px 12px",
                     }}
                   >
-                    {user?.fullName || user?.username || "N/A"}
+                    {user?.full_name || user?.username || "N/A"}
                   </td>
                 </tr>
                 <tr>
