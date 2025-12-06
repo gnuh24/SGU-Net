@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { Table, Button, Space, Modal, Form, Input, message } from "antd";
+import { Table, Button, Space, Modal, Form, Input, message, Tag } from "antd";
 import axios from "axios";
-import { SearchOutlined, PlusOutlined } from "@ant-design/icons";
+import { API_BASE_URL } from "../../constants";
+import { SearchOutlined, PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import { da } from "date-fns/locale";
 
 interface Category {
   categoryId: number;
   name: string;
 }
 
-const API_URL = "http://localhost:5260/api/v1/categories";
+const API_URL = `${API_BASE_URL}/categories`;
 
 const CategoryList: React.FC = () => {
   const [form] = Form.useForm();
@@ -16,6 +18,9 @@ const CategoryList: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
     fetchCategories();
@@ -24,18 +29,25 @@ const CategoryList: React.FC = () => {
   const fetchCategories = async (search?: string) => {
     setLoading(true);
     try {
-      const query = search
-        ? `${API_URL}?search=${encodeURIComponent(search)}&pageSize=50`
-        : `${API_URL}?pageSize=50`;
+      const params = new URLSearchParams({
+        page: String(page),
+        pageSize: String(pageSize),
+      });
+      if (search) params.append("search", search);
 
-      const res = await axios.get(query);
-      if (Array.isArray(res.data?.data)) {
-        const sorted = [...res.data.data].sort(
-          (a: Category, b: Category) => a.categoryId - b.categoryId
-        );
-        setCategories(sorted);
+      const res = await fetch(`${API_URL}?${params.toString()}`);
+      const data =await res.json()
+      const totalCount = data.total;
+      let list: Category[] = [];
+      list = data.data.data;
+      if (Array.isArray(list)) {
+        setCategories(list);
+        console.log("Fetched categories:", data);
+        setTotal(totalCount);
       } else {
         setCategories([]);
+        console.log("Fetched find categories: []");
+        setTotal(0);
       }
     } catch (error) {
       message.error("Không thể tải danh mục!");
@@ -45,14 +57,12 @@ const CategoryList: React.FC = () => {
     }
   };
 
-  
   useEffect(() => {
     const timeout = setTimeout(() => {
       fetchCategories(searchText);
     }, 500);
     return () => clearTimeout(timeout);
-  }, [searchText]);
-
+  }, [page, pageSize, searchText]);
 
   const handleDelete = async (id: number) => {
     Modal.confirm({
@@ -72,7 +82,6 @@ const CategoryList: React.FC = () => {
       },
     });
   };
-
 
   const handleAddOrEdit = async () => {
     try {
@@ -95,33 +104,40 @@ const CategoryList: React.FC = () => {
   };
 
   const columns = [
-    { title: "Mã danh mục", dataIndex: "categoryId", key: "categoryId" },
+    { title: "Mã danh mục", dataIndex: "categoryId", key: "categoryId",sorter: (a: Category, b: Category) => a.categoryId - b.categoryId,
+      defaultSortOrder: "ascend", },
     { title: "Tên danh mục", dataIndex: "name", key: "name" },
     {
-      title: "Hành động",
-      key: "action",
-      render: (_: unknown, record: Category) => (
-        <Space>
-          <Button
-            type="link"
-            onClick={() => {
-              form.setFieldsValue(record);
-              setIsModalOpen(true);
-            }}
-          >
-            Sửa
-          </Button>
-          <Button danger type="link" onClick={() => handleDelete(record.categoryId)}>
-            Xóa
-          </Button>
-        </Space>
-      ),
-    },
+  title: "Hành động",
+  key: "action",
+  render: (_: unknown, record: Category) => {
+    
+    if (record.categoryId === 1) {
+      return <Tag color="blue">Mặc định</Tag>; 
+    }
+
+    return (
+      <Space>
+        <Button
+          icon={<EditOutlined />}
+          onClick={() => {
+            form.setFieldsValue(record);
+            setIsModalOpen(true);
+          }}
+        />
+        <Button
+          danger
+          icon={<DeleteOutlined />}
+          onClick={() => handleDelete(record.categoryId)}
+        />
+      </Space>
+    );
+  },
+},
   ];
 
   return (
     <div>
-    
       <div className="flex justify-between items-center mb-4 gap-2">
         <div className="flex gap-2 items-center">
           <Input
@@ -143,21 +159,33 @@ const CategoryList: React.FC = () => {
             setIsModalOpen(true);
           }}
         >
-         Thêm danh mục
+          Thêm danh mục
         </Button>
       </div>
 
-    
       <Table
         columns={columns}
         dataSource={categories}
         rowKey="categoryId"
         bordered
         loading={loading}
-        pagination={{ pageSize: 8 }}
+        pagination={{
+          current: page,
+          pageSize,
+          total,
+          showSizeChanger: true,
+          pageSizeOptions: ["10", "20", "50"],
+          showTotal: (t) => `Tổng ${t} danh mục`,
+          onChange: (p, ps) => {
+            setPage(p);
+            if (ps !== pageSize) {
+              setPageSize(ps);
+              setPage(1);
+            }
+          },
+        }}
       />
 
-   
       <Modal
         title="Thêm / Sửa danh mục"
         open={isModalOpen}
@@ -167,7 +195,6 @@ const CategoryList: React.FC = () => {
         cancelText="Hủy"
       >
         <Form layout="vertical" form={form}>
-          
           <Form.Item
             label="Tên danh mục"
             name="name"

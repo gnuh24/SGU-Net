@@ -79,7 +79,7 @@ namespace be_retail.Controllers
         [HttpPatch("update/{id}")]
         public async Task<IActionResult> UpdateOrder(int id, [FromBody] OrderUpdateForm form)
         {
-            if (form == null || form.OrderItems == null || !form.OrderItems.Any())
+            if (form == null)
             {
                 return BadRequest(new { Status = 400, Message = "Dữ liệu không hợp lệ", Data = false });
             }

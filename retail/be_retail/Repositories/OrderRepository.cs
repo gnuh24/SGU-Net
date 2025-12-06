@@ -19,6 +19,8 @@ namespace be_retail.Repositories
                 .Include(o => o.Payment)
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Product)
+                .Include(o => o.User)           // ✅ THÊM: Để lấy tên người lập hoá đơn
+                .Include(o => o.Promotion)      // ✅ THÊM: Để lấy mã khuyến mãi
                 .FirstOrDefaultAsync(o => o.OrderId == id);
         }
         public IQueryable<Order> Query()

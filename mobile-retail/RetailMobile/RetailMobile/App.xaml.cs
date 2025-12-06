@@ -80,11 +80,11 @@ public partial class App : Application
                 {
                     // Đường dẫn database platform-specific
 #if ANDROID
-                    string dbPath = Path.Combine(Android.App.Application.Context.FilesDir.Path, "app.db3");
+                    string dbPath = Path.Combine(Android.App.Application.Context!.FilesDir!.Path, "app.db3");
 #elif IOS
                     string dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "app.db3");
 #else
-                    string dbPath = "app.db3";
+                    string dbPath = "app.db3"; // Desktop
 #endif
 
                     // Add DbContext
@@ -97,7 +97,7 @@ public partial class App : Application
                     services.AddSingleton<CartService>();
 
                     // Add TokenService
-                    services.AddSingleton<TokenService>();
+                    services.AddSingleton<ITokenService, TokenService>();
 
                     // ApiClientConfig từ appsettings.json
                     services.Configure<ApiClientConfig>(context.Configuration.GetSection("ApiClient"));
@@ -122,6 +122,60 @@ public partial class App : Application
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             db.Database.EnsureDeleted();
             db.Database.EnsureCreated();
+            // Initialize database
+            await InitializeDatabaseAsync();
+        }
+    }
+
+    private async Task InitializeDatabaseAsync()
+    {
+        try
+        {
+            if (Host?.Services != null)
+            {
+                using var scope = Host.Services.CreateScope();
+                var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+                // Ensure database is created
+                await dbContext.Database.EnsureCreatedAsync();
+
+                // Seed data if empty
+                if (!await dbContext.Products.AnyAsync())
+                {
+                    System.Diagnostics.Debug.WriteLine("Seeding database...");
+                    var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+                    var resourceName = "RetailMobile.Assets.products.json";
+
+                    using var stream = assembly.GetManifestResourceStream(resourceName);
+                    if (stream != null)
+                    {
+                        using var reader = new StreamReader(stream);
+                        var json = await reader.ReadToEndAsync();
+                        var products = System.Text.Json.JsonSerializer.Deserialize<List<RetailMobile.Models.Product>>(json);
+
+                        if (products != null)
+                        {
+                            await dbContext.Products.AddRangeAsync(products);
+                            await dbContext.SaveChangesAsync();
+                            System.Diagnostics.Debug.WriteLine($"Seeded {products.Count} products.");
+                        }
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Resource not found: {resourceName}");
+                        // List available resources for debugging
+                        foreach (var res in assembly.GetManifestResourceNames())
+                        {
+                            System.Diagnostics.Debug.WriteLine($"Available resource: {res}");
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // Log the error
+            System.Diagnostics.Debug.WriteLine($"Database initialization failed: {ex.Message}");
         }
     }
 
@@ -136,7 +190,8 @@ public partial class App : Application
             new ViewMap<CheckoutPage, CheckoutViewModel>(),
             new ViewMap<PaymentProcessingPage, PaymentProcessingViewModel>(),
             new ViewMap<OrderConfirmationPage, OrderConfirmationViewModel>(),
-            new ViewMap<ProfilePage, ProfileViewModel>()
+            new ViewMap<ProfilePage, ProfileViewModel>(),
+            new ViewMap<ProductListPage, ProductListViewModel>()
         );
 
         routes.Register(
@@ -150,7 +205,8 @@ public partial class App : Application
                     new ("SignIn", View: views.FindByViewModel<SignInViewModel>(), IsDefault: true),
                     new ("SignUp", View: views.FindByViewModel<SignUpViewModel>()),
                     new ("OrderConfirm", View: views.FindByViewModel<OrderConfirmationViewModel>()),
-                    new ("Profile", View: views.FindByViewModel<ProfileViewModel>())
+                    new ("Profile", View: views.FindByViewModel<ProfileViewModel>()),
+                    new ("Products", View: views.FindByViewModel<ProductListViewModel>()),
                 ]
             )
         );

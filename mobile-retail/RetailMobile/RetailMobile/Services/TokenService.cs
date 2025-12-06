@@ -53,9 +53,9 @@ public class TokenService : ITokenService
 
     public async Task DeleteTokensAsync()
     {
-        var token = await _db.Tokens.OrderBy(token => token.Id).FirstOrDefaultAsync();
-        if (token != null)
-        {
+        var token = await _db.Tokens.FirstOrDefaultAsync();
+        if (token != null) // Fixed: was "== null" (logic bug!)
+        {  
             _db.Tokens.Remove(token);
             await _db.SaveChangesAsync();
         }

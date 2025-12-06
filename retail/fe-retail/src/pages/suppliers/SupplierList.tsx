@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Table, Button, Space, Modal, Form, Input, message } from "antd";
+import { Table, Button, Space, Modal, Form, Input, message, Tag } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import axios from "axios";
+import { API_BASE_URL } from "../../constants";
 
 interface Supplier {
   supplierId: number;
@@ -9,10 +10,9 @@ interface Supplier {
   address: string;
   phone: string;
   email: string;
-  createdAt?: string;
 }
 
-const API_URL = "http://localhost:5260/api/v1/suppliers";
+const API_URL = `${API_BASE_URL}/suppliers`;
 
 const SupplierList: React.FC = () => {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -20,24 +20,35 @@ const SupplierList: React.FC = () => {
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
     fetchSuppliers();
-  }, []);
+  }, [page, pageSize]);
 
   const fetchSuppliers = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API_URL}?pageSize=50`);
-      if (Array.isArray(res.data?.data)) {
-
-        const sorted = [...res.data.data].sort(
-          (a: Supplier, b: Supplier) => a.supplierId - b.supplierId
-        );
-        setSuppliers(sorted);
+      const params = new URLSearchParams({
+        page: String(page),
+        pageSize: String(pageSize),
+      });
+      const res = await fetch(`${API_URL}?${params.toString()}`);
+      const data =await res.json();
+      const totalCount = data.total;
+      let list: Supplier[] = [];
+      list = data.data.data;
+      console.log("Fetched suppliers:", list);
+      if (Array.isArray(list)) {
+        setSuppliers(list);
+        setTotal(totalCount);
+        console.log("array :", list);
       } else {
         setSuppliers([]);
+        setTotal(0);
+        console.log("kh array :",list);
       }
     } catch (err) {
       console.error("Lỗi khi fetch suppliers:", err);
@@ -83,11 +94,9 @@ const SupplierList: React.FC = () => {
       const values = await form.validateFields();
 
       if (editingSupplier) {
-
         await axios.put(`${API_URL}/${editingSupplier.supplierId}`, values);
         message.success("Cập nhật thành công");
       } else {
-
         await axios.post(API_URL, values);
         message.success("Thêm mới thành công");
       }
@@ -116,7 +125,11 @@ const SupplierList: React.FC = () => {
     {
       title: "Hành động",
       key: "action",
-      render: (_: unknown, record: Supplier) => (
+      render: (_: unknown, record: Supplier) => {
+         if (record.supplierId === 1) {
+     return <Tag color="blue">Mặc định</Tag>;  
+    }
+    return (
         <Space>
           <Button icon={<EditOutlined />} onClick={() => handleEdit(record)} />
           <Button
@@ -125,7 +138,8 @@ const SupplierList: React.FC = () => {
             onClick={() => handleDelete(record.supplierId)}
           />
         </Space>
-      ),
+    );
+      },
     },
   ];
 
@@ -146,11 +160,27 @@ const SupplierList: React.FC = () => {
         rowKey="supplierId"
         bordered
         loading={loading}
-        pagination={{ pageSize: 5 }}
+        pagination={{
+          current: page,
+          pageSize,
+          total,
+          showSizeChanger: true,
+          pageSizeOptions: ["10", "20", "50"],
+          showTotal: (t) => `Tổng ${t} nhà cung cấp`,
+          onChange: (p, ps) => {
+            setPage(p);
+            if (ps !== pageSize) {
+              setPageSize(ps);
+              setPage(1);
+            }
+          },
+        }}
       />
 
       <Modal
-        title={editingSupplier ? "Chỉnh sửa nhà cung cấp" : "Thêm nhà cung cấp mới"}
+        title={
+          editingSupplier ? "Chỉnh sửa nhà cung cấp" : "Thêm nhà cung cấp mới"
+        }
         open={isModalOpen}
         onCancel={() => setIsModalOpen(false)}
         onOk={handleSubmit}
@@ -158,7 +188,11 @@ const SupplierList: React.FC = () => {
         cancelText="Hủy"
       >
         <Form form={form} layout="vertical">
-          <Form.Item label="Tên nhà cung cấp" name="name" rules={[{ required: true, message: "Nhập tên nhà cung cấp" }]}>
+          <Form.Item
+            label="Tên nhà cung cấp"
+            name="name"
+            rules={[{ required: true, message: "Nhập tên nhà cung cấp" }]}
+          >
             <Input />
           </Form.Item>
           <Form.Item label="Địa chỉ" name="address">

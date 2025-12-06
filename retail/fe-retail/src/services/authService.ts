@@ -8,7 +8,9 @@ export class AuthService {
     return import.meta.env.VITE_USE_MOCK_API === "true";
   }
 
-  async login(credentials: LoginRequest): Promise<{ user: User; token: string }> {
+  async login(
+    credentials: LoginRequest
+  ): Promise<{ user: User; token: string }> {
     if (this.useMockApi) {
       return mockAuthService.login(credentials);
     }
@@ -46,15 +48,14 @@ export class AuthService {
     throw new Error("Login failed: No data returned from server");
   }
 
-  async register(userData: RegisterRequest): Promise<{ user: User; token: string }> {
+  async register(
+    userData: RegisterRequest
+  ): Promise<{ user: User; token: string }> {
     if (this.useMockApi) {
       return mockAuthService.register(userData);
     }
 
-    const response = await apiService.post<any>(
-      "/auth/register",
-      userData
-    );
+    const response = await apiService.post<any>("/auth/register", userData);
 
     const authData: AuthResponse = response.data?.data || response.data;
 

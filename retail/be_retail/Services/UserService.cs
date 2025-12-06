@@ -1,5 +1,6 @@
 using be_retail.Models;
 using be_retail.Repositories;
+using be_retail.DTOs.User;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -36,7 +37,7 @@ namespace be_retail.Services
             return await _userRepository.CreateAsync(user);
         }
 
-        public async Task<User> UpdateAsync(int id, User updatedUser)
+        public async Task<User> UpdateAsync(int id, UserUpdateRequest request)
         {
             var user = await _userRepository.GetByIdAsync(id);
             if (user == null)
@@ -44,14 +45,23 @@ namespace be_retail.Services
                 throw new Exception("User not found");
             }
 
-            user.Username = updatedUser.Username;
-            user.FullName = updatedUser.FullName;
-            user.Role = updatedUser.Role;
+            // Cập nhật từng trường nếu có gửi từ FE (partial update)
+            if (!string.IsNullOrWhiteSpace(request.Username))
+                user.Username = request.Username;
 
-            // Only update password if provided
-            if (!string.IsNullOrEmpty(updatedUser.Password))
+            if (!string.IsNullOrWhiteSpace(request.FullName))
+                user.FullName = request.FullName;
+
+            if (!string.IsNullOrWhiteSpace(request.Role))
+                user.Role = request.Role;
+
+            if (!string.IsNullOrWhiteSpace(request.Status))
+                user.Status = request.Status;
+
+            // Chỉ hash & cập nhật password nếu FE gửi mật khẩu mới
+            if (!string.IsNullOrWhiteSpace(request.Password))
             {
-                user.Password = HashPassword(updatedUser.Password);
+                user.Password = HashPassword(request.Password);
             }
 
             return await _userRepository.UpdateAsync(user);

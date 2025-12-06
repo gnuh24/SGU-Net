@@ -16,11 +16,15 @@ const Login: React.FC = () => {
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const { isAuthenticated, loading, error } = useAuth();
+  const { isAuthenticated, loading, error, user } = useAuth();
   const [rememberMe, setRememberMe] = useState(false);
 
   // Redirect if already authenticated
   if (isAuthenticated) {
+    if (user?.role === "admin") {
+      return <Navigate to="/users" replace />;
+    }
+
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -41,7 +45,12 @@ const Login: React.FC = () => {
         localStorage.setItem("remember_me", "true");
       }
 
-      navigate("/dashboard");
+      // Redirect based on role
+      if (response.user.role === "admin") {
+        navigate("/users");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (error: any) {
       dispatch(loginFailure(error.message || "Đăng nhập thất bại"));
     }

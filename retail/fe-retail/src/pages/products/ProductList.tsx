@@ -12,10 +12,17 @@ import {
   Upload,
   Image,
 } from "antd";
-import { SearchOutlined, EditOutlined, DeleteOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
+import {
+  SearchOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  PlusOutlined,
+  UploadOutlined,
+} from "@ant-design/icons";
 import type { UploadFile } from "antd";
 import dayjs from "dayjs";
 import { getImageUrl } from "../../utils/imageUtils";
+import { API_BASE_URL } from "../../constants";
 
 interface Product {
   productId: number;
@@ -44,17 +51,20 @@ interface Supplier {
   name: string;
 }
 
-const API_URL = "http://localhost:5260/api/v1/products";
+const API_URL = `${API_BASE_URL}/products`;
 
 const generateBarcode = (products: Product[]): string => {
   const prefix = "890";
   const existingBarcodes = new Set(
     products
-      .filter(p => p.barcode && p.barcode.startsWith(prefix) && p.barcode.length === 13)
-      .map(p => p.barcode!)
+      .filter(
+        (p) =>
+          p.barcode && p.barcode.startsWith(prefix) && p.barcode.length === 13
+      )
+      .map((p) => p.barcode!)
   );
 
-  const maxAttempts = 2000; 
+  const maxAttempts = 2000;
 
   for (let i = 0; i < maxAttempts; i++) {
     // Sinh 10 chữ số ngẫu nhiên
@@ -70,10 +80,11 @@ const generateBarcode = (products: Product[]): string => {
   }
 
   // Nếu quá nhiều lần thử vẫn trùng -> fallback
-  console.warn("Không thể tạo barcode mới không trùng, fallback về 8900000000001");
+  console.warn(
+    "Không thể tạo barcode mới không trùng, fallback về 8900000000001"
+  );
   return prefix + "0000000001";
 };
-
 
 const ProductList: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -95,23 +106,24 @@ const ProductList: React.FC = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const fetchCategories = async () => {
-    const res = await fetch("http://localhost:5260/api/v1/categories?pageSize=100");
+    const res = await fetch(`${API_BASE_URL}/categories?pageSize=100`);
     const data = await res.json();
     if (Array.isArray(data.data)) setCategories(data.data);
   };
 
-
   const fetchSuppliers = async () => {
-    const res = await fetch("http://localhost:5260/api/v1/suppliers?pageSize=100");
+    const res = await fetch(`${API_BASE_URL}/suppliers?pageSize=100`);
     const data = await res.json();
     if (Array.isArray(data.data)) setSuppliers(data.data);
   };
 
-
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ pageSize: "9999" });
+      const params = new URLSearchParams({
+        page: String(page),
+        pageSize: String(pageSize),
+      });
       if (searchText.trim()) params.append("search", searchText);
       if (categoryId && categoryId !== 0)
         params.append("categoryId", String(categoryId));
@@ -129,20 +141,21 @@ const ProductList: React.FC = () => {
       const data = await res.json();
 
       let list: Product[] = [];
-      if (Array.isArray(data.data)) list = data.data;
-      else if (Array.isArray(data.data?.data)) list = data.data.data;
-      else if (Array.isArray(data.data?.items)) list = data.data.items;
+      let totalCount = 0;
 
+      if (Array.isArray(data.data)) {
+        list = data.data;
+        totalCount = data.data.length;
+      } else if (data.data?.data) {
+        list = Array.isArray(data.data.data) ? data.data.data : [];
+        totalCount = data.data.total || data.data.totalCount || list.length;
+      } else if (data.data?.items) {
+        list = data.data.items;
+        totalCount = data.data.total || data.data.totalCount || list.length;
+      }
 
-      const filtered = list.filter((item) => {
-        if (status === "active") return item.isDeleted === false;
-        if (status === "deleted") return item.isDeleted === true;
-        return true;
-      });
-
-      const sorted = filtered.sort((a, b) => a.productId - b.productId);
-      setProducts(sorted);
-      setTotal(sorted.length);
+      setProducts(list);
+      setTotal(totalCount);
     } catch (error) {
       message.error("Không thể tải sản phẩm!");
       console.error("❌ Lỗi fetchProducts:", error);
@@ -151,7 +164,6 @@ const ProductList: React.FC = () => {
     }
   };
 
-
   useEffect(() => {
     fetchCategories();
     fetchSuppliers();
@@ -159,7 +171,7 @@ const ProductList: React.FC = () => {
 
   useEffect(() => {
     fetchProducts();
-  }, [searchText, categoryId, supplierId, status]);
+  }, [page, pageSize, searchText, categoryId, supplierId, status]);
 
   // Reset preview và fileList khi modal đóng
   useEffect(() => {
@@ -184,7 +196,7 @@ const ProductList: React.FC = () => {
 
       // Thêm file ảnh nếu có
       if (fileList.length > 0) {
-        const file = fileList[0].originFileObj || fileList[0] as any;
+        const file = fileList[0].originFileObj || (fileList[0] as any);
         if (file) {
           formData.append("imageFile", file);
           console.log("✅ Gửi ảnh mới:", file.name, file.size);
@@ -233,8 +245,6 @@ const ProductList: React.FC = () => {
     }
   };
 
-
-
   const handleDelete = (id: number) => {
     Modal.confirm({
       title: "Xác nhận xóa sản phẩm?",
@@ -272,7 +282,18 @@ const ProductList: React.FC = () => {
             preview={false}
           />
         ) : (
-          <div style={{ width: 60, height: 60, background: "#f0f0f0", borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", color: "#999" }}>
+          <div
+            style={{
+              width: 60,
+              height: 60,
+              background: "#f0f0f0",
+              borderRadius: 4,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#999",
+            }}
+          >
             No Image
           </div>
         );
@@ -352,7 +373,6 @@ const ProductList: React.FC = () => {
         </Space>
       ),
     },
-
   ];
 
   return (
@@ -417,7 +437,6 @@ const ProductList: React.FC = () => {
           value={status}
           onChange={(val) => setStatus(val)}
           options={[
-
             { value: "active", label: "Còn hoạt động" },
             { value: "deleted", label: "Đã xóa" },
           ]}
@@ -427,7 +446,7 @@ const ProductList: React.FC = () => {
 
       <Table
         columns={columns}
-        dataSource={products.slice((page - 1) * pageSize, page * pageSize)}
+        dataSource={products}
         rowKey="productId"
         bordered
         loading={loading}
@@ -440,11 +459,13 @@ const ProductList: React.FC = () => {
           showTotal: (t) => `Tổng ${t} sản phẩm`,
           onChange: (p, ps) => {
             setPage(p);
-            setPageSize(ps);
+            if (ps !== pageSize) {
+              setPageSize(ps);
+              setPage(1); // Reset về trang 1 khi đổi pageSize
+            }
           },
         }}
       />
-
 
       <Modal
         title={editingProduct ? "Sửa sản phẩm" : "Thêm sản phẩm"}
@@ -468,60 +489,69 @@ const ProductList: React.FC = () => {
             <Input />
           </Form.Item>
 
-          <Form.Item 
-            label="Barcode" 
+          <Form.Item
+            label="Barcode"
             name="barcode"
             tooltip="Barcode tự động được tạo. Bạn có thể thay đổi nếu cần."
             rules={[
               { required: true, message: "Barcode là bắt buộc" },
-              { 
-                pattern: /^890\d{10}$/, 
-                message: "Barcode phải có dạng 890XXXXXXXXXX (13 chữ số)" 
+              {
+                pattern: /^890\d{10}$/,
+                message: "Barcode phải có dạng 890XXXXXXXXXX (13 chữ số)",
               },
               {
                 validator: async (_, value) => {
                   if (!value) return Promise.resolve();
-                  
+
                   // Kiểm tra trùng barcode (chỉ khi edit)
                   if (editingProduct) {
                     const duplicate = products.find(
-                      p => p.barcode === value && p.productId !== editingProduct.productId
+                      (p) =>
+                        p.barcode === value &&
+                        p.productId !== editingProduct.productId
                     );
                     if (duplicate) {
-                      return Promise.reject(new Error(`Barcode "${value}" đã tồn tại cho sản phẩm "${duplicate.productName}"`));
+                      return Promise.reject(
+                        new Error(
+                          `Barcode "${value}" đã tồn tại cho sản phẩm "${duplicate.productName}"`
+                        )
+                      );
                     }
                   } else {
                     // Kiểm tra trùng khi tạo mới
-                    const duplicate = products.find(p => p.barcode === value);
+                    const duplicate = products.find((p) => p.barcode === value);
                     if (duplicate) {
-                      return Promise.reject(new Error(`Barcode "${value}" đã tồn tại cho sản phẩm "${duplicate.productName}"`));
+                      return Promise.reject(
+                        new Error(
+                          `Barcode "${value}" đã tồn tại cho sản phẩm "${duplicate.productName}"`
+                        )
+                      );
                     }
                   }
                   return Promise.resolve();
-                }
-              }
+                },
+              },
             ]}
           >
-            <Input 
-  placeholder="890XXXXXXXXXX"
-  disabled={editingProduct}
-  addonAfter={
-    !editingProduct && (
-      <Button 
-        type="link" 
-        size="small"
-        onClick={() => {
-          const newBarcode = generateBarcode(products);
-          form.setFieldsValue({ barcode: newBarcode });
-        }}
-        style={{ padding: 0, height: 'auto' }}
-      >
-        Tạo mới
-      </Button>
-    )
-  }
-/>
-
+            <Input
+              placeholder="890XXXXXXXXXX"
+              disabled={editingProduct}
+              addonAfter={
+                !editingProduct && (
+                  <Button
+                    type="link"
+                    size="small"
+                    onClick={() => {
+                      const newBarcode = generateBarcode(products);
+                      form.setFieldsValue({ barcode: newBarcode });
+                    }}
+                    style={{ padding: 0, height: "auto" }}
+                  >
+                    Tạo mới
+                  </Button>
+                )
+              }
+            />
           </Form.Item>
 
           <Form.Item
@@ -575,10 +605,17 @@ const ProductList: React.FC = () => {
                     alt="Current image"
                     width={100}
                     height={100}
-                    style={{ objectFit: "cover", borderRadius: 4, border: "1px solid #d9d9d9" }}
+                    style={{
+                      objectFit: "cover",
+                      borderRadius: 4,
+                      border: "1px solid #d9d9d9",
+                    }}
                     preview={false}
                     onError={() => {
-                      console.error("Failed to load preview image:", imagePreview);
+                      console.error(
+                        "Failed to load preview image:",
+                        imagePreview
+                      );
                       setImagePreview(null);
                     }}
                   />
@@ -587,7 +624,7 @@ const ProductList: React.FC = () => {
                   </div>
                 </div>
               )}
-              
+
               {/* Upload component - luôn hiển thị */}
               <Upload
                 listType="picture-card"
@@ -603,34 +640,41 @@ const ProductList: React.FC = () => {
                     message.error("Ảnh phải nhỏ hơn 5MB!");
                     return false;
                   }
-                // Tạo UploadFile object với originFileObj
-                const uploadFile: UploadFile = {
-                  uid: `${Date.now()}`,
-                  name: file.name,
-                  status: 'done',
-                  originFileObj: file,
-                } as UploadFile;
-                
-                setFileList([uploadFile]);
-                console.log("✅ File đã được thêm vào fileList:", file.name, file.size);
-                
-                // Clear preview ảnh cũ khi upload ảnh mới
-                if (editingProduct) {
-                  setImagePreview(null);
-                }
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                  // Set preview cho ảnh mới
-                  setImagePreview(e.target?.result as string);
-                };
-                reader.readAsDataURL(file);
-                return false; // Prevent auto upload
+                  // Tạo UploadFile object với originFileObj
+                  const uploadFile: UploadFile = {
+                    uid: `${Date.now()}`,
+                    name: file.name,
+                    status: "done",
+                    originFileObj: file,
+                  } as UploadFile;
+
+                  setFileList([uploadFile]);
+                  console.log(
+                    "✅ File đã được thêm vào fileList:",
+                    file.name,
+                    file.size
+                  );
+
+                  // Clear preview ảnh cũ khi upload ảnh mới
+                  if (editingProduct) {
+                    setImagePreview(null);
+                  }
+                  const reader = new FileReader();
+                  reader.onload = (e) => {
+                    // Set preview cho ảnh mới
+                    setImagePreview(e.target?.result as string);
+                  };
+                  reader.readAsDataURL(file);
+                  return false; // Prevent auto upload
                 }}
                 onRemove={() => {
                   setFileList([]);
                   // Nếu đang edit, khôi phục preview ảnh cũ
                   if (editingProduct && editingProduct.imageUrl) {
-                    const imgUrl = getImageUrl(editingProduct.imageUrl, editingProduct.image);
+                    const imgUrl = getImageUrl(
+                      editingProduct.imageUrl,
+                      editingProduct.image
+                    );
                     setImagePreview(imgUrl);
                   } else {
                     setImagePreview(null);
@@ -643,12 +687,14 @@ const ProductList: React.FC = () => {
                   <div>
                     <UploadOutlined />
                     <div style={{ marginTop: 8 }}>
-                      {editingProduct && imagePreview ? "Thay đổi ảnh" : "Upload"}
+                      {editingProduct && imagePreview
+                        ? "Thay đổi ảnh"
+                        : "Upload"}
                     </div>
                   </div>
                 )}
               </Upload>
-              
+
               {/* Hiển thị preview ảnh mới khi upload */}
               {imagePreview && fileList.length > 0 && (
                 <div style={{ marginTop: 16 }}>
@@ -660,7 +706,11 @@ const ProductList: React.FC = () => {
                     alt="New image preview"
                     width={100}
                     height={100}
-                    style={{ objectFit: "cover", borderRadius: 4, border: "1px solid #52c41a" }}
+                    style={{
+                      objectFit: "cover",
+                      borderRadius: 4,
+                      border: "1px solid #52c41a",
+                    }}
                     preview={false}
                   />
                 </div>

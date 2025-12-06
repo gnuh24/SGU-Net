@@ -32,7 +32,8 @@ namespace be_retail.Controllers
                         UserId = u.UserId,
                         Username = u.Username!,
                         FullName = u.FullName!,
-                        Role = u.Role!
+                        Role = u.Role!,
+                        Status = u.Status!
                     }).ToList();
 
                     var response = new PagedResponse<UserResponseDTO>(data, total, page.Value, pageSize);
@@ -53,7 +54,8 @@ namespace be_retail.Controllers
                         UserId = u.UserId,
                         Username = u.Username!,
                         FullName = u.FullName!,
-                        Role = u.Role!
+                        Role = u.Role!,
+                        Status = u.Status!
                     }).ToList();
 
                     return Ok(new ApiResponse<object>
@@ -96,7 +98,8 @@ namespace be_retail.Controllers
                     UserId = user.UserId,
                     Username = user.Username!,
                     FullName = user.FullName!,
-                    Role = user.Role!
+                    Role = user.Role!,
+                    Status = user.Status!
                 };
 
                 return Ok(new ApiResponse<UserResponseDTO>
@@ -163,22 +166,16 @@ namespace be_retail.Controllers
         {
             try
             {
-                var user = new User
-                {
-                    Username = request.Username!,
-                    Password = request.Password,
-                    FullName = request.FullName!,
-                    Role = request.Role!
-                };
-
-                var updated = await _userService.UpdateAsync(id, user);
+                // Truyền DTO trực tiếp vào service để xử lý partial update
+                var updated = await _userService.UpdateAsync(id, request);
 
                 var data = new UserResponseDTO
                 {
                     UserId = updated.UserId,
                     Username = updated.Username!,
                     FullName = updated.FullName!,
-                    Role = updated.Role!
+                    Role = updated.Role!,
+                    Status = updated.Status!
                 };
 
                 return Ok(new ApiResponse<UserResponseDTO>

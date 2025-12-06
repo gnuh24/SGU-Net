@@ -1,11 +1,10 @@
 import axios from "axios";
 import { mockReportService } from "./mock/mockReportService";
+import { API_BASE_URL } from "../constants";
 
 // Create separate axios instance for statistics API (different base path)
 const statsApi = axios.create({
-  baseURL:
-    import.meta.env.VITE_API_BASE_URL?.replace("/v1", "") ||
-    "http://localhost:5260/api",
+  baseURL: API_BASE_URL.replace(/\/v1$/, ""),
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",

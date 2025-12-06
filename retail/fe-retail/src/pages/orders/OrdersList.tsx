@@ -22,7 +22,9 @@ import {
 } from "@ant-design/icons";
 import { useSearchParams, useLocation } from "react-router-dom";
 import { apiService } from "../../services/apiService";
+import { getImageUrl } from "../../utils/imageUtils";
 import dayjs from "dayjs";
+import { useAuth } from "../../hooks/useAuth";
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -36,7 +38,7 @@ interface Order {
   discountAmount: number;
   status: string;
   userName?: string;
-  promoName?: string;
+  promoCode?: string; // ✅ Đổi từ promoName thành promoCode để match API
   orderItems?: OrderItem[];
   payment?: Payment;
 }
@@ -44,6 +46,7 @@ interface Order {
 interface OrderItem {
   orderItemId: number;
   productName: string;
+  productImage?: string;
   quantity: number;
   price: number;
 }
@@ -78,13 +81,27 @@ const OrdersList: React.FC = () => {
     fromDate: "",
     toDate: "",
   });
+  const [sortField, setSortField] = useState<string>("");
+  const [sortOrder, setSortOrder] = useState<string>("");
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
+  const { user, hasRole } = useAuth();
 
-  // Fetch orders on mount
+  // Fetch lần đầu
   useEffect(() => {
-    fetchOrders();
+    fetchOrders(pagination.current, pagination.pageSize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Tự động lọc lại khi bộ lọc thay đổi (search, status, ngày)
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      fetchOrders(1, pagination.pageSize);
+    }, 400);
+
+    return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters]);
 
   // Auto-refresh when coming from payment return page
   useEffect(() => {
@@ -102,12 +119,22 @@ const OrdersList: React.FC = () => {
   }, [location.search]);
 
   const unwrapResponse = (response: any): any => {
+    // If response.data has pagination structure (data + total), return the whole object
+    if (response?.data?.data && response?.data?.total !== undefined) {
+      return response.data;
+    }
+    // Otherwise, unwrap to just the data
     if (response?.data?.data) return response.data.data;
     if (response?.data) return response.data;
     return response;
   };
 
-  const fetchOrders = async (page: number = 1, pageSize: number = 10) => {
+  const fetchOrders = async (
+    page: number = 1,
+    pageSize: number = 10,
+    customSortField?: string,
+    customSortOrder?: string
+  ) => {
     setLoading(true);
     try {
       const params: any = {
@@ -115,31 +142,54 @@ const OrdersList: React.FC = () => {
         pageSize,
       };
 
+      // Staff chỉ xem hóa đơn của chính mình
+      if (user && hasRole("staff")) {
+        params.userId = user.id;
+      }
+
       if (filters.search) params.search = filters.search;
       if (filters.status) params.status = filters.status;
       if (filters.fromDate) params.fromDate = filters.fromDate;
       if (filters.toDate) params.toDate = filters.toDate;
 
+      const activeSortField =
+        customSortField !== undefined ? customSortField : sortField;
+      const activeSortOrder =
+        customSortOrder !== undefined ? customSortOrder : sortOrder;
+
+      if (activeSortField) {
+        // Map frontend field names to backend field names
+        const fieldMapping: { [key: string]: string } = {
+          orderId: "orderId",
+          orderDate: "orderDate",
+          finalAmount: "finalAmount",
+        };
+        params.sortBy = fieldMapping[activeSortField] || activeSortField;
+      }
+      if (activeSortOrder) params.sortDirection = activeSortOrder;
+
       const response = await apiService.get("/orders", { params });
       const data = unwrapResponse(response);
 
-      let ordersList = [];
-      let total = 0;
-
-      if (Array.isArray(data)) {
-        ordersList = data;
-        total = data.length;
-      } else if (data.items) {
-        ordersList = data.items;
-        total = data.total || data.items.length;
-      } else if (data.data) {
-        ordersList = data.data;
-        total = data.total || data.data.length;
+      // Backend returns PagedResponse structure: { data: [...], total: X, page: Y, pageSize: Z }
+      if (
+        data &&
+        typeof data === "object" &&
+        "data" in data &&
+        "total" in data
+      ) {
+        setOrders(data.data || []);
+        setPagination({ current: page, pageSize, total: data.total || 0 });
+      } else if (Array.isArray(data)) {
+        // Fallback for direct array response
+        setOrders(data);
+        setPagination({ current: page, pageSize, total: data.length });
+      } else {
+        setOrders([]);
+        setPagination({ current: page, pageSize, total: 0 });
       }
-
-      setOrders(ordersList);
-      setPagination({ current: page, pageSize, total });
     } catch (error: any) {
+      console.error("Error fetching orders:", error);
       message.error("Lỗi khi tải danh sách hóa đơn");
     } finally {
       setLoading(false);
@@ -150,6 +200,7 @@ const OrdersList: React.FC = () => {
     try {
       const response = await apiService.get(`/orders/${orderId}`);
       const data = unwrapResponse(response);
+
       setSelectedOrder(data);
       setDetailModalVisible(true);
     } catch (error: any) {
@@ -157,8 +208,36 @@ const OrdersList: React.FC = () => {
     }
   };
 
-  const handleTableChange = (paginationConfig: any) => {
-    fetchOrders(paginationConfig.current, paginationConfig.pageSize);
+  const handleTableChange = (
+    paginationConfig: any,
+    filters: any,
+    sorter: any
+  ) => {
+    // Handle sorting
+    let newSortField = "";
+    let newSortOrder = "";
+
+    if (sorter.field) {
+      newSortField = sorter.field;
+      newSortOrder =
+        sorter.order === "ascend"
+          ? "asc"
+          : sorter.order === "descend"
+          ? "desc"
+          : "";
+      setSortField(newSortField);
+      setSortOrder(newSortOrder);
+    } else {
+      setSortField("");
+      setSortOrder("");
+    }
+
+    fetchOrders(
+      paginationConfig.current,
+      paginationConfig.pageSize,
+      newSortField,
+      newSortOrder
+    );
   };
 
   const handleSearch = () => {
@@ -172,7 +251,6 @@ const OrdersList: React.FC = () => {
       fromDate: "",
       toDate: "",
     });
-    setTimeout(() => fetchOrders(1, pagination.pageSize), 100);
   };
 
   const getStatusColor = (status: string) => {
@@ -181,6 +259,7 @@ const OrdersList: React.FC = () => {
         return "green";
       case "pending":
         return "orange";
+      case "canceled":
       case "cancelled":
         return "red";
       default:
@@ -194,6 +273,7 @@ const OrdersList: React.FC = () => {
         return "Đã thanh toán";
       case "pending":
         return "Chờ thanh toán";
+      case "canceled":
       case "cancelled":
         return "Đã hủy";
       default:
@@ -220,6 +300,13 @@ const OrdersList: React.FC = () => {
       dataIndex: "orderId",
       key: "orderId",
       width: 80,
+      sorter: true,
+      sortOrder:
+        sortField === "orderId"
+          ? sortOrder === "asc"
+            ? ("ascend" as const)
+            : ("descend" as const)
+          : undefined,
       render: (id: number) => `#${id}`,
     },
     {
@@ -227,6 +314,13 @@ const OrdersList: React.FC = () => {
       dataIndex: "orderDate",
       key: "orderDate",
       width: 150,
+      sorter: true,
+      sortOrder:
+        sortField === "orderDate"
+          ? sortOrder === "asc"
+            ? ("ascend" as const)
+            : ("descend" as const)
+          : undefined,
       render: (date: string) => dayjs(date).format("DD/MM/YYYY HH:mm"),
     },
     {
@@ -253,9 +347,17 @@ const OrdersList: React.FC = () => {
     },
     {
       title: "Thành tiền",
+      dataIndex: "finalAmount",
       key: "finalAmount",
       align: "right" as const,
       width: 130,
+      sorter: true,
+      sortOrder:
+        sortField === "finalAmount"
+          ? sortOrder === "asc"
+            ? ("ascend" as const)
+            : ("descend" as const)
+          : undefined,
       render: (_: any, record: Order) =>
         formatCurrency(record.totalAmount - (record.discountAmount || 0)),
     },
@@ -323,7 +425,7 @@ const OrdersList: React.FC = () => {
               >
                 <Option value="paid">Đã thanh toán</Option>
                 <Option value="pending">Chờ thanh toán</Option>
-                <Option value="cancelled">Đã hủy</Option>
+                <Option value="canceled">Đã hủy</Option>
               </Select>
             </Col>
             <Col xs={24} sm={12} lg={8}>
@@ -421,7 +523,7 @@ const OrdersList: React.FC = () => {
                   </Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="Khuyến mãi">
-                  {selectedOrder.promoName || "Không có"}
+                  {selectedOrder.promoCode || "Không có"}
                 </Descriptions.Item>
               </Descriptions>
             </Card>
@@ -436,8 +538,26 @@ const OrdersList: React.FC = () => {
                 columns={[
                   {
                     title: "Sản phẩm",
-                    dataIndex: "productName",
-                    key: "productName",
+                    key: "product",
+                    width: 250,
+                    render: (_: any, record: OrderItem) => (
+                      <div className="flex items-center space-x-3">
+                        <img
+                          src={
+                            getImageUrl(undefined, record.productImage) ||
+                            "/placeholder-product.png"
+                          }
+                          alt={record.productName}
+                          className="w-10 h-10 object-cover rounded border"
+                          onError={(e) => {
+                            e.currentTarget.src = "/placeholder-product.png";
+                          }}
+                        />
+                        <span className="font-medium">
+                          {record.productName}
+                        </span>
+                      </div>
+                    ),
                   },
                   {
                     title: "Số lượng",

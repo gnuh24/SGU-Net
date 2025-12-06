@@ -8,5 +8,6 @@ namespace be_retail.DTOs
         public decimal Price { get; set; }
         public decimal Subtotal { get; set; }
         public string? ProductName { get; set; }
+        public string? ProductImage { get; set; }
     }
 }

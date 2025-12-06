@@ -16,17 +16,19 @@
             </Grid.RowDefinitions>
             <utu:NavigationBar Content="{Binding Title}" />
 
-            <StackPanel
-                Grid.Row="1"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center"
-                Spacing="16">
-                <TextBox PlaceholderText="Enter your name:" Text="{Binding Name, Mode=TwoWay}" />
-                <Button
-                    AutomationProperties.AutomationId="SecondPageButton"
-                    Command="{Binding GoToSecond}"
-                    Content="Go to Second Page" />
-            </StackPanel>
-        </Grid>
-    </ScrollViewer>
+      <StackPanel Grid.Row="1"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            Spacing="16">
+        <TextBox Text="{Binding Name, Mode=TwoWay}"
+            PlaceholderText="Enter your name:" />
+        <Button Content="Go to Second Page"
+            AutomationProperties.AutomationId="SecondPageButton"
+            Command="{Binding GoToSecond}" />
+        <Button Content="Danh sách Sản phẩm"
+            AutomationProperties.AutomationId="ProductListButton"
+            Command="{Binding GoToProducts}" />
+      </StackPanel>
+    </Grid>
+  </ScrollViewer>
 </Page>

@@ -11,3 +11,5 @@ global using RetailMobile.Presentation;
 global using RetailMobile.Services.Endpoints;
 global using Uno.Extensions.Http.Kiota;
 global using ApplicationExecutionState = Windows.ApplicationModel.Activation.ApplicationExecutionState;
+
+

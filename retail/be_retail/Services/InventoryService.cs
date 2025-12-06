@@ -1,4 +1,4 @@
-using be_retail.Api; 
+using be_retail.Api;
 using be_retail.DTOs.Inventory;
 using be_retail.Models;
 using be_retail.Repositories;
@@ -7,10 +7,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace be_retail.Services
 {
-    public class InventoryService 
+    public class InventoryService
     {
         private readonly InventoryRepository _inventoryRepository;
-        private readonly ProductRepository _productRepository; 
+        private readonly ProductRepository _productRepository;
 
         public InventoryService(InventoryRepository inventoryRepository, ProductRepository productRepository)
         {
@@ -19,8 +19,8 @@ namespace be_retail.Services
         }
 
         public async Task<PagedResponse<InventoryResponseDTO>> GetInventoriesAsync(
-            int page, 
-            int pageSize, 
+            int page,
+            int pageSize,
             string? search,
             string? sortBy,
             bool desc,
@@ -73,7 +73,7 @@ namespace be_retail.Services
                         Message = "Mã sản phẩm không tồn tại hoặc đã bị xóa"
                     };
                 }
-                
+
                 var newInventory = await _inventoryRepository.CreateAsync(new Inventory
                 {
                     ProductId = form.ProductId,
@@ -156,17 +156,14 @@ namespace be_retail.Services
             }
         }
 
-        public async Task<PagedResponse<InventoryResponseDTO>> GetLowStockProductsAsync(
-            int threshold,
-            int page,
-            int pageSize)
-        {
-            return await _inventoryRepository.GetLowStockProductsAsync(threshold, page, pageSize);
-        }
-
         public async Task<int> GetTotalStockAsync(int productId)
         {
             return await _inventoryRepository.GetTotalStockByProductIdAsync(productId);
+        }
+
+        public async Task<PagedResponse<ProductResponseDTO>> GetProductsWithLowTotalStockAsync(int threshold, int page, int pageSize)
+        {
+            return await _inventoryRepository.GetProductsWithLowTotalStockAsync(threshold, page, pageSize);
         }
     }
 }

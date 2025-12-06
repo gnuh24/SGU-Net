@@ -1,4 +1,5 @@
 import axios from "axios";
+import { API_BASE_URL, BACKEND_BASE_URL } from "../constants";
 import { mockPromotionService } from "@/services/mock/mockPromotionService";
 
 export interface SwaggerProduct {
@@ -52,7 +53,6 @@ export interface Order {
   status?: string;
 }
 
-const API_BASE_URL = "http://localhost:5260/api/v1";
 const apiClient = axios.create({ baseURL: API_BASE_URL });
 
 const unwrapData = (response: any): any[] => {
@@ -100,7 +100,7 @@ export const posApi = {
     apiClient.get(`/products?pageSize=1000`).then(unwrapData),
 
   getCustomers: (): Promise<Customer[]> =>
-    apiClient.get(`/customers`).then(unwrapData),
+    apiClient.get(`/customers?pageSize=1000`).then(unwrapData),
 
   validatePromotion: async (
     promoCode: string,
@@ -195,7 +195,7 @@ export const posApi = {
         orderId,
         amount,
         returnUrl: returnUrl || `${window.location.origin}/payment/momo/return`,
-        notifyUrl: `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5260'}/api/v1/payments/momo/callback`
+        notifyUrl: `${BACKEND_BASE_URL}/api/v1/payments/momo/callback`
       });
       const result = response.data?.data || response.data;
       if (result?.payUrl) {
@@ -205,6 +205,28 @@ export const posApi = {
     } catch (error: any) {
       throw error;
     }
+  },
+
+  // Cập nhật đơn hàng (sử dụng cho việc chuyển trạng thái pending → paid tại POS)
+  updateOrder: async (
+    orderId: number,
+    payload: {
+      status?: string;
+      paymentMethod?: "cash" | "card" | "transfer" | "momo" | "vnpay";
+    }
+  ): Promise<boolean> => {
+    const body: any = {};
+    if (payload.status !== undefined) body.status = payload.status;
+    if (payload.paymentMethod !== undefined)
+      body.paymentMethod = payload.paymentMethod;
+
+    const response = await apiClient.patch(`/orders/update/${orderId}`, body);
+    const data = response.data?.data ?? response.data;
+    // Backend trả về ApiResponse<bool> → data là true/false
+    if (typeof data === "object" && "data" in data) {
+      return Boolean((data as any).data);
+    }
+    return Boolean(data);
   },
 
   // Tạo payment request với VNPay

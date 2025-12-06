@@ -8,11 +8,6 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using be_retail.Models;
-using be_retail.Services;
-
 using System.Threading.Tasks;
 
 namespace be_retail.Controllers
@@ -140,7 +135,7 @@ namespace be_retail.Controllers
 
 
         [HttpPost("refresh-token")]
-        [Authorize(Roles = "admin,staff")]
+        [Authorize(Roles = "admin,manager,staff")]
         public IActionResult RefreshToken([FromBody] RefreshTokenRequest request)
         {
             try

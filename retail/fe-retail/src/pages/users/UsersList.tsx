@@ -33,38 +33,93 @@ const UsersList: React.FC = () => {
     navigate(`/users/${record.id}/edit`);
   };
 
-  const handleDelete = async (record: User) => {
+  const handleToggleStatus = async (record: User) => {
+    const isCurrentlyBanned = record.status === "banned";
+    const action = isCurrentlyBanned ? "mở" : "khóa";
+    const newStatus = isCurrentlyBanned ? "active" : "banned";
+
     Modal.confirm({
       title: "Xác nhận",
-      content: `Bạn có muốn xóa người dùng ${record.username}?`,
+      content: `Bạn có muốn ${action} tài khoản của ${record.username}?`,
       onOk: async () => {
         try {
-          await userService.deleteUser(record.id);
-          message.success("Xóa thành công");
+          await userService.updateUser(record.id, { status: newStatus });
+          message.success(
+            `${
+              action.charAt(0).toUpperCase() + action.slice(1)
+            } tài khoản thành công`
+          );
           fetchUsers();
         } catch (err: any) {
-          message.error(err.message || "Xóa thất bại");
+          message.error(err.message || `Không thể ${action} tài khoản`);
         }
       },
     });
   };
 
+  // const handleDelete = async (record: User) => {
+  //   Modal.confirm({
+  //     title: "Xác nhận",
+  //     content: `Bạn có muốn xóa người dùng ${record.username}?`,
+  //     onOk: async () => {
+  //       try {
+  //         await userService.deleteUser(record.id);
+  //         message.success("Xóa thành công");
+  //         fetchUsers();
+  //       } catch (err: any) {
+  //         message.error(err.message || "Xóa thất bại");
+  //       }
+  //     },
+  //   });
+  // };
+
+  const getStatusText = (status?: string) => {
+    switch (status) {
+      case "active":
+        return { text: "Hoạt động", color: "green" };
+      case "banned":
+        return { text: "Đã khóa", color: "red" };
+      case "inactive":
+        return { text: "Không hoạt động", color: "orange" };
+      default:
+        return { text: "Hoạt động", color: "green" };
+    }
+  };
+
   const columns = [
-    { title: "ID", dataIndex: "id", key: "id" },
+    { title: "ID", dataIndex: "id", key: "id", width: 80 },
     { title: "Username", dataIndex: "username", key: "username" },
     { title: "Full name", dataIndex: "full_name", key: "full_name" },
     { title: "Role", dataIndex: "role", key: "role" },
     {
+      title: "Trạng thái",
+      dataIndex: "status",
+      key: "status",
+      render: (status: string) => {
+        const { text, color } = getStatusText(status);
+        return <span style={{ color }}>{text}</span>;
+      },
+    },
+    {
       title: "Actions",
       key: "actions",
-      render: (_: any, record: User) => (
-        <Space>
-          <Button onClick={() => handleEdit(record)}>Sửa</Button>
-          <Button danger onClick={() => handleDelete(record)}>
-            Xóa
-          </Button>
-        </Space>
-      ),
+      width: 200,
+      render: (_: any, record: User) =>
+        record.role === "admin" ? null : (
+          <Space>
+            <Button onClick={() => handleEdit(record)}>Sửa</Button>
+            <Button
+              type={record.status === "banned" ? "default" : "primary"}
+              danger={record.status !== "banned"}
+              onClick={() => handleToggleStatus(record)}
+            >
+              {record.status === "banned" ? "Mở khóa" : "Khóa"}
+            </Button>
+            {/* <Button danger onClick={() => handleDelete(record)}>
+              Xóa
+            </Button> */}
+          </Space>
+        ),
     },
   ];
 

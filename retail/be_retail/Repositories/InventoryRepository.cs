@@ -8,7 +8,7 @@ using System.Linq.Expressions;
 namespace be_retail.Repositories
 {
     public class InventoryRepository
-{
+    {
         private readonly AppDbContext _context;
 
         public InventoryRepository(AppDbContext context)
@@ -27,7 +27,7 @@ namespace be_retail.Repositories
 
             if (!string.IsNullOrEmpty(search))
             {
-                query = query.Where(i => i.Product.Name.Contains(search) || 
+                query = query.Where(i => i.Product.Name.Contains(search) ||
                                         i.Product.Barcode!.Contains(search) ||
                                         (i.Product.Category != null && i.Product.Category.Name.Contains(search)) ||
                                         (i.Product.Supplier != null && i.Product.Supplier.Name.Contains(search)));
@@ -263,45 +263,6 @@ namespace be_retail.Repositories
             return inventory;
         }
 
-        public async Task<PagedResponse<InventoryResponseDTO>> GetLowStockProductsAsync(
-            int threshold,
-            int page,
-            int pageSize)
-        {
-            var query = _context.Inventories
-                .Include(i => i.Product)
-                    .ThenInclude(p => p.Category)
-                .Include(i => i.Product)
-                    .ThenInclude(p => p.Supplier)
-                .Where(i => i.Quantity <= threshold)
-                .AsQueryable();
-
-            var totalCount = await query.CountAsync();
-            var inventories = await query
-                .OrderBy(i => i.Quantity)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(i => new InventoryResponseDTO
-                {
-                    InventoryId = i.InventoryId,
-                    ProductId = i.ProductId,
-                    Quantity = i.Quantity,
-                    CreatedAt = i.CreatedAt,
-                    UpdatedAt = i.UpdatedAt,
-                    ProductName = i.Product.Name,
-                    Barcode = i.Product.Barcode,
-                    Price = i.Product.Price,
-                    Unit = i.Product.Unit,
-                    CategoryId = i.Product.CategoryId,
-                    CategoryName = i.Product.Category != null ? i.Product.Category.Name : null,
-                    SupplierId = i.Product.SupplierId,
-                    SupplierName = i.Product.Supplier != null ? i.Product.Supplier.Name : null
-                })
-                .ToListAsync();
-
-            return new PagedResponse<InventoryResponseDTO>(inventories, totalCount, page, pageSize);
-        }
-
         public async Task<List<Inventory>> GetInventoriesByProductIdFIFOAsync(int productId)
         {
             return await _context.Inventories
@@ -310,11 +271,11 @@ namespace be_retail.Repositories
                 .ToListAsync();
         }
 
-        public async Task<(bool IsSufficient, List<(int InventoryId, int QuantityToDeduct)> InventoryDeductions, int TotalAvailable)> 
+        public async Task<(bool IsSufficient, List<(int InventoryId, int QuantityToDeduct)> InventoryDeductions, int TotalAvailable)>
             CheckAndGetInventoryForSaleAsync(int productId, int requestedQuantity)
         {
             var inventories = await GetInventoriesByProductIdFIFOAsync(productId);
-            
+
             var totalAvailable = inventories.Sum(i => i.Quantity);
             if (totalAvailable < requestedQuantity)
             {
@@ -355,6 +316,72 @@ namespace be_retail.Repositories
             return await _context.Inventories
                 .Where(i => i.ProductId == productId)
                 .SumAsync(i => i.Quantity);
+        }
+        public async Task<PagedResponse<ProductResponseDTO>> GetProductsWithLowTotalStockAsync(int threshold, int page, int pageSize)
+        {
+            // 1. Tìm các ProductId có tổng tồn kho < threshold
+            var lowStockStats = await _context.Inventories
+                .GroupBy(i => i.ProductId)
+                .Select(g => new
+                {
+                    ProductId = g.Key,
+                    TotalQuantity = g.Sum(i => i.Quantity)
+                })
+                .Where(x => x.TotalQuantity < threshold)
+                .ToListAsync();
+
+            var totalCount = lowStockStats.Count;
+
+            if (totalCount == 0)
+            {
+                return new PagedResponse<ProductResponseDTO>(new List<ProductResponseDTO>(), 0, page, pageSize);
+            }
+
+            // 2. Phân trang trên danh sách ID
+            var pagedProductIds = lowStockStats
+                .OrderBy(x => x.TotalQuantity) // Sắp xếp theo số lượng tồn kho tăng dần
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(x => x.ProductId)
+                .ToList();
+
+            // 3. Lấy thông tin chi tiết Product
+            var products = await _context.Products
+                .Include(p => p.Category)
+                .Include(p => p.Supplier)
+                .Where(p => pagedProductIds.Contains(p.ProductId) && !p.IsDeleted)
+                .ToListAsync();
+
+            // 4. Map sang DTO và gán lại TotalStock chính xác
+            var result = new List<ProductResponseDTO>();
+            foreach (var p in products)
+            {
+                // Lấy lại TotalQuantity từ danh sách stats đã query ở bước 1
+                var stat = lowStockStats.FirstOrDefault(x => x.ProductId == p.ProductId);
+                var totalStock = stat?.TotalQuantity ?? 0;
+
+                result.Add(new ProductResponseDTO
+                {
+                    ProductId = p.ProductId,
+                    CategoryId = p.CategoryId,
+                    SupplierId = p.SupplierId,
+                    ProductName = p.Name,
+                    Barcode = p.Barcode,
+                    Image = p.Image,
+                    Price = p.Price,
+                    Unit = p.Unit,
+                    CreatedAt = p.CreatedAt,
+                    IsDeleted = p.IsDeleted,
+                    CategoryName = p.Category?.Name,
+                    SupplierName = p.Supplier?.Name,
+                    CurrentStock = totalStock
+                });
+            }
+
+            // Sắp xếp lại result theo thứ tự của pagedProductIds (vì query IN không bảo đảm thứ tự)
+            result = result.OrderBy(r => pagedProductIds.IndexOf(r.ProductId)).ToList();
+
+            return new PagedResponse<ProductResponseDTO>(result, totalCount, page, pageSize);
         }
     }
 }

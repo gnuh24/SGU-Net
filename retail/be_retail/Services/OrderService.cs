@@ -52,13 +52,17 @@ namespace be_retail.Services
                     TotalAmount = order.TotalAmount,
                     DiscountAmount = order.DiscountAmount,
                     OrderDate = order.OrderDate,
+                    UserName = order.User?.FullName,           // ✅ THÊM: Tên người lập hoá đơn
+                    PromoCode = order.Promotion?.PromoCode,    // ✅ THÊM: Mã khuyến mãi
                     OrderItems = order.OrderItems.Select(oi => new OrderItemResponseDTO
                     {
                         OrderItemId = oi.OrderItemId,
                         ProductId = oi.ProductId,
                         Quantity = oi.Quantity,
                         Price = oi.Price,
-                        Subtotal = oi.Subtotal
+                        Subtotal = oi.Subtotal,
+                        ProductName = oi.Product?.Name,
+                        ProductImage = oi.Product?.Image
                     }).ToList(),
                     Payment = new PaymentResponseDTO
                     {
@@ -109,6 +113,13 @@ namespace be_retail.Services
                 if (form.ToDate.HasValue)
                     query = query.Where(o => o.OrderDate <= form.ToDate.Value);
 
+                // Tìm kiếm theo mã HĐ (chuỗi nhập phải xuất hiện trong OrderId)
+                if (!string.IsNullOrWhiteSpace(form.Search))
+                {
+                    var search = form.Search.Trim();
+                    query = query.Where(o => o.OrderId.ToString().Contains(search));
+                }
+
                 var total = await query.CountAsync();
 
                 int pageSize = form.PageSize > 0 ? form.PageSize : 10;
@@ -116,6 +127,12 @@ namespace be_retail.Services
 
                 query = (form.SortBy?.ToLower(), form.SortDirection?.ToLower()) switch
                 {
+                    ("orderid", "asc") => query.OrderBy(o => o.OrderId),
+                    ("orderid", "desc") => query.OrderByDescending(o => o.OrderId),
+                    ("orderdate", "asc") => query.OrderBy(o => o.OrderDate),
+                    ("orderdate", "desc") => query.OrderByDescending(o => o.OrderDate),
+                    ("finalamount", "asc") => query.OrderBy(o => o.TotalAmount - o.DiscountAmount),
+                    ("finalamount", "desc") => query.OrderByDescending(o => o.TotalAmount - o.DiscountAmount),
                     ("total_amount", "asc") => query.OrderBy(o => o.TotalAmount),
                     ("total_amount", "desc") => query.OrderByDescending(o => o.TotalAmount),
                     ("order_date", "asc") => query.OrderBy(o => o.OrderDate),
@@ -210,7 +227,7 @@ namespace be_retail.Services
                         && promo.StartDate <= DateTime.Now
                         && promo.EndDate >= DateTime.Now
                         && totalAmount >= promo.MinOrderAmount
-                        && promo.UsedCount < promo.UsageLimit)
+                        && (promo.UsageLimit == 0 || promo.UsedCount < promo.UsageLimit))
                     {
                         discountAmount = promo.DiscountType == "percent" ?
                                          totalAmount * (promo.DiscountValue / 100) :

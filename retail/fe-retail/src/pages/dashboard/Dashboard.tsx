@@ -8,6 +8,7 @@ import {
   Progress,
   Spin,
   message,
+  Button,
 } from "antd";
 import { useNavigate } from "react-router-dom";
 import {
@@ -41,7 +42,7 @@ const Dashboard: React.FC = () => {
     ordersGrowth: 0,
     customersGrowth: 0,
   });
-  const [recentOrders, setRecentOrders] = useState<any[]>([]);
+  const [topProducts, setTopProducts] = useState<any[]>([]);
   const [lowStockProducts, setLowStockProducts] = useState<any[]>([]);
 
   useEffect(() => {
@@ -51,14 +52,14 @@ const Dashboard: React.FC = () => {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const [statsData, ordersData, stockData] = await Promise.all([
+      const [statsData, topProductsData, stockData] = await Promise.all([
         dashboardService.getTodayStats(),
-        dashboardService.getRecentOrders(4),
+        dashboardService.getTopSellingProductsToday(5),
         dashboardService.getLowStockProducts(3),
       ]);
 
       setStats(statsData);
-      setRecentOrders(ordersData);
+      setTopProducts(topProductsData);
       setLowStockProducts(stockData);
     } catch (error: any) {
       message.error("Lỗi khi tải dữ liệu dashboard");
@@ -142,9 +143,19 @@ const Dashboard: React.FC = () => {
                 value={stats.totalCustomers}
                 prefix={<Users size={20} className="text-purple-500" />}
                 suffix={
-                  <span className="text-sm text-green-500">
-                    <TrendingUp size={14} />
-                    {stats.customersGrowth}%
+                  <span
+                    className={`text-sm ${
+                      stats.customersGrowth >= 0
+                        ? "text-green-500"
+                        : "text-red-500"
+                    }`}
+                  >
+                    {stats.customersGrowth >= 0 ? (
+                      <TrendingUp size={14} />
+                    ) : (
+                      <TrendingDown size={14} />
+                    )}
+                    {Math.abs(stats.customersGrowth)}%
                   </span>
                 }
               />
@@ -164,31 +175,34 @@ const Dashboard: React.FC = () => {
         </Row>
 
         <Row gutter={[16, 16]}>
-          {/* Recent Orders */}
+          {/* Top 5 best-selling products today */}
           <Col xs={24} lg={12}>
             <Card
-              title="Đơn hàng gần đây"
+              title="Top 5 sản phẩm bán chạy hôm nay"
               extra={
                 <Text type="secondary" className="text-sm">
-                  Cập nhật realtime
+                  Tính theo số lượng bán trong ngày
                 </Text>
               }
             >
               <div className="space-y-3">
-                {recentOrders.map((order) => (
+                {topProducts.map((product) => (
                   <div
-                    key={order.id}
+                    key={product.productId}
                     className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
                   >
                     <div>
-                      <div className="font-medium">{order.customer}</div>
+                      <div className="font-medium">{product.productName}</div>
                       <div className="text-sm text-gray-500">
-                        #{order.id} - {order.time}
+                        Đã bán:{" "}
+                        <span className="font-semibold">
+                          {product.totalQuantitySold}
+                        </span>
                       </div>
                     </div>
                     <div className="text-right">
                       <div className="font-medium text-green-600">
-                        {formatCurrency(order.amount)}
+                        {formatCurrency(product.totalRevenue)}
                       </div>
                     </div>
                   </div>
@@ -234,6 +248,16 @@ const Dashboard: React.FC = () => {
                     />
                   </div>
                 ))}
+
+                {/* Nút chuyển sang quản lý tồn kho */}
+                <div className="flex justify-end pt-2">
+                  <Button
+                    type="link"
+                    onClick={() => navigate("/inventory")}
+                  >
+                    Quản lý kho hàng
+                  </Button>
+                </div>
               </div>
             </Card>
           </Col>

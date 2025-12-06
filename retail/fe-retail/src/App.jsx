@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -7,12 +7,13 @@ import {
 } from "react-router-dom";
 import { Provider } from "react-redux";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ConfigProvider } from "antd";
+import { ConfigProvider, Spin } from "antd";
 import viVN from "antd/locale/vi_VN";
 import { store } from "./store";
 import { useAppDispatch } from "./hooks/redux";
 import { loginSuccess } from "./store/slices/authSlice";
 import { STORAGE_KEYS } from "./constants";
+import { useAuth } from "./hooks/useAuth";
 
 // Layouts
 import AppLayout from "./components/layout/AppLayout";
@@ -54,6 +55,7 @@ const queryClient = new QueryClient({
 
 const AppContent = () => {
   const dispatch = useAppDispatch();
+  const [bootstrapped, setBootstrapped] = useState(false);
 
   useEffect(() => {
     // Check if user is already logged in
@@ -71,7 +73,36 @@ const AppContent = () => {
         localStorage.removeItem(STORAGE_KEYS.USER);
       }
     }
+    // Đánh dấu đã khởi tạo xong (dù có token hay không)
+    setBootstrapped(true);
   }, [dispatch]);
+
+  // Default route component based on user role
+  const DefaultRoute = () => {
+    const { user } = useAuth();
+
+    if (user?.role === 'admin') {
+      return <Navigate to="/users" replace />;
+    }
+
+    return <Navigate to="/dashboard" replace />;
+  };
+
+  // Trong lúc đang khởi tạo auth từ localStorage, chưa render router
+  if (!bootstrapped) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Spin size="large" tip="Đang tải..." />
+      </div>
+    );
+  }
 
   return (
     <Router>
@@ -84,8 +115,15 @@ const AppContent = () => {
 
         {/* Protected routes */}
         <Route path="/" element={<AppLayout />}>
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="dashboard" element={<Dashboard />} />
+          <Route index element={<DefaultRoute />} />
+          <Route
+            path="dashboard"
+            element={
+              <RoleGuard allowedRoles={["manager", "staff"]}>
+                <Dashboard />
+              </RoleGuard>
+            }
+          />
 
           {/* Users (Admin only) */}
           <Route
@@ -113,21 +151,21 @@ const AppContent = () => {
             }
           />
 
-          {/* Orders (Admin & Staff) */}
+          {/* Orders (Admin, Manager & Staff) */}
           <Route
             path="orders"
             element={
-              <RoleGuard allowedRoles={["admin", "staff"]}>
+              <RoleGuard allowedRoles={["admin", "manager", "staff"]}>
                 <OrdersList />
               </RoleGuard>
             }
           />
 
-          {/* Promotions (Admin only) */}
+          {/* Promotions (Admin & Manager) */}
           <Route
             path="promotions"
             element={
-              <RoleGuard allowedRoles={["admin"]}>
+              <RoleGuard allowedRoles={["admin", "manager"]}>
                 <PromotionsList />
               </RoleGuard>
             }
@@ -135,7 +173,7 @@ const AppContent = () => {
           <Route
             path="promotions/new"
             element={
-              <RoleGuard allowedRoles={["admin"]}>
+              <RoleGuard allowedRoles={["admin", "manager"]}>
                 <PromotionForm />
               </RoleGuard>
             }
@@ -143,17 +181,17 @@ const AppContent = () => {
           <Route
             path="promotions/:id/edit"
             element={
-              <RoleGuard allowedRoles={["admin"]}>
+              <RoleGuard allowedRoles={["admin", "manager"]}>
                 <PromotionForm />
               </RoleGuard>
             }
           />
 
-          {/* Reports (Admin only) */}
+          {/* Reports (Admin & Manager, Inventory also for Staff) */}
           <Route
             path="reports"
             element={
-              <RoleGuard allowedRoles={["admin"]}>
+              <RoleGuard allowedRoles={["admin", "manager"]}>
                 <ReportsIndex />
               </RoleGuard>
             }
@@ -161,7 +199,7 @@ const AppContent = () => {
           <Route
             path="reports/dashboard"
             element={
-              <RoleGuard allowedRoles={["admin"]}>
+              <RoleGuard allowedRoles={["admin", "manager"]}>
                 <ReportsDashboard />
               </RoleGuard>
             }
@@ -169,7 +207,7 @@ const AppContent = () => {
           <Route
             path="reports/sales"
             element={
-              <RoleGuard allowedRoles={["admin"]}>
+              <RoleGuard allowedRoles={["admin", "manager"]}>
                 <RevenueReport />
               </RoleGuard>
             }
@@ -177,7 +215,7 @@ const AppContent = () => {
           <Route
             path="reports/products"
             element={
-              <RoleGuard allowedRoles={["admin"]}>
+              <RoleGuard allowedRoles={["admin", "manager"]}>
                 <ProductReport />
               </RoleGuard>
             }
@@ -185,7 +223,7 @@ const AppContent = () => {
           <Route
             path="reports/customers"
             element={
-              <RoleGuard allowedRoles={["admin"]}>
+              <RoleGuard allowedRoles={["admin", "manager"]}>
                 <CustomerReport />
               </RoleGuard>
             }
@@ -193,7 +231,7 @@ const AppContent = () => {
           <Route
             path="reports/inventory"
             element={
-              <RoleGuard allowedRoles={["admin"]}>
+              <RoleGuard allowedRoles={["admin", "manager", "staff"]}>
                 <InventoryReport />
               </RoleGuard>
             }

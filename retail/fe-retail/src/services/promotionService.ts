@@ -56,7 +56,7 @@ class PromotionService {
 
   async getPromotions() {
     if (this.useMock) return mockPromotionService.getPromotions();
-    const res = await apiService.get("/promotions");
+    const res = await apiService.get("/promotions?pageSize=1000");
     const data = this.unwrapResponse(res);
     const promotions = Array.isArray(data) ? data : data.items || [];
     return promotions.map(this.mapPromotionToFrontend);

@@ -3,8 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { Result, Button, Spin, message } from "antd";
 import { CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
 import axios from "axios";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5260/api/v1";
+import { API_BASE_URL } from "../../constants";
 
 const VNPayReturn: React.FC = () => {
   const [searchParams] = useSearchParams();

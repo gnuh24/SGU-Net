@@ -195,6 +195,12 @@ const PromotionsList: React.FC = () => {
         dataSource={data}
         columns={columns}
         loading={loading}
+        pagination={{
+          pageSize: 10,
+          showSizeChanger: true,
+          pageSizeOptions: ["10", "20", "50"],
+          showTotal: (t) => `Tổng ${t} chương trình`,
+        }}
       />
     </div>
   );

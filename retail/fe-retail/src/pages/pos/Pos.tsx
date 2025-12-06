@@ -17,8 +17,14 @@ import {
   Modal,
   Form,
   Space,
+  AutoComplete,
 } from "antd";
-import { DeleteOutlined, TagOutlined, SearchOutlined } from "@ant-design/icons";
+import {
+  DeleteOutlined,
+  TagOutlined,
+  SearchOutlined,
+  QrcodeOutlined, 
+} from "@ant-design/icons";
 
 import {
   posApi,
@@ -30,7 +36,10 @@ import {
 } from "../../api/posApi";
 import { getImageUrl } from "../../utils/imageUtils";
 import { useAuth } from "@/hooks/useAuth";
+import { promotionService } from "../../services/promotionService";
 import { BrowserMultiFormatReader } from "@zxing/browser";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 const formatCurrency = (value: string | number | bigint) => {
   const numValue = Number(value);
@@ -45,6 +54,7 @@ const { Title, Text } = Typography;
 const { Option } = Select;
 
 type StockFilter = "all" | "in" | "out";
+type ScanMode = "product" | "customer"; 
 
 const GRID_CARD_WIDTH = 180;
 
@@ -66,6 +76,8 @@ const PosPageInternal: React.FC = () => {
   const [appliedPromotion, setAppliedPromotion] = useState<Promotion | null>(
     null
   );
+  const [availablePromotions, setAvailablePromotions] = useState<any[]>([]);
+  const [loadingPromotions, setLoadingPromotions] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<
     "cash" | "card" | "transfer" | "momo" | "vnpay"
@@ -75,17 +87,32 @@ const PosPageInternal: React.FC = () => {
 
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanning, setScanning] = useState(false);
+  const [scanMode, setScanMode] = useState<ScanMode>("product"); 
   const videoRef = React.useRef<HTMLVideoElement>(null);
 
   const [categories, setCategories] = useState<
     { categoryId: number; categoryName?: string }[]
   >([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number>(0); // 0 = all
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number>(0);
   const [stockFilter, setStockFilter] = useState<StockFilter>("all");
   const [minPrice, setMinPrice] = useState<number | null>(null);
   const [maxPrice, setMaxPrice] = useState<number | null>(null);
 
   const [gridLimit, setGridLimit] = useState<number>(30);
+  const [draftOrder, setDraftOrder] = useState<Order | null>(null);
+
+  type PrintData = {
+    order: Order;
+    items: CartItem[];
+    customer: Customer | null;
+    totalAmount: number;
+    cash: number;
+    discountAmount: number;
+    paymentMethod: string;
+  };
+
+  const [printData, setPrintData] = useState<PrintData | null>(null);
+  const printAreaRef = React.useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let reader: BrowserMultiFormatReader | null = null;
@@ -99,17 +126,37 @@ const PosPageInternal: React.FC = () => {
         .decodeOnceFromVideoDevice(undefined, videoRef.current!)
         .then(async (result) => {
           const code = result.getText();
-          message.success(`Đã quét QR: ${code}`);
+          // Đóng modal sau khi quét thành công
           setScannerOpen(false);
           setScanning(false);
 
-          try {
-            const product = await posApi.scanBarcode(code);
-            addProductToCart(product);
-            message.success(`Đã thêm sản phẩm: ${product.productName}`);
-          } catch (error) {
-            console.error(error);
-            message.error("Không tìm thấy sản phẩm tương ứng!");
+          if (scanMode === "product") {
+            // --- LOGIC QUÉT SẢN PHẨM ---
+            message.success(`Đã quét mã sản phẩm: ${code}`);
+            try {
+              const product = await posApi.scanBarcode(code);
+              addProductToCart(product);
+              message.success(`Đã thêm sản phẩm: ${product.productName}`);
+            } catch (error) {
+              console.error(error);
+              message.error("Không tìm thấy sản phẩm tương ứng!");
+            }
+          } else {
+            // --- LOGIC QUÉT KHÁCH HÀNG ---
+            message.success(`Đã quét mã khách hàng: ${code}`);
+            const foundCustomer = customers.find((c) => {
+                // So sánh số điện thoại (xóa khoảng trắng nếu có để chính xác hơn)
+                const phoneInDb = (c.phoneNumber || c.phone || "").replace(/\s/g, "");
+                const codeClean = code.replace(/\s/g, "");
+                return phoneInDb === codeClean || phoneInDb.endsWith(codeClean);
+            });
+
+            if (foundCustomer) {
+                setSelectedCustomer(foundCustomer);
+                message.success(`Đã chọn khách hàng: ${foundCustomer.customerName}`);
+            } else {
+                message.warning(`Không tìm thấy khách hàng có SĐT: ${code}`);
+            }
           }
         })
         .catch((err) => {
@@ -134,7 +181,7 @@ const PosPageInternal: React.FC = () => {
       }
       reader = null;
     };
-  }, [scannerOpen, message]);
+  }, [scannerOpen, message, scanMode, customers]); 
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -264,9 +311,6 @@ const PosPageInternal: React.FC = () => {
     setLoadingSearch(false);
   };
 
-  const [paidAmountLocalSetter, setPaidAmountLocalSetter] = useState<
-    number | null
-  >(null);
   const { subtotal, discount, total } = useMemo(() => {
     const sub = cart.reduce((s, i) => s + i.price * i.quantity, 0);
     let disc = 0;
@@ -290,8 +334,64 @@ const PosPageInternal: React.FC = () => {
     return { subtotal: sub, discount: disc, total: finalTotal };
   }, [cart, appliedPromotion]);
 
-  const applyPromotion = async () => {
-    if (!promoCode.trim()) {
+  useEffect(() => {
+    const loadAvailablePromotions = async () => {
+      if (cart.length === 0 || subtotal === 0) {
+        setAvailablePromotions([]);
+        return;
+      }
+
+      try {
+        setLoadingPromotions(true);
+        const allPromotions = await promotionService.getPromotions();
+
+        const today = new Date();
+        const applicable = allPromotions.filter((promo: any) => {
+          if (promo.status !== "active") return false;
+
+          const startDate = new Date(promo.start_date);
+          const endDate = new Date(promo.end_date);
+          if (today < startDate || today > endDate) return false;
+
+          const minAmount = promo.min_order_amount || 0;
+          if (subtotal < minAmount) return false;
+
+          return true;
+        });
+
+        setAvailablePromotions(applicable);
+      } catch (error) {
+        console.error("Error loading promotions:", error);
+      } finally {
+        setLoadingPromotions(false);
+      }
+    };
+
+    loadAvailablePromotions();
+  }, [subtotal, cart.length]);
+
+  const getPaymentMethodText = (method: string) => {
+    switch (method) {
+      case "cash":
+        return "Tiền mặt";
+      case "card":
+        return "Thẻ";
+      case "transfer":
+        return "Chuyển khoản";
+      case "momo":
+        return "MoMo";
+      case "vnpay":
+        return "VNPay";
+      default:
+        return method;
+    }
+  };
+
+  const applyPromotion = async (codeOverride?: string) => {
+    const codeToCheck = (typeof codeOverride === "string" ? codeOverride : promoCode)
+      .trim()
+      .toUpperCase();
+    if (!codeToCheck.trim()) {
       message.warning("Vui lòng nhập mã khuyến mãi!");
       return;
     }
@@ -305,12 +405,13 @@ const PosPageInternal: React.FC = () => {
         content: "Đang kiểm tra mã khuyến mãi...",
         key: "promo",
       });
-      const res = await posApi.validatePromotion(promoCode.trim(), subtotal);
+      const res = await posApi.validatePromotion(codeToCheck, subtotal);
 
       if (res.valid) {
         const promotion = res.promo ?? res.promotion;
         if (promotion) {
           setAppliedPromotion(promotion);
+          setPromoCode(codeToCheck);
           message.success({
             content: `✅ Áp dụng mã "${promotion.promoCode}" thành công!`,
             key: "promo",
@@ -369,6 +470,7 @@ const PosPageInternal: React.FC = () => {
     setMinPrice(null);
     setMaxPrice(null);
     setGridLimit(30);
+    setDraftOrder(null);
   };
 
   const printReceipt = (
@@ -376,8 +478,85 @@ const PosPageInternal: React.FC = () => {
     items: CartItem[],
     customer: Customer | null,
     totalAmount: number,
-    cash: number
-  ) => {};
+    cash: number,
+    discountAmount: number
+  ) => {
+    setPrintData({
+      order,
+      items,
+      customer,
+      totalAmount,
+      cash,
+      discountAmount,
+      paymentMethod,
+    });
+  };
+
+  const handlePrintInvoice = async () => {
+    if (!user) {
+      message.error("Lỗi xác thực, vui lòng đăng nhập lại!");
+      return;
+    }
+
+    if (cart.length === 0) {
+      message.error("Giỏ hàng trống!");
+      return;
+    }
+
+    if (paymentMethod === "momo" || paymentMethod === "vnpay") {
+      message.warning(
+        "In hóa đơn tạm tính hiện chỉ hỗ trợ cho thanh toán tại quầy (tiền mặt/thẻ/chuyển khoản)."
+      );
+      return;
+    }
+
+    setLoadingCheckout(true);
+    try {
+      message.loading("Đang tạo hóa đơn chờ thanh toán...", 0);
+
+      let orderForReceipt = draftOrder;
+
+      if (!orderForReceipt) {
+        const payload = {
+          userId: user.id,
+          customerId:
+            selectedCustomer?.customerId ?? selectedCustomer?.id ?? 0,
+          promoId: appliedPromotion?.promoId ?? null,
+          paymentMethod: paymentMethod,
+          orderItems: cart.map((item) => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          status: "pending" as const,
+        };
+
+        const createdOrder = await posApi.createFullOrder(payload);
+        orderForReceipt = createdOrder;
+        setDraftOrder(createdOrder);
+      }
+
+      message.destroy();
+      message.success("Đã tạo hóa đơn chờ thanh toán!");
+
+      printReceipt(
+        orderForReceipt,
+        cart,
+        selectedCustomer,
+        total,
+        paidAmount ?? total,
+        discount
+      );
+    } catch (err: any) {
+      message.destroy();
+      console.error("Lỗi khi tạo hóa đơn chờ thanh toán:", err);
+      const errorMsg =
+        err.response?.data?.message || "Lỗi khi tạo hóa đơn chờ thanh toán!";
+      message.error(errorMsg);
+    } finally {
+      setLoadingCheckout(false);
+    }
+  };
 
   const handleCheckout = async () => {
     if (!user) {
@@ -399,8 +578,7 @@ const PosPageInternal: React.FC = () => {
     setLoadingCheckout(true);
     try {
       message.loading("Đang xử lý đơn hàng...", 0);
-      
-      // Nếu là MoMo, tạo order với status pending và redirect đến MoMo
+
       if (paymentMethod === "momo") {
         const payload = {
           userId: user.id,
@@ -412,13 +590,12 @@ const PosPageInternal: React.FC = () => {
             quantity: item.quantity,
             price: item.price,
           })),
-          status: "pending", // Chờ thanh toán MoMo
+          status: "pending",
         };
 
         const createdOrder = await posApi.createFullOrder(payload);
         message.destroy();
 
-        // Tạo MoMo payment request
         message.loading("Đang tạo yêu cầu thanh toán MoMo...", 0);
         const returnUrl = `${window.location.origin}/payment/momo/return?orderId=${createdOrder.orderId}`;
         const momoPayment = await posApi.createMoMoPayment(
@@ -428,9 +605,8 @@ const PosPageInternal: React.FC = () => {
         );
 
         message.destroy();
-        
+
         if (momoPayment.payUrl) {
-          // Redirect đến MoMo payment page
           window.location.href = momoPayment.payUrl;
         } else {
           message.error("Không thể tạo link thanh toán MoMo!");
@@ -438,7 +614,6 @@ const PosPageInternal: React.FC = () => {
         return;
       }
 
-      // Nếu là VNPay, tạo order với status pending và redirect đến VNPay
       if (paymentMethod === "vnpay") {
         const payload = {
           userId: user.id,
@@ -450,13 +625,12 @@ const PosPageInternal: React.FC = () => {
             quantity: item.quantity,
             price: item.price,
           })),
-          status: "pending", // Chờ thanh toán VNPay
+          status: "pending",
         };
 
         const createdOrder = await posApi.createFullOrder(payload);
         message.destroy();
 
-        // Tạo VNPay payment request
         message.loading("Đang tạo yêu cầu thanh toán VNPay...", 0);
         const returnUrl = `${window.location.origin}/payment/vnpay/return?orderId=${createdOrder.orderId}`;
         const vnpayPayment = await posApi.createVNPayPayment(
@@ -466,9 +640,8 @@ const PosPageInternal: React.FC = () => {
         );
 
         message.destroy();
-        
+
         if (vnpayPayment.paymentUrl) {
-          // Redirect đến VNPay payment page
           window.location.href = vnpayPayment.paymentUrl;
         } else {
           message.error("Không thể tạo link thanh toán VNPay!");
@@ -476,36 +649,51 @@ const PosPageInternal: React.FC = () => {
         return;
       }
 
-      // Các phương thức thanh toán khác (cash, card, transfer)
-      const payload = {
-        userId: user.id,
-        customerId: selectedCustomer?.customerId ?? selectedCustomer?.id,
-        promoId: appliedPromotion?.promoId,
-        paymentMethod: paymentMethod,
-        orderItems: cart.map((item) => ({
-          productId: item.productId,
-          quantity: item.quantity,
-          price: item.price,
-        })),
-        status: "paid",
-      };
+      let orderForReceipt: Order;
 
-      const createdOrder = await posApi.createFullOrder(payload);
+      if (draftOrder && (draftOrder.status || "").toLowerCase() === "pending") {
+        const idForUpdate =
+          draftOrder.orderId ?? (draftOrder as any).OrderId ?? draftOrder.id;
+
+        if (!idForUpdate) {
+          throw new Error("Không xác định được mã hóa đơn để cập nhật.");
+        }
+
+        await posApi.updateOrder(idForUpdate, {
+          status: "paid",
+          paymentMethod,
+        });
+
+        orderForReceipt = {
+          ...draftOrder,
+          status: "paid",
+        };
+      } else {
+        const payload = {
+          userId: user.id,
+          customerId: selectedCustomer?.customerId ?? selectedCustomer?.id,
+          promoId: appliedPromotion?.promoId,
+          paymentMethod: paymentMethod,
+          orderItems: cart.map((item) => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          status: "paid" as const,
+        };
+
+        const createdOrder = await posApi.createFullOrder(payload);
+        orderForReceipt = createdOrder;
+      }
 
       message.destroy();
       message.success("Thanh toán thành công!");
 
-      printReceipt(
-        createdOrder,
-        cart,
-        selectedCustomer,
-        total,
-        paidAmount ?? total
-      );
       resetPos();
     } catch (err: any) {
       message.destroy();
       console.error("Lỗi thanh toán:", err);
+      console.error("Error response:", err.response?.data);
       const errorMsg =
         err.response?.data?.message || "Lỗi khi xử lý thanh toán!";
       message.error(`Thanh toán thất bại: ${errorMsg}`);
@@ -612,6 +800,60 @@ const PosPageInternal: React.FC = () => {
     setGridLimit(30);
   }, [selectedCategoryId, stockFilter, minPrice, maxPrice]);
 
+  useEffect(() => {
+    const generatePdf = async () => {
+      if (!printData || !printAreaRef.current) return;
+
+      try {
+        const canvas = await html2canvas(printAreaRef.current, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+          onclone: (clonedDoc) => {
+            const all = clonedDoc.querySelectorAll<HTMLElement>("*");
+            all.forEach((el) => {
+              const style = clonedDoc.defaultView?.getComputedStyle(el);
+              if (!style) return;
+
+              const bg = style.backgroundColor || "";
+              const color = style.color || "";
+
+              if (bg.includes("oklch(")) {
+                el.style.backgroundColor = "#ffffff";
+              }
+              if (color.includes("oklch(")) {
+                el.style.color = "#000000";
+              }
+            });
+          },
+        });
+
+        const imgData = canvas.toDataURL("image/png");
+        const pdf = new jsPDF("p", "mm", "a4");
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+
+        const imgProps = pdf.getImageProperties(imgData);
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+        pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+
+        const orderIdText =
+          printData.order.orderId ??
+          (printData.order as any).OrderId ??
+          printData.order.id;
+
+        pdf.save(`hoa_don_${orderIdText || Date.now()}.pdf`);
+      } catch (error) {
+        console.error("Lỗi khi tạo PDF hóa đơn:", error);
+        message.error("Không thể tạo file PDF hóa đơn!");
+      } finally {
+        setPrintData(null);
+      }
+    };
+
+    generatePdf();
+  }, [printData, message]);
+
   return (
     <div style={{ padding: 24 }}>
       <Card>
@@ -642,7 +884,7 @@ const PosPageInternal: React.FC = () => {
               <Button
                 type="default"
                 onClick={() => {
-                  // open scanner modal
+                  setScanMode("product"); // Set mode quét sản phẩm
                   setScannerOpen(true);
                 }}
                 icon={<SearchOutlined />}
@@ -852,9 +1094,6 @@ const PosPageInternal: React.FC = () => {
                               >
                                 Tồn: {stock}
                               </div>
-                              {/* <Button size="small" type="text" onClick={(e) => { e.stopPropagation(); setProductQuery(String(p.barcode ?? "")); }}>
-                                  Mã: {p.barcode ?? "-"}
-                                </Button> */}
                             </div>
                           </div>
                         );
@@ -903,72 +1142,126 @@ const PosPageInternal: React.FC = () => {
           <Col xs={24} md={9}>
             <Card style={{ position: "sticky", top: 24 }}>
               <Title level={5}>Khách hàng</Title>
-              <Select
-                style={{ width: "100%" }}
-                placeholder="Chọn khách hàng (có thể tìm kiếm)"
-                value={
-                  selectedCustomer
-                    ? selectedCustomer.customerId ?? selectedCustomer.id
-                    : 0
-                }
-                onChange={(selectedValue) => {
-                  if (selectedValue === 0) {
-                    setSelectedCustomer(null);
-                  } else {
-                    const c = customers.find(
-                      (x) => (x.customerId ?? x.id) === selectedValue
-                    );
-                    setSelectedCustomer(c ?? null);
+              {/* Sửa phần chọn khách hàng để thêm nút quét QR */}
+              <div style={{ display: "flex", gap: 8 }}>
+                <Select
+                  style={{ flex: 1 }}
+                  placeholder="Chọn khách hàng"
+                  value={
+                    selectedCustomer
+                      ? selectedCustomer.customerId ?? selectedCustomer.id
+                      : 0
                   }
-                }}
-                showSearch
-                optionFilterProp="label"
-                filterOption={(input, option) =>
-                  (option?.label ?? "")
-                    .toString()
-                    .toLowerCase()
-                    .includes(input.toLowerCase())
-                }
-                loading={loadingCustomers}
-                notFoundContent={
-                  loadingCustomers ? <Spin size="small" /> : "Không tìm thấy"
-                }
-              >
-                <Option key="guest" value={0} label="Khách vãng lai">
-                  Khách vãng lai
-                </Option>
-                {customers.map((c) => (
-                  <Option
-                    key={c.customerId ?? c.id}
-                    value={c.customerId ?? c.id!}
-                    label={`${c.customerName ?? c.name} - ${
-                      c.phoneNumber ?? c.phone
-                    }`}
-                  >
-                    {`${c.customerName ?? c.name} - ${
-                      c.phoneNumber ?? c.phone
-                    }`}
+                  onChange={(selectedValue) => {
+                    if (selectedValue === 0) {
+                      setSelectedCustomer(null);
+                    } else {
+                      const c = customers.find(
+                        (x) => (x.customerId ?? x.id) === selectedValue
+                      );
+                      setSelectedCustomer(c ?? null);
+                    }
+                  }}
+                  showSearch
+                  optionFilterProp="label"
+                  filterOption={(input, option) =>
+                    (option?.label ?? "")
+                      .toString()
+                      .toLowerCase()
+                      .includes(input.toLowerCase())
+                  }
+                  loading={loadingCustomers}
+                  notFoundContent={
+                    loadingCustomers ? <Spin size="small" /> : "Không tìm thấy"
+                  }
+                >
+                  <Option key="guest" value={0} label="Khách vãng lai">
+                    Khách vãng lai
                   </Option>
-                ))}
-              </Select>
+                  {customers.map((c) => (
+                    <Option
+                      key={c.customerId ?? c.id}
+                      value={c.customerId ?? c.id!}
+                      label={`${c.customerName ?? c.name} - ${
+                        c.phoneNumber ?? c.phone
+                      }`}
+                    >
+                      {`${c.customerName ?? c.name} - ${
+                        c.phoneNumber ?? c.phone
+                      }`}
+                    </Option>
+                  ))}
+                </Select>
+                <Button
+                    icon={<QrcodeOutlined />}
+                    onClick={() => {
+                        setScanMode("customer"); // Chế độ quét khách hàng
+                        setScannerOpen(true);
+                    }}
+                    title="Quét QR khách hàng"
+                />
+              </div>
 
               <Divider />
               <Title level={5}>
                 <TagOutlined /> Khuyến mãi
               </Title>
               <Space.Compact style={{ width: "100%" }}>
-                <Input
-                  placeholder="Nhập mã khuyến mãi"
+                <AutoComplete
+                  style={{ flex: 1 }}
                   value={promoCode}
-                  onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                  onPressEnter={applyPromotion}
+                  onChange={(value) => setPromoCode(value)}
+                  onSelect={(value) => {
+                    setPromoCode(value);
+                    applyPromotion(value);
+                  }}
                   disabled={cart.length === 0}
-                  prefix={<TagOutlined />}
-                  allowClear
-                />
+                  options={availablePromotions.map((promo) => {
+                    const discountText =
+                      promo.discount_type === "percent" ||
+                      promo.discount_type === "percentage"
+                        ? `${promo.discount_value}%`
+                        : formatCurrency(promo.discount_value);
+                    const minOrderText =
+                      promo.min_order_amount > 0
+                        ? ` (Đơn tối thiểu: ${formatCurrency(
+                            promo.min_order_amount
+                          )})`
+                        : "";
+
+                    return {
+                      value: promo.promo_code,
+                      label: (
+                        <div>
+                          <div style={{ fontWeight: "bold" }}>
+                            {promo.promo_code}
+                          </div>
+                          <div style={{ fontSize: "0.9em", color: "#666" }}>
+                            {promo.description} - Giảm {discountText}
+                            {minOrderText}
+                          </div>
+                        </div>
+                      ),
+                    };
+                  })}
+                  notFoundContent={
+                    loadingPromotions ? (
+                      <Spin size="small" />
+                    ) : availablePromotions.length === 0 ? (
+                      "Không có mã khuyến mãi khả dụng"
+                    ) : null
+                  }
+                >
+                  <Input
+                    prefix={<TagOutlined />}
+                    placeholder="Nhập hoặc chọn mã khuyến mãi"
+                    allowClear
+                    onPressEnter={() => applyPromotion()}
+                  />
+                </AutoComplete>
                 <Button
                   type="primary"
-                  onClick={applyPromotion}
+                  onClick={() => applyPromotion()}
                   disabled={cart.length === 0 || !promoCode.trim()}
                 >
                   Áp dụng
@@ -1046,15 +1339,14 @@ const PosPageInternal: React.FC = () => {
                   <Select
                     value={paymentMethod}
                     onChange={(v) =>
-                      setPaymentMethod(v as "cash" | "card" | "transfer" | "momo" | "vnpay")
+                      setPaymentMethod(
+                        v as "cash" | "card" | "transfer" | "momo" | "vnpay"
+                      )
                     }
                     style={{ width: "100%" }}
                   >
                     <Option value="cash">Tiền mặt</Option>
-                    <Option value="card">Thẻ</Option>
-                    <Option value="transfer">Chuyển khoản</Option>
                     <Option value="momo">MoMo</Option>
-                    <Option value="vnpay">VNPay</Option>
                   </Select>
                 </Form.Item>
                 {paymentMethod === "cash" && (
@@ -1073,16 +1365,31 @@ const PosPageInternal: React.FC = () => {
                     />
                   </Form.Item>
                 )}
-                <Button
-                  type="primary"
-                  size="large"
-                  block
-                  onClick={() => setPaymentModalOpen(true)}
-                  disabled={cart.length === 0 || loadingCheckout}
-                  loading={loadingCheckout}
+                <Space
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    justifyContent: "flex-end",
+                  }}
                 >
-                  Xác nhận & Thanh toán
-                </Button>
+                  <Button
+                    size="large"
+                    onClick={handlePrintInvoice}
+                    disabled={cart.length === 0 || loadingCheckout}
+                    loading={loadingCheckout && !paymentModalOpen}
+                  >
+                    In hóa đơn
+                  </Button>
+                  <Button
+                    type="primary"
+                    size="large"
+                    onClick={() => setPaymentModalOpen(true)}
+                    disabled={cart.length === 0 || loadingCheckout}
+                    loading={loadingCheckout && paymentModalOpen}
+                  >
+                    Xác nhận & Thanh toán
+                  </Button>
+                </Space>
               </Form>
             </Card>
           </Col>
@@ -1135,7 +1442,7 @@ const PosPageInternal: React.FC = () => {
       {/* Scanner modal */}
       <Modal
         open={scannerOpen}
-        title="Quét mã vạch sản phẩm"
+        title={scanMode === 'product' ? "Quét mã vạch sản phẩm" : "Quét mã QR khách hàng"}
         onCancel={() => setScannerOpen(false)}
         footer={null}
         width={600}
@@ -1152,13 +1459,420 @@ const PosPageInternal: React.FC = () => {
           />
           <div style={{ marginTop: 12 }}>
             {scanning ? (
-              <Spin tip="Đang quét..." />
+              <Spin tip={scanMode === 'product' ? "Đang quét sản phẩm..." : "Đang tìm số điện thoại..."} />
             ) : (
               <Button onClick={() => setScannerOpen(false)}>Đóng</Button>
             )}
           </div>
         </div>
       </Modal>
+
+      {/* Hidden invoice layout for PDF generation */}
+      <div
+        id="pos-print-area"
+        ref={printAreaRef}
+        style={{
+          position: "fixed",
+          top: -10000,
+          left: -10000,
+          width: "800px",
+          padding: "24px",
+          background: "#ffffff",
+          color: "#000000",
+          fontFamily: "Arial, sans-serif",
+        }}
+      >
+        {printData && (
+          <div>
+            {/* Header with logo R and title */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 24,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: "50%",
+                    backgroundColor: "#1677ff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#fff",
+                    fontWeight: 700,
+                    fontSize: 22,
+                  }}
+                >
+                  R
+                </div>
+                <div>
+                  <div style={{ fontSize: 18, fontWeight: 600 }}>
+                    Chi tiết hóa đơn #{printData.order.orderId}
+                  </div>
+                  <div style={{ fontSize: 12, color: "#666" }}>
+                    Hệ thống bán lẻ SGU-Net
+                  </div>
+                </div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>
+                  {new Date().toLocaleDateString("vi-VN")}
+                </div>
+              </div>
+            </div>
+
+            {/* Order info table (similar to OrdersList modal, without status) */}
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                fontSize: 12,
+                marginBottom: 16,
+              }}
+            >
+              <tbody>
+                <tr>
+                  <td
+                    style={{
+                      border: "1px solid #f0f0f0",
+                      padding: "8px 12px",
+                      width: "25%",
+                      background: "#fafafa",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Mã hóa đơn
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid #f0f0f0",
+                      padding: "8px 12px",
+                      width: "25%",
+                    }}
+                  >
+                    #{printData.order.orderId}
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid #f0f0f0",
+                      padding: "8px 12px",
+                      width: "25%",
+                      background: "#fafafa",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Ngày tạo
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid #f0f0f0",
+                      padding: "8px 12px",
+                      width: "25%",
+                    }}
+                  >
+                    {new Date(
+                      (printData.order as any).orderDate ||
+                        (printData.order as any).OrderDate ||
+                        printData.order.createdAt ||
+                        new Date().toISOString()
+                    ).toLocaleString("vi-VN")}
+                  </td>
+                </tr>
+                <tr>
+                  <td
+                    style={{
+                      border: "1px solid #f0f0f0",
+                      padding: "8px 12px",
+                      background: "#fafafa",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Khách hàng
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid #f0f0f0",
+                      padding: "8px 12px",
+                    }}
+                  >
+                    {printData.customer?.customerName ||
+                      printData.customer?.name ||
+                      "Khách vãng lai"}
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid #f0f0f0",
+                      padding: "8px 12px",
+                      background: "#fafafa",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Nhân viên
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid #f0f0f0",
+                      padding: "8px 12px",
+                    }}
+                  >
+                    {user?.full_name || user?.username || "N/A"}
+                  </td>
+                </tr>
+                <tr>
+                  <td
+                    style={{
+                      border: "1px solid #f0f0f0",
+                      padding: "8px 12px",
+                      background: "#fafafa",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Khuyến mãi
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid #f0f0f0",
+                      padding: "8px 12px",
+                    }}
+                  >
+                    {appliedPromotion?.promoCode || "Không có"}
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid #f0f0f0",
+                      padding: "8px 12px",
+                      background: "#fafafa",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Phương thức
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid #f0f0f0",
+                      padding: "8px 12px",
+                    }}
+                  >
+                    {getPaymentMethodText(printData.paymentMethod)}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            {/* Products table */}
+            <div style={{ marginTop: 8, marginBottom: 16 }}>
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 600,
+                  marginBottom: 8,
+                }}
+              >
+                Sản phẩm
+              </div>
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  fontSize: 12,
+                }}
+              >
+                <thead>
+                  <tr>
+                    <th
+                      style={{
+                        border: "1px solid #f0f0f0",
+                        padding: "8px 8px",
+                        textAlign: "left",
+                        background: "#1677ff",
+                        color: "#fff",
+                      }}
+                    >
+                      Sản phẩm
+                    </th>
+                    <th
+                      style={{
+                        border: "1px solid #f0f0f0",
+                        padding: "8px 8px",
+                        textAlign: "center",
+                        width: "10%",
+                        background: "#1677ff",
+                        color: "#fff",
+                      }}
+                    >
+                      SL
+                    </th>
+                    <th
+                      style={{
+                        border: "1px solid #f0f0f0",
+                        padding: "8px 8px",
+                        textAlign: "right",
+                        width: "20%",
+                        background: "#1677ff",
+                        color: "#fff",
+                      }}
+                    >
+                      Đơn giá
+                    </th>
+                    <th
+                      style={{
+                        border: "1px solid #f0f0f0",
+                        padding: "8px 8px",
+                        textAlign: "right",
+                        width: "20%",
+                        background: "#1677ff",
+                        color: "#fff",
+                      }}
+                    >
+                      Thành tiền
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {printData.items.map((item) => (
+                    <tr key={item.productId}>
+                      <td
+                        style={{
+                          border: "1px solid #f0f0f0",
+                          padding: "6px 8px",
+                        }}
+                      >
+                        {item.productName}
+                      </td>
+                      <td
+                        style={{
+                          border: "1px solid #f0f0f0",
+                          padding: "6px 8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {item.quantity}
+                      </td>
+                      <td
+                        style={{
+                          border: "1px solid #f0f0f0",
+                          padding: "6px 8px",
+                          textAlign: "right",
+                        }}
+                      >
+                        {formatCurrency(item.price)}
+                      </td>
+                      <td
+                        style={{
+                          border: "1px solid #f0f0f0",
+                          padding: "6px 8px",
+                          textAlign: "right",
+                        }}
+                      >
+                        {formatCurrency(item.price * item.quantity)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Summary and payment info */}
+            <div style={{ marginTop: 16 }}>
+              <div
+                style={{
+                  maxWidth: 360,
+                  marginLeft: "auto",
+                  fontSize: 13,
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginBottom: 4,
+                  }}
+                >
+                  <span>Tổng tiền hàng:</span>
+                  <span style={{ fontWeight: 600 }}>
+                    {formatCurrency(
+                      printData.items.reduce(
+                        (sum, i) => sum + i.price * i.quantity,
+                        0
+                      )
+                    )}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginBottom: 4,
+                    color: "#ff4d4f",
+                  }}
+                >
+                  <span>Giảm giá:</span>
+                  <span style={{ fontWeight: 600 }}>
+                    - {formatCurrency(printData.discountAmount || 0)}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginTop: 8,
+                    paddingTop: 8,
+                    borderTop: "1px solid #f0f0f0",
+                    fontWeight: 700,
+                    fontSize: 15,
+                    color: "#52c41a",
+                  }}
+                >
+                  <span>Thành tiền:</span>
+                  <span>{formatCurrency(printData.totalAmount)}</span>
+                </div>
+
+                <div style={{ marginTop: 8, fontSize: 12 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      marginBottom: 4,
+                    }}
+                  >
+                    <span>Khách đưa:</span>
+                    <span>{formatCurrency(printData.cash)}</span>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <span>Tiền thối lại:</span>
+                    <span>
+                      {formatCurrency(
+                        Math.max(printData.cash - printData.totalAmount, 0)
+                      )}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                marginTop: 32,
+                textAlign: "center",
+                fontSize: 11,
+                color: "#888",
+              }}
+            >
+              Cảm ơn quý khách đã mua hàng!
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
