@@ -1,0 +1,288 @@
+﻿<Page
+    x:Class="RetailMobile.Presentation.Views.SignUpPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:RetailMobile.Presentation.Views"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Grid Background="White"
+      Padding="32">
+
+        <!-- 
+    Cấu trúc Grid cho trang Đăng ký (5 ô input + 1 nút + 1 footer)
+    Tổng cộng 17 Row Definitions
+    -->
+        <Grid.RowDefinitions>
+            <!-- 0. Tiêu đề -->
+            <RowDefinition Height="Auto"/>
+            <!-- 1. Spacer sau tiêu đề -->
+            <RowDefinition Height="30"/>
+
+            <!-- 2. Username Input (Height 55) -->
+            <RowDefinition Height="Auto"/>
+            <!-- 3. Spacer -->
+            <RowDefinition Height="15"/>
+
+            <!-- 4. Fullname Input (Height 55) -->
+            <RowDefinition Height="Auto"/>
+            <!-- 5. Spacer -->
+            <RowDefinition Height="15"/>
+
+            <!-- 6. Phone Input (Height 55) -->
+            <RowDefinition Height="Auto"/>
+            <!-- 7. Spacer -->
+            <RowDefinition Height="15"/>
+
+            <!-- 8. Password Input (Height 55) -->
+            <RowDefinition Height="Auto"/>
+            <!-- 9. Spacer -->
+            <RowDefinition Height="15"/>
+
+            <!-- 10. Confirm Password Input (Height 55) -->
+            <RowDefinition Height="Auto"/>
+
+            <!-- 11. Spacer lớn đến nút Create Account -->
+            <RowDefinition Height="45"/>
+
+            <!-- 12. Create Account Button (Height 55) -->
+            <RowDefinition Height="Auto"/>
+
+            <!-- 13. Spacer đến Footer -->
+            <RowDefinition Height="40"/>
+
+            <!-- 14. Footer (Already have account) -->
+            <RowDefinition Height="Auto"/>
+
+            <!-- 15. Guest Link -->
+            <RowDefinition Height="Auto"/>
+
+            <!-- 16. Phần còn lại (Đẩy Footer lên) -->
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- 0. Tiêu đề: Create an account -->
+        <TextBlock
+        Grid.Row="0"
+        Text="Create an account"
+        FontFamily="Montserrat"
+        FontWeight="Bold"
+        FontSize="36"
+        Foreground="#F83758"
+        HorizontalAlignment="Center"
+        Margin="0, 30, 0, 0" />
+
+        <!-- 2. USERNAME FIELD -->
+        <Grid Grid.Row="2" Height="55" Background="#F3F3F3" BorderThickness="0" CornerRadius="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <!-- Icon -->
+                <ColumnDefinition Width="*"/>
+                <!-- TextBox -->
+            </Grid.ColumnDefinitions>
+
+            <!-- User icon -->
+            <TextBlock Grid.Column="0" Text="👤" Margin="16, 0, 0, 0" VerticalAlignment="Center" FontSize="18" Foreground="#676767"/>
+
+            <!-- Username Input -->
+            <TextBox Grid.Column="1"
+                 PlaceholderText="Username"
+                 FontFamily="Montserrat"
+                 FontSize="14"
+                 VerticalAlignment="Center"
+                 VerticalContentAlignment="Center"
+                 Padding="8, 0, 16, 0"
+                 BorderThickness="0"
+                 Background="Transparent"
+                 Foreground="Black"/>
+        </Grid>
+
+        <!-- 4. FULLNAME FIELD -->
+        <Grid Grid.Row="4" Height="55" Background="#F3F3F3" BorderThickness="0" CornerRadius="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <!-- Icon -->
+                <ColumnDefinition Width="*"/>
+                <!-- TextBox -->
+            </Grid.ColumnDefinitions>
+
+            <!-- Fullname icon (Placeholder) -->
+            <TextBlock Grid.Column="0" Text="👤" Margin="16, 0, 0, 0" VerticalAlignment="Center" FontSize="18" Foreground="#676767"/>
+
+            <!-- Fullname Input -->
+            <TextBox Grid.Column="1"
+                 PlaceholderText="Fullname"
+                 FontFamily="Montserrat"
+                 FontSize="14"
+                 VerticalAlignment="Center"
+                 VerticalContentAlignment="Center"
+                 Padding="8, 0, 16, 0"
+                 BorderThickness="0"
+                 Background="Transparent"
+                 Foreground="Black"/>
+        </Grid>
+
+        <!-- 6. PHONE FIELD -->
+        <Grid Grid.Row="6" Height="55" Background="#F3F3F3" BorderThickness="0" CornerRadius="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <!-- Icon -->
+                <ColumnDefinition Width="*"/>
+                <!-- TextBox -->
+            </Grid.ColumnDefinitions>
+
+            <!-- Phone icon (Placeholder) -->
+            <TextBlock Grid.Column="0" Text="📞" Margin="16, 0, 0, 0" VerticalAlignment="Center" FontSize="18" Foreground="#676767"/>
+
+            <!-- Phone Input -->
+            <TextBox Grid.Column="1"
+                 PlaceholderText="Phone"
+                 FontFamily="Montserrat"
+                 FontSize="14"
+                 VerticalAlignment="Center"
+                 VerticalContentAlignment="Center"
+                 Padding="8, 0, 16, 0"
+                 BorderThickness="0"
+                 Background="Transparent"
+                 Foreground="Black"/>
+        </Grid>
+
+        <!-- 8. PASSWORD FIELD -->
+        <Grid Grid.Row="8" Height="55" Background="#F3F3F3" BorderThickness="0" CornerRadius="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <!-- Icon -->
+                <ColumnDefinition Width="*"/>
+                <!-- PasswordBox -->
+                <ColumnDefinition Width="Auto"/>
+                <!-- Eye Icon -->
+            </Grid.ColumnDefinitions>
+
+            <!-- Password icon (Placeholder) -->
+            <TextBlock Grid.Column="0" Text="🔒" Margin="16, 0, 0, 0" VerticalAlignment="Center" FontSize="18" Foreground="#676767"/>
+
+            <!-- Password Input -->
+            <PasswordBox Grid.Column="1"
+                     PlaceholderText="Password"
+                     FontFamily="Montserrat"
+                     FontSize="14"
+                     VerticalAlignment="Center"
+                     VerticalContentAlignment="Center"
+                     Padding="8, 0, 0, 0"
+                     Background="Transparent"
+                     BorderThickness="0"
+                     Foreground="Black"/>
+
+            <!-- Password Eye Icon -->
+            <TextBlock Grid.Column="2" Text="👁️" Margin="0, 0, 16, 0" VerticalAlignment="Center" FontSize="18" Foreground="#676767"/>
+        </Grid>
+
+        <!-- 10. CONFIRM PASSWORD FIELD -->
+        <Grid Grid.Row="10" Height="55" Background="#F3F3F3" BorderThickness="0" CornerRadius="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <!-- Icon -->
+                <ColumnDefinition Width="*"/>
+                <!-- PasswordBox -->
+                <ColumnDefinition Width="Auto"/>
+                <!-- Eye Icon -->
+            </Grid.ColumnDefinitions>
+
+            <!-- Confirm Password icon (Placeholder) -->
+            <TextBlock Grid.Column="0" Text="🔒" Margin="16, 0, 0, 0" VerticalAlignment="Center" FontSize="18" Foreground="#676767"/>
+
+            <!-- Confirm Password Input -->
+            <PasswordBox Grid.Column="1"
+                     PlaceholderText="Confirm Password"
+                     FontFamily="Montserrat"
+                     FontSize="14"
+                     VerticalAlignment="Center"
+                     VerticalContentAlignment="Center"
+                     Padding="8, 0, 0, 0"
+                     Background="Transparent"
+                     BorderThickness="0"
+                     Foreground="Black"/>
+
+            <!-- Confirm Password Eye Icon -->
+            <TextBlock Grid.Column="2" Text="👁️" Margin="0, 0, 16, 0" VerticalAlignment="Center" FontSize="18" Foreground="#676767"/>
+        </Grid>
+
+        <!-- 12. Sign Up Button (Functional Button) -->
+        <Button Grid.Row="12"
+            Height="55"
+            Background="#F83758"
+            CornerRadius="12"
+            BorderThickness="0"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            Padding="0">
+            <TextBlock Text="Create Account"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   FontFamily="Montserrat"
+                   FontSize="20"
+                   FontWeight="SemiBold"
+                   Foreground="White"/>
+        </Button>
+
+        <!-- 14. Already have account Link -->
+        <StackPanel Grid.Row="14"
+                Orientation="Horizontal"
+                HorizontalAlignment="Center">
+            <TextBlock Text="I Already Have an Account"
+                   FontFamily="Montserrat"
+                   FontWeight="Normal"
+                   FontSize="14"
+                   Foreground="#575757"
+                   VerticalAlignment="Center"
+                   Margin="0, 0, 5, 0"/>
+
+            <!-- Link: Chuyển sang Login Page -->
+            <Button Background="Transparent" 
+                BorderThickness="0" 
+                Padding="0" 
+                VerticalAlignment="Center"
+                VerticalContentAlignment="Center"
+                Command="{Binding NavigateToSignInPageCommand}">
+                <TextBlock Text="Login"
+                       FontFamily="Montserrat"
+                       FontWeight="SemiBold"
+                       FontSize="14"
+                       TextDecorations="Underline"
+                       Foreground="#F83758"/>
+            </Button>
+        </StackPanel>
+
+        <!-- 15. Guest Link -->
+        <StackPanel Grid.Row="15"
+                Orientation="Horizontal"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Stretch"
+                Margin="0, 10, 0, 0">
+            <!-- Link: Chuyển đến ProductPage -->
+            <Button Background="Transparent" 
+                BorderThickness="0" 
+                Padding="0" 
+                VerticalAlignment="Center"
+                VerticalContentAlignment="Center"
+                Margin="0, 0, 5, 0"
+                Command="{Binding NavigateToCheckoutPageCommand}">
+                <TextBlock Text="Click here"
+                       FontFamily="Montserrat"
+                       FontWeight="SemiBold"
+                       FontSize="14"
+                       TextDecorations="Underline"
+                       Foreground="#F83758"/>
+            </Button>
+            <TextBlock Text="if you are guest"
+                   FontFamily="Montserrat"
+                   FontWeight="Normal"
+                   FontSize="14"
+                   VerticalAlignment="Center"
+                   Foreground="#575757"/>
+        </StackPanel>
+    </Grid>
+
+</Page>

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using RetailMobile.Data;
 using RetailMobile.Presentation.ViewModels;
+using RetailMobile.Presentation.Views;
 using RetailMobile.Services;
 using Uno.Resizetizer;
 
@@ -117,8 +118,15 @@ public partial class App : Application
 
         Host = await builder.NavigateAsync<Shell>();
 
-        // Initialize database
-        await InitializeDatabaseAsync();
+
+        using (var scope = Host.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            db.Database.EnsureDeleted();
+            db.Database.EnsureCreated();
+            // Initialize database
+            await InitializeDatabaseAsync();
+        }
     }
 
     private async Task InitializeDatabaseAsync()
@@ -179,6 +187,12 @@ public partial class App : Application
             new ViewMap(ViewModel: typeof(ShellViewModel)),
             new ViewMap<MainPage, MainViewModel>(),
             new DataViewMap<SecondPage, SecondViewModel, Entity>(),
+            new ViewMap<SignInPage, SignInViewModel>(),
+            new ViewMap<SignUpPage,SignUpViewModel>(),
+            new ViewMap<CheckoutPage, CheckoutViewModel>(),
+            new ViewMap<PaymentProcessingPage, PaymentProcessingViewModel>(),
+            new ViewMap<OrderConfirmationPage, OrderConfirmationViewModel>(),
+            new ViewMap<ProfilePage, ProfileViewModel>(),
             new ViewMap<ProductListPage, ProductListViewModel>(),
             new ViewMap<ProductDetailPage, ProductDetailViewModel>()
         );
@@ -187,8 +201,14 @@ public partial class App : Application
             new RouteMap("", View: views.FindByViewModel<ShellViewModel>(),
                 Nested:
                 [
-                    new ("Main", View: views.FindByViewModel<MainViewModel>(), IsDefault:true),
+                    new ("Main", View: views.FindByViewModel<MainViewModel>()),
                     new ("Second", View: views.FindByViewModel<SecondViewModel>()),
+                    new ("Checkout", View: views.FindByViewModel<CheckoutViewModel>()),
+                    new ("Payment", View: views.FindByViewModel<PaymentProcessingViewModel>()),
+                    new ("SignIn", View: views.FindByViewModel<SignInViewModel>(), IsDefault: true),
+                    new ("SignUp", View: views.FindByViewModel<SignUpViewModel>()),
+                    new ("OrderConfirm", View: views.FindByViewModel<OrderConfirmationViewModel>()),
+                    new ("Profile", View: views.FindByViewModel<ProfileViewModel>()),
                     new ("Products", View: views.FindByViewModel<ProductListViewModel>()),
                     new ("ProductDetail", View: views.FindByViewModel<ProductDetailViewModel>()),
                 ]

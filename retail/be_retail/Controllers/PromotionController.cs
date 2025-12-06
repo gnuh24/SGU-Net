@@ -426,6 +426,39 @@ namespace be_retail.Controllers
                 });
             }
         }
+
+        [HttpGet("available")]
+        public async Task<IActionResult> GetAvailablePromotions([FromQuery] decimal orderAmount)
+        {
+            if (orderAmount <= 0)
+            {
+                return BadRequest(new ApiResponse<string>
+                {
+                    Status = 400,
+                    Message = "Order amount must be greater than zero.",
+                    Data = null
+                });
+            }
+            try
+            {
+                var availablePromotions = await _promotionService.GetAvailablePromotionAsync(orderAmount);
+                return Ok(new ApiResponse<List<PromotionResponseDTO>>
+                {
+                    Status = 200,
+                    Message = "Available promotions fetched successfully.",
+                    Data = availablePromotions
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new ApiResponse<string>
+                {
+                    Status = 500,
+                    Message = "An error occurred while fetching available promotions.",
+                    Data = null
+                });
+            }
+        }
     }
 
     public class ValidatePromotionRequest

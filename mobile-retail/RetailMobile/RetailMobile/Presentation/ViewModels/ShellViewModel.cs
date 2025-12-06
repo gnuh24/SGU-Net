@@ -1,4 +1,4 @@
-namespace RetailMobile.Presentation;
+namespace RetailMobile.Presentation.ViewModels;
 
 public class ShellViewModel
 {

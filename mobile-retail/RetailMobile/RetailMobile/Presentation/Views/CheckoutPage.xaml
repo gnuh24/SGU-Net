@@ -1,0 +1,293 @@
+﻿<Page
+    x:Class="RetailMobile.Presentation.Views.CheckoutPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:RetailMobile.Presentation.Views"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="using:RetailMobile.Presentation.ViewModels"
+    xmlns:utu="using:Uno.Toolkit.UI.Material"
+    xmlns:conv="using:RetailMobile.Helpers"
+    mc:Ignorable="d"
+    Background="{ThemeResource BackgroundBrush}">
+
+    <Page.Resources>
+        <conv:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <conv:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
+    </Page.Resources>
+
+    <!-- Root Grid -->
+    <Grid Padding="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Customer Info -->
+        <ScrollViewer Grid.Row="1"
+                      VerticalScrollBarVisibility="Hidden"
+                      HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Spacing="24">
+
+                <!-- 1. Thông tin Khách hàng -->
+                <StackPanel Spacing="16"
+                            Margin="20,0,20,4"
+                            Visibility="{Binding IsAuthenticated, Converter={StaticResource InverseBooleanToVisibilityConverter}}" >
+                    <TextBlock Text="Thông tin Khách hàng"
+                           Style="{StaticResource SubtitleTextBlockStyle}" 
+                           Margin="0,0,0,4"/>
+
+                    <TextBox Text="{Binding CustomerName, Mode=TwoWay}"
+                         PlaceholderText="Họ và Tên"
+                         Header="Họ và Tên (*)" />
+
+                    <TextBox Text="{Binding PhoneNumber, Mode=TwoWay}"
+                         PlaceholderText="Số Điện thoại"
+                         Header="Số Điện thoại (*)"
+                         InputScope="TelephoneNumber" />
+
+                    <TextBox Text="{Binding EmailAddress, Mode=TwoWay}"
+                         PlaceholderText="Địa chỉ Email"
+                         Header="Email"
+                         InputScope="EmailSmtpAddress" />
+
+                    <TextBox Text="{Binding DeliveryAddress, Mode=TwoWay}"
+                         PlaceholderText="Địa chỉ Chi tiết (Số nhà, Tên đường)"
+                         Header="Địa chỉ Giao hàng (*)"
+                         AcceptsReturn="True"
+                         TextWrapping="Wrap" />
+                </StackPanel>
+                <!-- 2. Thông tin Khách hàng khi dang nhap -->
+                <StackPanel Spacing="16"
+                            Margin="20,0,20,4"
+                            Visibility="{Binding IsAuthenticated, Converter={StaticResource BooleanToVisibilityConverter}}" >
+                    <Border Background="{ThemeResource SystemControlBackgroundChromeLowBrush}"
+                                BorderBrush="{ThemeResource DividerColor}"
+                                BorderThickness="1"
+                                CornerRadius="8">
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Spacing="4">
+                                <TextBlock FontSize="14" TextWrapping="Wrap">
+                                            <Run Text="Address: " Foreground="{ThemeResource ForegroundSecondaryBrush}"/>
+                                            <Run Text="{Binding DeliveryAddress}" FontWeight="SemiBold"/>
+                                </TextBlock>
+                                <TextBlock FontSize="14">
+                                            <Run Text="Contact: " Foreground="{ThemeResource ForegroundSecondaryBrush}"/>
+                                            <Run Text="{Binding PhoneNumber}" FontWeight="SemiBold"/>
+                                </TextBlock>
+                                <TextBlock FontSize="14">
+                                            <Run Text="Fullname: " Foreground="{ThemeResource ForegroundSecondaryBrush}"/>
+                                            <Run Text="{Binding CustomerName}" FontWeight="SemiBold"/>
+                                </TextBlock>
+                            </StackPanel>
+
+                            <Button Grid.Column="1" 
+                                        Style="{StaticResource TextButtonStyle}" 
+                                        Command="{Binding EditAddressCommand}" 
+                                        VerticalAlignment="Top"
+                                        Height="26"
+                                        Padding="10">
+                                <SymbolIcon Symbol="Edit" Width="16" Height="16" Foreground="{ThemeResource ForegroundSecondaryBrush}"/>
+                            </Button>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+
+                <!-- Danh sách Sản phẩm trong Giỏ hàng -->
+
+                <StackPanel>
+
+                    <TextBlock Text="Shopping List"
+                               Style="{StaticResource SubtitleTextBlockStyle}"
+                               Margin="20,0,20,4" />
+
+                    <ListView ItemsSource="{Binding CartItems}"
+                                  SelectionMode="None"
+                                  Margin="20,-16,20,0">
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="Padding" Value="8,8,8,8" />
+                                <Setter Property="MinHeight" Value="0" />
+                                <Setter Property="BorderThickness" Value="0" />
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="{ThemeResource SystemControlBackgroundChromeLowBrush}"
+                                        CornerRadius="10"
+                                        Padding="12"
+                                        Margin="0, 4, 0, 4"
+                                        HorizontalAlignment="Stretch">
+
+                                    <Grid ColumnSpacing="12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="80" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <Border Grid.Column="0"
+                                                Width="80" Height="80"
+                                                Background="#F0F0F0" 
+                                                CornerRadius="8"
+                                                HorizontalAlignment="Left">
+                                            <Image Source="{Binding ImageUrl}" 
+                                                   Stretch="UniformToFill"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"/>
+                                        </Border>
+
+                                        <Grid Grid.Column="1" VerticalAlignment="Center">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                            </Grid.RowDefinitions>
+
+                                            <TextBlock Grid.Row="0"
+                                                   Text="{Binding Name}" 
+                                                   FontSize="18"
+                                                   FontWeight="Bold"
+                                                   TextWrapping="Wrap"/>
+
+                                            <TextBlock Grid.Row="1"
+                                                   Text="{Binding Category}" 
+                                                   FontSize="14"
+                                                   Foreground="{ThemeResource ForegroundSecondaryBrush}"
+                                                   Margin="0, 2, 0, 0"/>
+
+                                            <Grid Grid.Row="2" Margin="0, 8, 0, 0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+
+                                                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Price}" 
+                                                       FontWeight="Bold"
+                                                       FontSize="18"
+                                                       Margin="2, 0, 0, 0"/>
+                                                    <TextBlock Text="₫" 
+                                                       FontWeight="Bold"
+                                                       FontSize="18"/>
+                                                </StackPanel>
+
+                                                <Border Grid.Column="1"
+                                                        Background="{ThemeResource SystemControlBackgroundChromeHighBrush}" 
+                                                        CornerRadius="16" 
+                                                        Padding="12, 6"
+                                                        MinHeight="32"
+                                                        MinWidth="32"
+                                                        HorizontalAlignment="Right"
+                                                        VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Quantity}" 
+                                                               HorizontalAlignment="Center"
+                                                               VerticalAlignment="Center"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{ThemeResource ForegroundSecondaryBrush}"/>
+                                                </Border>
+                                            </Grid>
+                                        </Grid>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+
+                </StackPanel>
+
+                <!-- 3. Mã giảm giá -->
+                <Border CornerRadius="8">
+                    <ComboBox ItemsSource="{Binding Promotions}"
+                              Margin="20, 0, 20, 0"
+                                SelectedItem="{Binding SelectedPromotion}"
+                                DisplayMemberPath="Description"
+                                SelectedValuePath="PromoId"
+                                SelectedValue="{Binding SelectedPromotion, Mode=TwoWay}"
+                                />
+                </Border>
+
+                <!-- Footer: Tổng tiền & Thanh toán -->
+                <Grid Margin="20,10,20,5"
+                      Padding="0,0,0,5"
+                            BorderThickness="0,1,0,0"
+                      RowSpacing="5"
+                            BorderBrush="{ThemeResource DividerColor}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid Grid.Row="0" Margin="0, 0, 0, 5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                   HorizontalAlignment="Right"
+                                   Text="Tổng cộng:"
+                                   FontWeight="Bold"/>
+                        <TextBlock Grid.Column="2"
+                                   HorizontalAlignment="Left"
+                                   Text="{Binding FormattedTotalAmount}"
+                                   FontWeight="Bold"/>
+                    </Grid>
+
+                    <Grid Grid.Row="1" Margin="0, 0, 0, 5"
+                          Visibility="{Binding DiscountVisibility}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                   HorizontalAlignment="Right"
+                                   Text="Giảm giá: "
+                                   FontWeight="Bold"/>
+                        <TextBlock Grid.Column="2"
+                                    HorizontalAlignment="Left"
+                                   Text="-"
+                                   FontWeight="Bold"/>
+                        <TextBlock Grid.Column="3"
+                                    HorizontalAlignment="Left"
+                                   Text="{Binding FormattedDiscountAmount}"
+                                   FontWeight="Bold"/>
+                    </Grid>
+
+                    <Grid Grid.Row="2" Margin="0, 0, 0, 5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                    HorizontalAlignment="Right"
+                                   Text="Tổng thanh toán:"
+                                   FontWeight="Bold"/>
+                        <TextBlock Grid.Column="2"
+                                    HorizontalAlignment="Left"
+                                   Text="{Binding FormattedFinalAmount}"
+                                   FontWeight="Bold"/>
+                    </Grid>
+
+                    <Button Grid.Row="3"
+                            Content="Thanh toán"
+                            Command="{Binding PlaceOrderCommand}"
+                            HorizontalAlignment="Stretch"
+                            Style="{StaticResource AccentButtonStyle}"
+                            Background="#F83758"
+                            CornerRadius="8"
+                            Height="48"/>
+                </Grid>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

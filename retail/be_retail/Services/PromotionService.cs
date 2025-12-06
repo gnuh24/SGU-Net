@@ -1,6 +1,7 @@
 using be_retail.Models;
 using be_retail.Repositories;
 using be_retail.DTOs.Promotion;
+using be_retail.Api;
 
 namespace be_retail.Services
 {
@@ -205,6 +206,41 @@ namespace be_retail.Services
             }
 
             return (true, null, promotion);
+        }
+
+        public async Task<List<PromotionResponseDTO>> GetAvailablePromotionAsync(decimal orderAmount)
+        {
+            try
+            {
+
+                var promotions = await _promotionRepository.GetAvailablePromotionsAsync(orderAmount);
+
+                if (promotions.Any())
+                {
+                    var promoDTOs = promotions.Select(p => new PromotionResponseDTO
+                    {
+                        PromoId = p.PromoId,
+                        PromoCode = p.PromoCode,
+                        Description = p.Description,
+                        DiscountType = p.DiscountType,
+                        DiscountValue = p.DiscountValue,
+                        StartDate = p.StartDate,
+                        EndDate = p.EndDate,
+                        MinOrderAmount = p.MinOrderAmount,
+                        UsageLimit = p.UsageLimit,
+                        UsedCount = p.UsedCount,
+                        Status = p.Status
+                    }).ToList();
+
+                    return promoDTOs;
+                }
+                return new List<PromotionResponseDTO>();
+            }
+            catch (Exception ex)
+            {
+                return new List<PromotionResponseDTO>();
+            }
+
         }
     }
 }
