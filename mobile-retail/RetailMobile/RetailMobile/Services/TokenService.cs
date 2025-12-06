@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using RetailMobile.Data;
+using SQLite;
 
 namespace RetailMobile.Services;
 public class TokenService : ITokenService
@@ -13,31 +14,40 @@ public class TokenService : ITokenService
 
     public async Task<string> GetAccessTokenAsync()
     {
-        var token = await _db.Tokens.FirstOrDefaultAsync();
+        var token = await _db.Tokens.OrderBy(token => token.Id).FirstOrDefaultAsync();
         return token?.AccessToken ?? "";
     }
 
     public async Task<string> GetRefreshTokenAsync()
     {
-        var token = await _db.Tokens.FirstOrDefaultAsync();
+        var token = await _db.Tokens.OrderBy(token => token.Id).FirstOrDefaultAsync();
         return token?.RefreshToken ?? "";
     }
 
     public async Task SaveTokensAsync(string accessToken, string refreshToken)
     {
-        var token = await _db.Tokens.FirstOrDefaultAsync();
+        var token = await _db.Tokens.OrderBy(token => token.Id).FirstOrDefaultAsync();
+
         if (token == null)
         {
-            token = new TokenRecord { AccessToken = accessToken, RefreshToken = refreshToken, UpdatedAt = DateTime.UtcNow };
-            _db.Tokens.Add(token);
+            token = new TokenRecord
+            {
+                AccessToken = accessToken,
+                RefreshToken = refreshToken,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            await _db.Tokens.AddAsync(token);
         }
         else
         {
             token.AccessToken = accessToken;
             token.RefreshToken = refreshToken;
             token.UpdatedAt = DateTime.UtcNow;
+
             _db.Tokens.Update(token);
         }
+
         await _db.SaveChangesAsync();
     }
 
@@ -51,3 +61,4 @@ public class TokenService : ITokenService
         }
     }
 }
+

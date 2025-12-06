@@ -1,0 +1,178 @@
+﻿<Page
+    x:Class="RetailMobile.Presentation.Views.SignInPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:RetailMobile.Presentation.Views"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Grid Background="White"
+      Padding="32, 32, 32, 32">
+        <!-- 
+    Cấu trúc Grid giữ nguyên các hàng để đảm bảo vị trí tương đối và tính responsive
+    -->
+        <Grid.RowDefinitions>
+            <!-- 0. Tiêu đề: Cao độ cố định -->
+            <RowDefinition Height="Auto"/>
+            <!-- 1. Khoảng trống lớn sau tiêu đề -->
+            <RowDefinition Height="30"/>
+            <!-- 2. Ô nhập Username -->
+            <RowDefinition Height="Auto"/>
+            <!-- 3. Khoảng trống giữa 2 ô input -->
+            <RowDefinition Height="15"/>
+            <!-- 4. Ô nhập Password -->
+            <RowDefinition Height="Auto"/>
+            <!-- 5. Khoảng trống đến nút Login -->
+            <RowDefinition Height="60"/>
+            <!-- 6. Nút Login -->
+            <RowDefinition Height="Auto"/>
+            <!-- 7. Khoảng trống đến footer -->
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- 0. Welcome Back! (Giữ màu chủ đạo để nhấn mạnh) -->
+        <TextBlock
+            Grid.Row="0"
+            Text="Welcome Back!"
+            FontWeight="Bold"
+            FontSize="36"
+            Foreground="#F83758"
+            Margin="0, 130, 0, 0"
+            HorizontalAlignment="Center"
+            HorizontalTextAlignment="Center"/>
+
+        <!-- 2. Username Input Section: Đã thêm VerticalContentAlignment và Foreground -->
+        <TextBox Grid.Row="2"
+             Height="55"
+             PlaceholderText="Username"
+             FontSize="14"
+             VerticalAlignment="Center"
+             VerticalContentAlignment="Center"
+             Padding="16, 0, 0, 0"
+             BorderThickness="0"
+             Background="#F3F3F3"
+             CornerRadius="12"
+             Foreground="Black"/>
+
+        <!-- 4. Password Input Section -->
+        <Grid Grid.Row="4"
+          Height="55"
+          Background="#F3F3F3"
+          BorderThickness="0"
+          CornerRadius="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <!-- Cho PasswordBox -->
+                <ColumnDefinition Width="Auto"/>
+                <!-- Cho icon mắt -->
+            </Grid.ColumnDefinitions>
+
+            <PasswordBox Grid.Column="0"
+                     PlaceholderText="Password"
+                     FontSize="14"
+                     VerticalAlignment="Center"
+                     VerticalContentAlignment="Center"
+                     Padding="16, 0, 0, 0"
+                     Background="Transparent"
+                     BorderThickness="0"
+                     Foreground="Black"/>
+
+            <!-- Eye Icon Container -->
+            <Border Grid.Column="1"
+                Width="36"
+                Height="36"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Center"
+                Margin="0, 0, 8, 0">
+                <!-- Thay đổi style của icon mắt để phù hợp hơn với thiết kế phẳng -->
+                <TextBlock Text="👁️" 
+                       VerticalAlignment="Center" 
+                       HorizontalAlignment="Center" 
+                       FontSize="18" 
+                       Foreground="#676767"/>
+            </Border>
+        </Grid>
+
+        <!-- 6. Login Button: Giữ màu chủ đạo, thêm chút CornerRadius lớn hơn và đảm bảo Auto Height -->
+        <Button Grid.Row="6"
+            Height="55"
+            Background="#F83758"
+            CornerRadius="12"
+            BorderThickness="0"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            Width="175"
+            Padding="0">
+            <TextBlock Text="Login"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   FontFamily="Montserrat"
+                   FontSize="20"
+                   FontWeight="SemiBold"
+                   Foreground="White"/>
+        </Button>
+
+        <!-- 7. Footer Section (Giữ nguyên style) -->
+        <StackPanel Grid.Row="7"
+                VerticalAlignment="Bottom"
+                HorizontalAlignment="Center"
+                Orientation="Vertical"
+                Margin="0, 0, 0, 30">
+
+            <!-- Create An Account (Sử dụng Button cho "Sign Up") -->
+            <StackPanel Orientation="Horizontal"
+                    HorizontalAlignment="Center"
+                    Margin="0, 0, 0, 10">
+                <TextBlock Text="Create An Account"
+                       FontFamily="Montserrat"
+                       FontWeight="Normal"
+                       FontSize="14"
+                       Foreground="#575757"
+                       VerticalAlignment="Center"
+                       Margin="0, 0, 5, 0"/>
+                <!-- Link: Chuyển sang SignUp Page -->
+                <Button Background="Transparent" 
+                    BorderThickness="0" 
+                    Padding="0" 
+                    VerticalAlignment="Center"
+                    VerticalContentAlignment="Center"
+                    Command="{Binding NavigateToSignUpPageCommand}">
+                    <TextBlock Text="Sign Up"
+                           FontFamily="Montserrat"
+                           FontWeight="SemiBold"
+                           FontSize="14"
+                           TextDecorations="Underline"
+                           Foreground="#F83758"/>
+                </Button>
+            </StackPanel>
+
+            <!-- Guest Link (Sử dụng Button cho "Click here") -->
+            <StackPanel Orientation="Horizontal"
+                    HorizontalAlignment="Center">
+                <!-- Link: Chuyển đến ProductPage -->
+                <Button Background="Transparent" 
+                    BorderThickness="0" 
+                    Padding="0" 
+                    VerticalAlignment="Center"
+                    VerticalContentAlignment="Center"
+                    Margin="0, 0, 5, 0">
+                    <TextBlock Text="Click here"
+                           FontFamily="Montserrat"
+                           FontWeight="SemiBold"
+                           FontSize="14"
+                           TextDecorations="Underline"
+                           Foreground="#F83758"/>
+                </Button>
+                <TextBlock Text="if you are guest"
+                       FontFamily="Montserrat"
+                       FontWeight="Normal"
+                       FontSize="14"
+                       VerticalAlignment="Center"
+                       Foreground="#575757"/>
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+
+</Page>

@@ -131,5 +131,17 @@ namespace be_retail.Repositories
             await _context.SaveChangesAsync();
             return true;
         }
+
+        public async Task<IEnumerable<Promotion>> GetAvailablePromotionsAsync(decimal orderAmount)
+        {
+            var now = DateTime.Now;
+            return await _context.Promotions
+                .Where(p => p.Status == "active" &&
+                           p.StartDate <= now &&
+                           p.EndDate >= now &&
+                           (p.UsageLimit == 0 || p.UsedCount < p.UsageLimit) &&
+                           (p.MinOrderAmount == 0 || p.MinOrderAmount <= orderAmount))
+                .ToListAsync();
+        }
     }
 }

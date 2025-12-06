@@ -1,37 +1,43 @@
 using Microsoft.EntityFrameworkCore;
 using RetailMobile.Data;
+using SQLite;
 
 namespace RetailMobile.Services;
 public class CartService
 {
-    private readonly AppDbContext _context;
+    private readonly AppDbContext _db;
 
-    public CartService(AppDbContext context)
+    public CartService(AppDbContext db)
     {
-        _context = context;
+        _db = db;
     }
 
-    public async Task AddItemAsync(CartItem item)
+    public async Task<int> AddItemAsync(CartItem item)
     {
-        _context.CartItems.Add(item);
-        await _context.SaveChangesAsync();
+        await _db.CartItems.AddAsync(item);
+        return await _db.SaveChangesAsync();
     }
 
-    public async Task UpdateItemAsync(CartItem item)
+    public async Task<int> UpdateItemAsync(CartItem item)
     {
-        _context.CartItems.Update(item);
-        await _context.SaveChangesAsync();
+        _db.CartItems.Update(item);
+        return await _db.SaveChangesAsync();
     }
 
     public async Task<List<CartItem>> GetCartAsync()
     {
-        return await _context.CartItems.ToListAsync();
+        return await _db.CartItems.ToListAsync();
     }
 
-    public async Task RemoveItemAsync(CartItem item)
+    public async Task<int> RemoveItemAsync(CartItem item)
     {
-        _context.CartItems.Remove(item);
-        await _context.SaveChangesAsync();
+        _db.CartItems.Remove(item);
+        return await _db.SaveChangesAsync();
+    }
+
+    public async Task<int> ClearCart()
+    {
+        _db.CartItems.RemoveRange(_db.CartItems);
+        return await _db.SaveChangesAsync();
     }
 }
-
