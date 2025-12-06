@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -18,11 +19,13 @@ namespace RetailMobile.Presentation.ViewModels;
 
 public partial class CheckoutViewModel:ObservableObject
 {
-    private INavigator _navigator;
+    private readonly INavigator _navigator;
 
-    private ApiClient _apiClient;
+    private readonly ApiClient _apiClient;
 
-    private CartService _cartService;
+    private readonly CartService _cartService;
+
+    private readonly TokenService _tokenService;
 
     [ObservableProperty]
     private List<CartItem> _cartItems = new();
@@ -52,68 +55,17 @@ public partial class CheckoutViewModel:ObservableObject
     private string _deliveryAddress;
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(PlaceOrderCommand))]
-    private PaymentMethod _selectedPaymentMethod = PaymentMethod.cash;
+    private bool _isAuthenticated;
 
-    public CheckoutViewModel(INavigator navigator, ApiClient apiClient, CartService cartService)
+    public CheckoutViewModel(INavigator navigator, ApiClient apiClient, CartService cartService, TokenService tokenService)
     {
         _navigator = navigator;
         _apiClient = apiClient;
         _cartService = cartService;
+        _tokenService = tokenService;
+
+        CheckUserAuthenticationCommand.ExecuteAsync(null);
         _ = LoadCheckoutDataAsync();
-    }
-
-    public bool IsCashSelected
-    {
-        get => SelectedPaymentMethod == PaymentMethod.cash;
-        set => SelectPaymentMethod(PaymentMethod.cash);
-    }
-
-    public bool IsCardSelected
-    {
-        get => SelectedPaymentMethod == PaymentMethod.card;
-        set => SelectPaymentMethod(PaymentMethod.card);
-    }
-
-    public bool IsBankTransferSelected
-    {
-        get => SelectedPaymentMethod == PaymentMethod.bank_transfer;
-        set => SelectPaymentMethod(PaymentMethod.bank_transfer);
-    }
-
-    public bool IsMomoSelected
-    {
-        get => SelectedPaymentMethod == PaymentMethod.momo;
-        set => SelectPaymentMethod(PaymentMethod.momo);
-    }
-
-    public bool IsVnpaySelected
-    {
-        get => SelectedPaymentMethod == PaymentMethod.vnpay;
-        set => SelectPaymentMethod(PaymentMethod.vnpay);
-    }
-
-    partial void OnSelectedPaymentMethodChanged(PaymentMethod value)
-    {
-        OnPropertyChanged(nameof(IsCashSelected));
-        OnPropertyChanged(nameof(IsCardSelected));
-        OnPropertyChanged(nameof(IsBankTransferSelected));
-        OnPropertyChanged(nameof(IsMomoSelected));
-        OnPropertyChanged(nameof(IsVnpaySelected));
-    }
-
-    [RelayCommand]
-    private void SelectPaymentMethod(object parameter)
-    {
-        if (parameter is string methodString &&
-            Enum.TryParse<PaymentMethod>(methodString, true, out var method))
-        {
-            // Chỉ gán nếu phương thức được chọn khác với hiện tại để tránh loop
-            if (SelectedPaymentMethod != method)
-            {
-                SelectedPaymentMethod = method;
-            }
-        }
     }
 
     public decimal DiscountAmount
@@ -197,13 +149,46 @@ public partial class CheckoutViewModel:ObservableObject
         OnPropertyChanged(nameof(FormattedFinalAmount));
     }
 
+    [RelayCommand]
+    private async Task CheckUserAuthenticationAsync()
+    {        
+        string token = await _tokenService.GetAccessTokenAsync();
+
+        if (token.IsNullOrEmpty())
+        {
+            IsAuthenticated = false;
+        }
+        else
+        {
+            //var queryParams = QueryHelper.ToQueryParams(("id", 1));
+            //CustomerResponseDTO customer = await _apiClient.GetAsync<CustomerResponseDTO>("api/v1/customers", queryParams);
+            CustomerResponseDTO customer = new CustomerResponseDTO();
+            customer.CustomerId = 1;
+            customer.Name = "Nguyen Van A";
+            customer.Phone = "0123456789";
+            customer.Email = "test@gmail.com";
+            customer.Address = "123 Le Loi, District 1, HCM City";
+
+            bool flag = customer != null;
+            if (flag)
+            {
+                CustomerName = customer.Name;
+                PhoneNumber = customer.Phone;
+                EmailAddress = customer.Email;
+                DeliveryAddress = customer.Address;
+            }
+            IsAuthenticated = flag;
+        }
+
+        Console.WriteLine($"User authenticated: {IsAuthenticated}");
+    }
+
     [RelayCommand(CanExecute = nameof(CanPlaceOrder))]
     private async Task PlaceOrderAsync()
     {
         Console.WriteLine($"Đặt hàng được xác nhận!");
         Console.WriteLine($"Khách hàng: {CustomerName}, SĐT: {PhoneNumber}");
         Console.WriteLine($"Địa chỉ: {DeliveryAddress}");
-        Console.WriteLine($"Phương thức: {SelectedPaymentMethod}");
         Console.WriteLine($"Thành tiền: {FinalAmount}");
         Console.WriteLine($"Khuyến mãi áp dụng: {SelectedPromotion}");
         Console.WriteLine($"Giam {DiscountAmount}");
@@ -229,32 +214,26 @@ public partial class CheckoutViewModel:ObservableObject
         orderForm.UserId = null; // Chưa có user đăng nhập
         orderForm.PromoId = SelectedPromotion != 0 ? SelectedPromotion : null;
         orderForm.Status = "Pending";
-        orderForm.PaymentMethod = SelectedPaymentMethod.ToString();
         orderForm.OrderItems = orderItems;
 
-        OrderResponseDTO createdOrder = await _apiClient.PostAsync<OrderCreateDto, OrderResponseDTO>("/api/v1/orders", orderForm);
-
-        Console.WriteLine($"Đơn hàng được tạo với ID: {createdOrder}");
-
-        if (createdOrder == null)
+        var navigationData = new Dictionary<string, object?>
         {
-            return;
-        }
+            { "OrderForm", orderForm },
+            { "Total", TotalAmount },
+            { "Discount", DiscountAmount },
+            { "Final", FinalAmount },
+        };
 
-        await _cartService.ClearCart();
-        switch (SelectedPaymentMethod)
-        {
-            case PaymentMethod.cash:
-                await _navigator.NavigateViewModelAsync<OrderConfirmationViewModel>(this, data: createdOrder);
-                break;
-            case PaymentMethod.card:
-            case PaymentMethod.bank_transfer:
-            case PaymentMethod.momo:
-            case PaymentMethod.vnpay:
-                // Chuyển đến trang xử lý thanh toán tương ứng
-                await _navigator.NavigateViewModelAsync<PaymentProcessingViewModel>(this, data: createdOrder);
-                break;
-        }
+        await _navigator.NavigateViewModelAsync<PaymentProcessingViewModel>(this, data: navigationData);
+
+        //OrderResponseDTO createdOrder = await _apiClient.PostAsync<OrderCreateDto, OrderResponseDTO>("/api/v1/orders", orderForm);
+
+        //Console.WriteLine($"Đơn hàng được tạo với ID: {createdOrder}");
+
+        //if (createdOrder == null)
+        //{
+        //    return;
+        //}
     }
 
     private bool CanPlaceOrder()
@@ -282,31 +261,14 @@ public partial class CheckoutViewModel:ObservableObject
     [RelayCommand]
     public async Task LoadCheckoutDataAsync()
     {
-            
+
         //CartItems = await _cartService.GetCartAsync();
         //TotalAmount = CartItems.Sum(item => item.Price * item.Quantity);
         //Promotions = await _apiClient.GetAsync<List<PromotionDTO>>("/api/v1/promotions/available",QueryHelper.ToQueryParams(("orderAmount", TotalAmount)));
+        
+        await _cartService.ClearCart(); // Xóa giỏ hàng trước khi load lại
 
-        if (!(await _cartService.GetCartAsync()).Any())
-        {
-            int c = await _cartService.AddItemAsync(new CartItem
-            {
-                ProductId = 1,
-                Name = "Coca Cola 500ml",
-                Quantity = 2,
-                Price = 10000
-            });
-
-            c += await _cartService.AddItemAsync(new CartItem
-            {
-                ProductId = 2,
-                Name = "Snack Oishi",
-                Quantity = 1,
-                Price = 15000
-            });
-
-        }
-
+        await LoadCartData(); // Tải dữ liệu mẫu vào giỏ hàng
 
         CartItems = await _cartService.GetCartAsync();
 
@@ -326,6 +288,20 @@ public partial class CheckoutViewModel:ObservableObject
             // 5) Mock fallback nếu API lỗi
             Promotions = new List<PromotionDTO>
         {
+            new PromotionDTO
+            {
+                PromoId = 0,
+                PromoCode = "SALE0",
+                DiscountType = "Percentage",
+                DiscountValue = 0,
+                Description = "Giảm 0%",
+                StartDate = DateTime.Now.AddDays(-5),
+                EndDate = DateTime.Now.AddDays(10),
+                MinOrderAmount = 0,
+                UsageLimit = 100,
+                UsedCount = 20,
+                Status = "Active"
+            },
             new PromotionDTO
             {
                 PromoId = 1,
@@ -355,6 +331,28 @@ public partial class CheckoutViewModel:ObservableObject
                 Status = "Active"
             }
         };
+        }
+    }
+
+    private async Task LoadCartData()
+    {
+        var sampleCartItems = new List<CartItem>
+        {
+            new CartItem { ProductId = 1, Name = "Nokia 3310", Quantity = 1, Price = 49999m },
+            new CartItem { ProductId = 2, Name = "iPhone 15 Pro", Quantity = 2, Price = 99999m },
+            new CartItem { ProductId = 3, Name = "Samsung Galaxy S24", Quantity = 1, Price = 89999m },
+            new CartItem { ProductId = 4, Name = "Xiaomi Redmi Note 13", Quantity = 3, Price = 19950m },
+            new CartItem { ProductId = 5, Name = "Oppo Reno 11", Quantity = 1, Price = 45000m },
+            new CartItem { ProductId = 6, Name = "Vivo V30", Quantity = 2, Price = 52000m },
+            new CartItem { ProductId = 7, Name = "MacBook Air M2", Quantity = 1, Price = 119900m },
+            new CartItem { ProductId = 8, Name = "iPad Pro 12.9", Quantity = 1, Price = 129900m },
+            new CartItem { ProductId = 9, Name = "Sony Headphones WH-1000XM5", Quantity = 2, Price = 34999m },
+            new CartItem { ProductId = 10, Name = "Logitech MX Master 3S", Quantity = 1, Price = 9999m }
+        };
+
+        foreach (var item in sampleCartItems)
+        {
+            _ = await _cartService.AddItemAsync(item);
         }
     }
 }

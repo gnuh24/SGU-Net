@@ -10,6 +10,7 @@ using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
+using RetailMobile.Presentation.ViewModels;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 
@@ -20,9 +21,10 @@ namespace RetailMobile.Presentation.Views;
 /// <summary>
 /// An empty page that can be used on its own or navigated to within a Frame.
 /// </summary>
-public sealed partial class PaymentProcessingPage : Page
+public sealed partial class SignInPage : Page
 {
-    public PaymentProcessingPage()
+    public SignInViewModel ViewModel => (SignInViewModel)this.DataContext;
+    public SignInPage()
     {
         this.InitializeComponent();
     }

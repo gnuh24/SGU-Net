@@ -1,0 +1,145 @@
+﻿<Page
+    x:Class="RetailMobile.Presentation.Views.ProfilePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:RetailMobile.Presentation.Views"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Grid>
+        <!-- MAIN SCROLL -->
+        <ScrollViewer>
+            <Grid Width="380" HorizontalAlignment="Center">
+
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0"
+                           Text="Profile"
+                           HorizontalAlignment="Center"
+                           FontSize="16"
+                           FontWeight="Bold"
+                           Margin="0,0,0,0"/>
+
+                <!-- ===== PROFILE AVATAR ===== -->
+                <StackPanel Grid.Row="1"
+                            Margin="0,20,0,0"
+                            HorizontalAlignment="Center">
+                    <Ellipse Width="113"
+                             Height="113">
+                        <Ellipse.Fill>
+                            <ImageBrush ImageSource="ms-appx:///Assets/profile.jpg"/>
+                        </Ellipse.Fill>
+                    </Ellipse>
+                </StackPanel>
+
+                <!-- ===== FORM SECTION ===== -->
+                <StackPanel Grid.Row="2"
+                            Margin="20,20,20,20"
+                            Spacing="20">
+
+                    <!-- Personal Details -->
+                    <TextBlock Text="Personal Details"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               FontFamily="Montserrat"/>
+
+                    <!-- Name Label -->
+                    <TextBlock Text="Full Name"
+                               FontSize="12"
+                               Margin="0,0,0,-10"/>
+
+                    <!-- Name Box -->
+                    <TextBox Height="32"
+                             Text="a"
+                            Background="White"
+                             Foreground="Black"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            FontSize="12">
+                    </TextBox>
+
+                    <!-- Phone Label -->
+                    <TextBlock Text="Phone Number"
+                               FontSize="12"
+                               Margin="0,0,0,-10"/>
+
+                    <!-- Phone Box -->
+                    <TextBox Height="32"
+                             Text="a"
+                            Background="White"
+                             Foreground="Black"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            FontSize="12">
+                    </TextBox>
+
+                    <!-- Email Label -->
+                    <TextBlock Text="Email Address"
+                               FontSize="12"
+                               Margin="0,0,0,-10"/>
+
+                    <!-- Email Box -->
+                    <TextBox Height="32"
+                             Text="a"
+                            Background="White"
+                             Foreground="Black"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            FontSize="12">
+                    </TextBox>
+
+                    <!-- Address label-->
+                    <TextBlock Text="Address"
+                               FontSize="12"
+                               Margin="0,0,0,-10"/>
+
+                    <!-- Address box-->
+                    <TextBox Height="32"
+                             Text="a"
+                            Background="White"
+                             Foreground="Black"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            FontSize="12">
+                    </TextBox>
+                </StackPanel>
+
+                <!-- SAVE BUTTON -->
+                <Grid Grid.Row="3"
+                        Margin="20, 20, 20, 0"
+                        VerticalAlignment="Top">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0"
+                        Content="Edit"
+                        Height="48"
+                        Width="165"
+                        Background="#F83758"
+                        Foreground="White"
+                        FontSize="15"
+                        FontWeight="SemiBold"
+                        CornerRadius="8"/>
+                    <Button Grid.Column="2"
+                        Content="Save"
+                        Height="48"
+                        Width="165"
+                        Background="#F83758"
+                        Foreground="White"
+                        FontSize="15"
+                        FontWeight="SemiBold"
+                        CornerRadius="8"/>
+                </Grid>
+            </Grid>
+        </ScrollViewer>
+    </Grid>
+</Page>

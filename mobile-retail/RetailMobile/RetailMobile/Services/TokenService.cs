@@ -3,31 +3,30 @@ using RetailMobile.Data;
 using SQLite;
 
 namespace RetailMobile.Services;
-
 public class TokenService : ITokenService
 {
-    private readonly SQLiteAsyncConnection _db;
+    private readonly AppDbContext _db;
 
-    public TokenService(DatabaseService database)
+    public TokenService(AppDbContext db)
     {
-        _db = database.Db;
+        _db = db;
     }
 
     public async Task<string> GetAccessTokenAsync()
     {
-        var token = await _db.Table<TokenRecord>().FirstOrDefaultAsync();
+        var token = await _db.Tokens.OrderBy(token => token.Id).FirstOrDefaultAsync();
         return token?.AccessToken ?? "";
     }
 
     public async Task<string> GetRefreshTokenAsync()
     {
-        var token = await _db.Table<TokenRecord>().FirstOrDefaultAsync();
+        var token = await _db.Tokens.OrderBy(token => token.Id).FirstOrDefaultAsync();
         return token?.RefreshToken ?? "";
     }
 
     public async Task SaveTokensAsync(string accessToken, string refreshToken)
     {
-        var token = await _db.Table<TokenRecord>().FirstOrDefaultAsync();
+        var token = await _db.Tokens.OrderBy(token => token.Id).FirstOrDefaultAsync();
 
         if (token == null)
         {
@@ -38,7 +37,7 @@ public class TokenService : ITokenService
                 UpdatedAt = DateTime.UtcNow
             };
 
-            await _db.InsertAsync(token);
+            await _db.Tokens.AddAsync(token);
         }
         else
         {
@@ -46,16 +45,20 @@ public class TokenService : ITokenService
             token.RefreshToken = refreshToken;
             token.UpdatedAt = DateTime.UtcNow;
 
-            await _db.UpdateAsync(token);
+            _db.Tokens.Update(token);
         }
+
+        await _db.SaveChangesAsync();
     }
 
     public async Task DeleteTokensAsync()
     {
-        var token = await _db.Table<TokenRecord>().FirstOrDefaultAsync();
+        var token = await _db.Tokens.OrderBy(token => token.Id).FirstOrDefaultAsync();
         if (token != null)
         {
-            await _db.DeleteAsync(token);
+            _db.Tokens.Remove(token);
+            await _db.SaveChangesAsync();
         }
     }
 }
+

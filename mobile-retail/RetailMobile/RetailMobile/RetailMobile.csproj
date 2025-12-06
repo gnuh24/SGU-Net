@@ -38,6 +38,15 @@
       SkiaRenderer;
     </UnoFeatures>
   </PropertyGroup>
+
+    <PropertyGroup>
+        <UnoSplashScreenColor>#FEFEFC</UnoSplashScreenColor>
+        <UnoIconForegroundScale>0.5</UnoIconForegroundScale>
+        <UnoSplashScreenBaseSize>350,300</UnoSplashScreenBaseSize>
+        <UnoIconForegroundFile>Assets/Icons/app_icon.svg</UnoIconForegroundFile>
+        <UnoSplashScreenFile>Assets/Splash/app_splash_screen.svg</UnoSplashScreenFile>
+    </PropertyGroup>
+    
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
@@ -50,6 +59,10 @@
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" />
     <PackageReference Include="SQLitePCLRaw.core" />
     <PackageReference Include="SQLitePCLRaw.provider.e_sqlite3" />
+  </ItemGroup>
+    
+  <ItemGroup>
+    <UnoImage Include="Assets\Splash\app_splash_screen.svg" Link="Assets\Splash\app_splash_screen.svg" />
   </ItemGroup>
   <ItemGroup>
     <Compile Update="Presentation\Views\OrderConfirmationPage.xaml.cs">
@@ -91,6 +104,31 @@
   </ItemGroup>
   <ItemGroup>
     <Page Update="Presentation\Views\LoginPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Presentation\Views\SignInPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Presentation\Views\SignUpPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Presentation\Views\HomePage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Presentation\Views\ProfilePage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Presentation\Views\CheckoutPageTest.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>

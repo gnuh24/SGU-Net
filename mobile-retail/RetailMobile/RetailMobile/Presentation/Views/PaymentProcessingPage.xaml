@@ -1,5 +1,5 @@
 ﻿<Page
-    x:Class="RetailMobile.Presentation.Views.PaymentProcessingView"
+    x:Class="RetailMobile.Presentation.Views.PaymentProcessingPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:RetailMobile.Presentation.Views"
@@ -8,9 +8,123 @@
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
-    <Grid>
-        <WebView x:Name="PaymentProcessingWebView"
-                 HorizontalAlignment="Stretch"
-                 VerticalAlignment="Stretch"/>
+    <Grid Margin="20, 10, 20, 10">
+        <!-- 1. Phương thức Thanh toán -->
+        <ScrollViewer VerticalScrollBarVisibility="Hidden"
+                    HorizontalScrollBarVisibility="Disabled">
+            <StackPanel>
+                <StackPanel Spacing="16" Margin="0,0,0,4">
+
+                    <TextBlock Text="Phương thức Thanh toán" 
+                               Style="{StaticResource SubtitleTextBlockStyle}"
+                               Margin="0,0,0,4" />
+
+                    <RadioButton Content="Thanh toán khi nhận hàng (COD)"
+                                 GroupName="PaymentMethod"
+                                 IsChecked="{Binding IsCashSelected, Mode=TwoWay}"
+                                 Command="{Binding SelectPaymentMethodCommand}"
+                                 CommandParameter="COD"/>
+
+                    <RadioButton Content="Thẻ tín dụng/ghi nợ (Visa/Mastercard)"
+                                 GroupName="PaymentMethod"
+                                 IsChecked="{Binding IsCardSelected, Mode=TwoWay}"
+                                 Command="{Binding SelectPaymentMethodCommand}"
+                                 CommandParameter="Card"/>
+
+                    <RadioButton Content="Ngân hàng"
+                                 GroupName="PaymentMethod"
+                                 IsChecked="{Binding IsBankTransferSelected, Mode=TwoWay}"
+                                 Command="{Binding SelectPaymentMethodCommand}"
+                                 CommandParameter="BankTransfer"/>
+
+                    <RadioButton Content="Momo"
+                                 GroupName="PaymentMethod"
+                                 IsChecked="{Binding IsMomoSelected, Mode=TwoWay}"
+                                 Command="{Binding SelectPaymentMethodCommand}"
+                                 CommandParameter="Momo"/>
+
+                    <RadioButton Content="Vnpay"
+                                 GroupName="PaymentMethod"
+                                 IsChecked="{Binding IsVnpaySelected, Mode=TwoWay}"
+                                 Command="{Binding SelectPaymentMethodCommand}"
+                                 CommandParameter="Vnpay"/>
+                </StackPanel>
+
+                <Grid Margin="20,10,20,5"
+      Padding="0,0,0,5"
+            BorderThickness="0,1,0,0"
+      RowSpacing="5"
+            BorderBrush="{ThemeResource DividerColor}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid Grid.Row="0" Margin="0, 0, 0, 5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                   HorizontalAlignment="Right"
+                   Text="Tổng cộng:"
+                   FontWeight="Bold"/>
+                        <TextBlock Grid.Column="2"
+                   HorizontalAlignment="Left"
+                   Text="{Binding FormattedTotalAmount}"
+                   FontWeight="Bold"/>
+                    </Grid>
+
+                    <Grid Grid.Row="1" Margin="0, 0, 0, 5"
+          Visibility="{Binding DiscountVisibility}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                   HorizontalAlignment="Right"
+                   Text="Giảm giá: "
+                   FontWeight="Bold"/>
+                        <TextBlock Grid.Column="2"
+                    HorizontalAlignment="Left"
+                   Text="-"
+                   FontWeight="Bold"/>
+                        <TextBlock Grid.Column="3"
+                    HorizontalAlignment="Left"
+                   Text="{Binding FormattedDiscountAmount}"
+                   FontWeight="Bold"/>
+                    </Grid>
+
+                    <Grid Grid.Row="2" Margin="0, 0, 0, 5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                    HorizontalAlignment="Right"
+                   Text="Tổng thanh toán:"
+                   FontWeight="Bold"/>
+                        <TextBlock Grid.Column="2"
+                    HorizontalAlignment="Left"
+                   Text="{Binding FormattedFinalAmount}"
+                   FontWeight="Bold"/>
+                    </Grid>
+
+                    <Button Grid.Row="3"
+            Content="Thanh toán"
+            Command="{Binding PlaceOrderCommand}"
+            HorizontalAlignment="Stretch"
+            Style="{StaticResource AccentButtonStyle}"
+            Background="#F83758"
+            CornerRadius="8"
+            Height="48"/>
+                </Grid>
+            </StackPanel>
+        </ScrollViewer>
     </Grid>
 </Page>

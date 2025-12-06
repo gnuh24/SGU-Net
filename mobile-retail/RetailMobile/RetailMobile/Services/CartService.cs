@@ -5,27 +5,39 @@ using SQLite;
 namespace RetailMobile.Services;
 public class CartService
 {
-    private readonly SQLiteAsyncConnection _db;
+    private readonly AppDbContext _db;
 
-    public CartService(DatabaseService database)
+    public CartService(AppDbContext db)
     {
-        _db = database.Db;
+        _db = db;
     }
 
     public async Task<int> AddItemAsync(CartItem item)
-    => await _db.InsertAsync(item);
+    {
+        await _db.CartItems.AddAsync(item);
+        return await _db.SaveChangesAsync();
+    }
 
     public async Task<int> UpdateItemAsync(CartItem item)
-    => await _db.UpdateAsync(item);
+    {
+        _db.CartItems.Update(item);
+        return await _db.SaveChangesAsync();
+    }
 
     public async Task<List<CartItem>> GetCartAsync()
-    => await _db.Table<CartItem>().ToListAsync();
+    {
+        return await _db.CartItems.ToListAsync();
+    }
 
     public async Task<int> RemoveItemAsync(CartItem item)
-    => await _db.DeleteAsync(item);
+    {
+        _db.CartItems.Remove(item);
+        return await _db.SaveChangesAsync();
+    }
 
-    public Task ClearCart()
-    => _db.DeleteAllAsync<CartItem>();
-
+    public async Task<int> ClearCart()
+    {
+        _db.CartItems.RemoveRange(_db.CartItems);
+        return await _db.SaveChangesAsync();
+    }
 }
-

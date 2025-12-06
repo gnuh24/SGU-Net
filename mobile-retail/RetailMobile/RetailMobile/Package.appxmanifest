@@ -21,7 +21,9 @@
     <Application Id="App"
       Executable="$targetnametoken$.exe"
       EntryPoint="$targetentrypoint$">
-      <uap:VisualElements />
+      <uap:VisualElements  DisplayName="RetailMobile" Description="Ung dung mua hang truc tuyen">
+        <uap:DefaultTile/>
+      </uap:VisualElements >
     </Application>
   </Applications>
 

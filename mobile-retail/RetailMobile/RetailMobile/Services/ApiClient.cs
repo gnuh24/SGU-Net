@@ -9,8 +9,8 @@ public class ApiClient
 {
     private readonly HttpClient _http;
     private readonly JsonSerializerOptions _jsonOptions;
-    private readonly ITokenService _tokenService;
-    public ApiClient(IOptions<ApiClientConfig> config, ITokenService tokenService)
+    private readonly TokenService _tokenService;
+    public ApiClient(IOptions<ApiClientConfig> config, TokenService tokenService)
     {
         _tokenService = tokenService;
 

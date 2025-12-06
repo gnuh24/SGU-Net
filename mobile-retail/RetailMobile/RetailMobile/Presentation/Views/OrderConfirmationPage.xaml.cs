@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -20,9 +20,9 @@ namespace RetailMobile.Presentation.Views;
 /// <summary>
 /// An empty page that can be used on its own or navigated to within a Frame.
 /// </summary>
-public sealed partial class OrderConfirmationView : Page
+public sealed partial class OrderConfirmationPage : Page
 {
-    public OrderConfirmationView()
+    public OrderConfirmationPage()
     {
         this.InitializeComponent();
     }

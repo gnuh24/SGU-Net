@@ -2,6 +2,7 @@ namespace RetailMobile.Data;
 
 using Microsoft.EntityFrameworkCore;
 using RetailMobile.Models;
+using Windows.System;
 
 public class AppDbContext : DbContext
 {
@@ -16,7 +17,6 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<CartItem>(entity =>
         {
             entity.HasKey(e => e.ProductId);
-            entity.Property(e => e.Name).IsRequired();
         });
         modelBuilder.Entity<TokenRecord>(entity =>
         {
