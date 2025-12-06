@@ -17,10 +17,10 @@ public static class ApiClientHelper
         }
 
         // Device thật → dùng LAN IP
-        return $"http://{NetworkHelper.GetLocalIPAddress()}:5260";
-        
+        //return $"http://{NetworkHelper.GetLocalIPAddress()}:5260";
+
         // Device thật -> dùng IP cố định
-        //return "http://192.168.1.11:5260";  // Thay bằng IP thật của bạn
+        return "http://192.168.1.7:5260";  // Thay bằng IP thật của bạn
 #elif IOS
         // iOS simulator chạy localhost được
         return config.Url!;

@@ -163,7 +163,68 @@ INSERT INTO suppliers (name,phone,email,address) VALUES
 
 -- DATA PRODUCTS
 INSERT INTO products (category_id,supplier_id,product_name,barcode,image,price,unit) VALUES
-(2, 1, 'Coca Cola lon', '8900000000001', 'coca_cola.jpg', 314838, 'lon'),(1, 3, 'Pepsi lon', '8900000000002', 'pepsi.jpg', 114807, 'lon'),(3, 3, 'Trà Xanh 0 độ', '8900000000003', 'tra_xanh_0_do.jpg', 415725, 'chai'),(2, 1, 'Sting dâu', '8900000000004', 'sting.jpg', 351670, 'lon'),(3, 2, 'Red Bull', '8900000000005', 'red_bull.jpg', 402179, 'lon'),(2, 2, 'Bánh Oreo', '8900000000006', 'oreo.jpg', 209283, 'bịch'),(5, 3, 'Bánh Chocopie', '8900000000007', 'chocopie.jpg', 212528, 'hộp'),(1, 2, 'Kẹo Alpenliebe', '8900000000008', 'keo_alpenliebe.jpg', 34313, 'bịch'),(5, 1, 'Kẹo bạc hà', '8900000000009','keo_bac_ha.jpg' , 316289, 'bịch'),(1, 2, 'Socola KitKat', '8900000000010', 'socola_kitkat.jpg', 139959, 'bịch'),(5, 1, 'Nước mắm Nam Ngư', '8900000000011', 'nuoc_mam_nam_ngu.jpg', 51792, 'chai'),(2, 2, 'Nước tương Maggi', '8900000000012', 'nuoc_tuong_maggi.jpg', 462539, 'chai'),(5, 3, 'Muối i-ốt', '8900000000013', 'muoi_iot.jpg', 173302, 'bịch'),(1, 1, 'Bột ngọt Ajinomoto', '8900000000014', 'bot_ngot_Ajinomoto.jpg', 443069, 'bịch'),(2, 2, 'Dầu ăn Tường An', '8900000000015', 'dau_an_tuong_an.png', 281354, 'chai'),(2, 1, 'Nồi cơm điện', '8900000000016', 'noi_com_dien.jpg', 405347, 'cái'),(1, 3, 'Ấm siêu tốc', '8900000000017', 'am_sieu_toc.jpg', 113087, 'cái'),(3, 2, 'Quạt máy', '8900000000018', 'quat_dien.jpg', 69968, 'cái'),(4, 1, 'Bếp gas mini', '8900000000019', 'bep_ga_mini.jpg', 416845, 'cái'),(3, 3, 'Máy xay sinh tố', '8900000000020', 'may_xay.jpg', 334564, 'cái'),(1, 1, 'Sữa rửa mặt Hazeline', '8900000000021', 'sua_rua_mat_hazeline.jpg', 188475, 'chai'),(4, 1, 'Kem dưỡng da Pond''s', '8900000000022', 'kem_duong_da_pond.jpg', 413840, 'hộp'),(3, 3, 'Dầu gội Sunsilk', '8900000000023', 'dau_goi_sunsilk.jpg', 158950, 'chai'),(4, 2, 'Sữa tắm Dove', '8900000000024', 'sua_tam_dove.jpg', 336928, 'chai'),(1, 1, 'Nước hoa Romano', '8900000000025', 'nuoc_hoa_romano.jpg', 352508, 'chai'),(1, 1, 'Cà phê G7', '8900000000026', 'ca_phe_g7.jpg', 201228, 'bịch'),(2, 1, 'Trà Lipton', '8900000000027', 'Lipton.jpg', 38039, 'hộp'),(2, 3, 'Sữa Vinamilk', '8900000000028', 'sua_vinamilk.jpg', 252845, 'hộp'),(3, 1, 'Sữa TH True Milk', '8900000000029', 'sua_th_true_milk.jpg', 35278, 'hộp'),(3, 2, 'Nước suối Lavie', '8900000000030', 'nuoc_suoi_lavie.jpg', 331637, 'chai'),(5, 3, 'Khăn giấy Tempo', '8900000000031', 'khan_giay_tempo.jpg', 102525, 'bịch'),(4, 3, 'Giấy vệ sinh Pulppy', '8900000000032', 'giay_ve_sinh_pulppy.jpg', 495429, 'bịch'),(3, 2, 'Bình nước Lock&Lock', '8900000000033', 'binh_lockandlock.jpg', 354771, 'bình'),(2, 1, 'Hộp nhựa Tupperware', '8900000000034', 'hop_tupper.jpg', 297415, 'hộp'),(1, 3, 'Dao Inox', '8900000000035', 'dao_inox.jpg', 47523, 'cái'),(3, 1, 'Bàn chải Colgate', '8900000000036', 'ban_chai_colgate.jpg', 136417, 'cái'),(2, 2, 'Kem đánh răng P/S', '8900000000037', 'kem_danh_rang_ps.jpg', 93713, 'hộp'),(2, 3, 'Nước súc miệng Listerine', '8900000000038', 'nuoc_suc_mieng_listerine.jpg', 223906, 'chai'),(1, 2, 'Bông tẩy trang', '8900000000039', 'bong_tay_trang.jpg', 317819, 'bịch'),(4, 1, 'Khẩu trang 3M', '8900000000040', 'khau_trang_3M.jpg', 464252, 'hộp'),(3, 1, 'Bánh mì sandwich', '8900000000041', 'banh_mi_sandwich.jpg', 279350, 'bịch'),(5, 2, 'Mì gói Hảo Hảo', '8900000000042', 'my_haohao.jpg', 9413, 'thùng'),(1, 2, 'Mì Omachi', '8900000000043', 'my_omachi.jpg', 26616, 'thùng'),(5, 2, 'Bún khô', '8900000000044', 'bun_kho.jpg', 350911, 'gói'),(3, 1, 'Phở ăn liền', '8900000000045', 'pho_an_lien.jpg', 407779, 'bịch'),(1, 1, 'Nước ngọt Sprite', '8900000000046', 'sprite.jpg', 230083, 'chai'),(1, 3, 'Trà sữa đóng chai', '8900000000047', 'tra_sua_chai.jpg', 15130, 'chai'),(3, 3, 'Snack Oishi', '8900000000048', 'banh_oishi.jpg', 43415, 'bịch'),(4, 2, 'Snack Lay''s', '8900000000049', 'banh_lays.jpg', 83536, 'bịch'),(1, 2, 'Kẹo dẻo Haribo', '8900000000050', 'keo_haribo.jpg', 328680, 'bịch');
+
+-- Chưa phân loại (category_id = 1)
+(1, 2, 'Kem đánh răng P/S', '8900000000037', 'kem_danh_rang_ps.jpg', 32000, 'hộp'),
+(1, 2, 'Mì gói Hảo Hảo', '8900000000042', 'my_haohao.jpg', 80000, 'thùng'),
+(1, 2, 'Mì Omachi', '8900000000043', 'my_omachi.jpg', 95000, 'thùng'),
+(1, 2, 'Bún khô', '8900000000044', 'bun_kho.jpg', 15000, 'gói'),
+(1, 1, 'Phở ăn liền', '8900000000045', 'pho_an_lien.jpg', 18000, 'bịch'),
+
+-- Đồ uống (category_id = 2)
+(2, 1, 'Coca Cola lon', '8900000000001', 'coca_cola.jpg', 10000, 'lon'),
+(2, 3, 'Pepsi lon', '8900000000002', 'pepsi.jpg', 9500, 'lon'),
+(2, 3, 'Trà Xanh 0 độ', '8900000000003', 'tra_xanh_0_do.jpg', 10000, 'chai'),
+(2, 1, 'Sting dâu', '8900000000004', 'sting.jpg', 10000, 'lon'),
+(2, 2, 'Red Bull', '8900000000005', 'red_bull.jpg', 15000, 'lon'),
+(2, 1, 'Nước ngọt Sprite', '8900000000046', 'sprite.jpg', 10000, 'chai'),
+(2, 3, 'Trà sữa đóng chai', '8900000000047', 'tra_sua_chai.jpg', 15000, 'chai'),
+(2, 1, 'Trà Lipton', '8900000000027', 'Lipton.jpg', 45000, 'hộp'),
+(2, 3, 'Sữa Vinamilk', '8900000000028', 'sua_vinamilk.jpg', 30000, 'hộp'),
+(2, 1, 'Sữa TH True Milk', '8900000000029', 'sua_th_true_milk.jpg', 28000, 'hộp'),
+(2, 2, 'Nước suối Lavie', '8900000000030', 'nuoc_suoi_lavie.jpg', 5000, 'chai'),
+(2, 1, 'Cà phê G7', '8900000000026', 'ca_phe_g7.jpg', 85000, 'bịch'),
+
+-- Bánh kẹo (category_id = 3)
+(3, 2, 'Bánh Oreo', '8900000000006', 'oreo.jpg', 35000, 'bịch'),
+(3, 3, 'Bánh Chocopie', '8900000000007', 'chocopie.jpg', 55000, 'hộp'),
+(3, 2, 'Kẹo Alpenliebe', '8900000000008', 'keo_alpenliebe.jpg', 20000, 'bịch'),
+(3, 1, 'Kẹo bạc hà', '8900000000009','keo_bac_ha.jpg', 15000, 'bịch'),
+(3, 2, 'Socola KitKat', '8900000000010', 'socola_kitkat.jpg', 25000, 'bịch'),
+(3, 3, 'Snack Oishi', '8900000000048', 'banh_oishi.jpg', 8000, 'bịch'),
+(3, 2, 'Snack Lay''s', '8900000000049', 'banh_lays.jpg', 12000, 'bịch'),
+(3, 2, 'Kẹo dẻo Haribo', '8900000000050', 'keo_haribo.jpg', 35000, 'bịch'),
+(3, 1, 'Bánh mì sandwich', '8900000000041', 'banh_mi_sandwich.jpg', 32000, 'bịch'),
+
+-- Gia vị (category_id = 4)
+(4, 1, 'Nước mắm Nam Ngư', '8900000000011', 'nuoc_mam_nam_ngu.jpg', 35000, 'chai'),
+(4, 2, 'Nước tương Maggi', '8900000000012', 'nuoc_tuong_maggi.jpg', 18000, 'chai'),
+(4, 3, 'Muối i-ốt', '8900000000013', 'muoi_iot.jpg', 8000, 'bịch'),
+(4, 1, 'Bột ngọt Ajinomoto', '8900000000014', 'bot_ngot_Ajinomoto.jpg', 12000, 'bịch'),
+(4, 2, 'Dầu ăn Tường An', '8900000000015', 'dau_an_tuong_an.png', 45000, 'chai'),
+
+-- Đồ gia dụng (category_id = 5)
+(5, 1, 'Nồi cơm điện', '8900000000016', 'noi_com_dien.jpg', 550000, 'cái'),
+(5, 3, 'Ấm siêu tốc', '8900000000017', 'am_sieu_toc.jpg', 280000, 'cái'),
+(5, 2, 'Quạt máy', '8900000000018', 'quat_dien.jpg', 450000, 'cái'),
+(5, 1, 'Bếp gas mini', '8900000000019', 'bep_ga_mini.jpg', 350000, 'cái'),
+(5, 3, 'Máy xay sinh tố', '8900000000020', 'may_xay.jpg', 480000, 'cái'),
+(5, 3, 'Khăn giấy Tempo', '8900000000031', 'khan_giay_tempo.jpg', 25000, 'bịch'),
+(5, 3, 'Giấy vệ sinh Pulppy', '8900000000032', 'giay_ve_sinh_pulppy.jpg', 38000, 'bịch'),
+(5, 2, 'Bình nước Lock&Lock', '8900000000033', 'binh_lockandlock.jpg', 85000, 'bình'),
+(5, 1, 'Hộp nhựa Tupperware', '8900000000034', 'hop_tupper.jpg', 65000, 'hộp'),
+(5, 3, 'Dao Inox', '8900000000035', 'dao_inox.jpg', 45000, 'cái'),
+(5, 1, 'Bàn chải Colgate', '8900000000036', 'ban_chai_colgate.jpg', 18000, 'cái'),
+(5, 3, 'Khẩu trang 3M', '8900000000040', 'khau_trang_3M.jpg', 95000, 'hộp'),
+
+-- Mỹ phẩm (category_id = 6)
+(6, 1, 'Sữa rửa mặt Hazeline', '8900000000021', 'sua_rua_mat_hazeline.jpg', 85000, 'chai'),
+(6, 1, 'Kem dưỡng da Pond''s', '8900000000022', 'kem_duong_da_pond.jpg', 95000, 'hộp'),
+(6, 3, 'Dầu gội Sunsilk', '8900000000023', 'dau_goi_sunsilk.jpg', 68000, 'chai'),
+(6, 2, 'Sữa tắm Dove', '8900000000024', 'sua_tam_dove.jpg', 95000, 'chai'),
+(6, 1, 'Nước hoa Romano', '8900000000025', 'nuoc_hoa_romano.jpg', 125000, 'chai'),
+(6, 3, 'Nước súc miệng Listerine', '8900000000038', 'nuoc_suc_mieng_listerine.jpg', 85000, 'chai'),
+(6, 2, 'Bông tẩy trang', '8900000000039', 'bong_tay_trang.jpg', 25000, 'bịch');
 
 -- DATA INVENTORY
 INSERT INTO inventory (product_id,quantity) VALUES

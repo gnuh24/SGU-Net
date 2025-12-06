@@ -17,8 +17,10 @@ public partial class App : Application
         this.InitializeComponent();
     }
 
+
     protected Window? MainWindow { get; private set; }
-    protected IHost? Host { get; private set; }
+    public IHost? Host { get; private set; }
+
 
     protected async override void OnLaunched(LaunchActivatedEventArgs args)
     {
@@ -92,9 +94,6 @@ public partial class App : Application
                         options.UseSqlite($"Filename={dbPath}");
                     });
 
-                    // Add CartService
-                    services.AddSingleton<CartService>();
-
                     // Add TokenService
                     services.AddSingleton<ITokenService, TokenService>();
 
@@ -103,6 +102,9 @@ public partial class App : Application
 
                     // ApiClient
                     services.AddSingleton<ApiClient>();
+
+                    // Add CartService (Scoped because it uses DbContext)
+                    services.AddScoped<CartService>();
                 })
                 .UseNavigation(RegisterRoutes)
             );
@@ -177,7 +179,8 @@ public partial class App : Application
             new ViewMap(ViewModel: typeof(ShellViewModel)),
             new ViewMap<MainPage, MainViewModel>(),
             new DataViewMap<SecondPage, SecondViewModel, Entity>(),
-            new ViewMap<ProductListPage, ProductListViewModel>()
+            new ViewMap<ProductListPage, ProductListViewModel>(),
+            new ViewMap<ProductDetailPage, ProductDetailViewModel>()
         );
 
         routes.Register(
@@ -187,6 +190,7 @@ public partial class App : Application
                     new ("Main", View: views.FindByViewModel<MainViewModel>(), IsDefault:true),
                     new ("Second", View: views.FindByViewModel<SecondViewModel>()),
                     new ("Products", View: views.FindByViewModel<ProductListViewModel>()),
+                    new ("ProductDetail", View: views.FindByViewModel<ProductDetailViewModel>()),
                 ]
             )
         );
