@@ -59,6 +59,17 @@
                           FontSize="18"
                           Foreground="#8E8E8E" />
 
+                <!-- Stock Quantity -->
+                <TextBlock FontFamily="Montserrat"
+                          FontSize="14"
+                          Foreground="#666666"
+                          Margin="0,4,0,0">
+                    <Run Text="Số lượng có sẵn: " />
+                    <Run Text="{x:Bind ViewModel.Product.CurrentStock, Mode=OneWay}" FontWeight="SemiBold" Foreground="#416954" />
+                    <Run Text=" sản phẩm" />
+                </TextBlock>
+
+                <!-- Price -->
                 <TextBlock FontFamily="Montserrat"
                         FontSize="18"
                         FontWeight="SemiBold"

@@ -241,7 +241,15 @@
                                                Foreground="Gray"
                                                TextTrimming="CharacterEllipsis"
                                                MaxLines="1" />
-                                    
+                                    <!-- Stock -->
+                                    <TextBlock FontFamily="Montserrat"
+                                            FontSize="10"
+                                            Foreground="#666666"
+                                            Margin="0,2,0,0">
+                                        <Run Text="Còn lại: " />
+                                        <Run Text="{Binding CurrentStock}" FontWeight="SemiBold" />
+                                        <Run Text=" sp" />
+                                    </TextBlock>
                                     <!-- Price -->
                                     <TextBlock FontFamily="Montserrat"
                                                FontSize="14"
