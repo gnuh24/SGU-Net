@@ -42,6 +42,7 @@ import Customers from "./pages/customers/Customers";
 import Pos from "./pages/pos/Pos";
 import MoMoReturn from "./pages/payment/MoMoReturn";
 import VNPayReturn from "./pages/payment/VNPayReturn";
+import CustomerPos from "./pages/pos/CustomerPos";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -112,6 +113,8 @@ const AppContent = () => {
         <Route path="/register" element={<Register />} />
         <Route path="/payment/momo/return" element={<MoMoReturn />} />
         <Route path="/payment/vnpay/return" element={<VNPayReturn />} />
+        {/* Customer POS view - mở từ màn hình POS, không dùng layout quản trị */}
+        <Route path="/pos/customer" element={<CustomerPos />} />
 
         {/* Protected routes */}
         <Route path="/" element={<AppLayout />}>

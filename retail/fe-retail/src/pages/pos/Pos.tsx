@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import {
   message as staticMessage,
   App,
@@ -62,6 +62,13 @@ const PosPageInternal: React.FC = () => {
   const { user } = useAuth();
   const { message } = App.useApp();
 
+  // Broadcast channel để đồng bộ với màn hình khách
+  const customerChannelRef = React.useRef<BroadcastChannel | null>(null);
+  const customerWindowRef = React.useRef<Window | null>(null);
+
+  const [customerScreenConnected, setCustomerScreenConnected] = useState(false);
+  const [customerConfirmed, setCustomerConfirmed] = useState(false);
+
   const [productQuery, setProductQuery] = useState("");
   const [allProducts, setAllProducts] = useState<SwaggerProduct[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -101,6 +108,18 @@ const PosPageInternal: React.FC = () => {
   const [gridLimit, setGridLimit] = useState<number>(30);
   const [draftOrder, setDraftOrder] = useState<Order | null>(null);
 
+  // Refs để luôn nắm state mới nhất khi xử lý message từ BroadcastChannel
+  const cartRef = React.useRef<CartItem[]>([]);
+  const productsRef = React.useRef<SwaggerProduct[]>([]);
+
+  useEffect(() => {
+    cartRef.current = cart;
+  }, [cart]);
+
+  useEffect(() => {
+    productsRef.current = allProducts;
+  }, [allProducts]);
+
   type PrintData = {
     order: Order;
     items: CartItem[];
@@ -113,6 +132,163 @@ const PosPageInternal: React.FC = () => {
 
   const [printData, setPrintData] = useState<PrintData | null>(null);
   const printAreaRef = React.useRef<HTMLDivElement | null>(null);
+
+  const openCustomerWindow = useCallback(() => {
+    if (typeof window === "undefined") return;
+
+    try {
+      const existing = customerWindowRef.current;
+      if (existing && !existing.closed) {
+        existing.focus();
+        return;
+      }
+
+      const url = "/pos/customer";
+      const win = window.open(
+        url,
+        "POS_CUSTOMER_VIEW",
+        "width=960,height=720,noopener,noreferrer"
+      );
+
+      if (win) {
+        customerWindowRef.current = win;
+        sessionStorage.setItem("pos_customer_window_opened", "true");
+      } else {
+        message.warning(
+          "Trình duyệt đã chặn cửa sổ màn hình khách. Vui lòng cho phép popup hoặc mở thủ công."
+        );
+      }
+    } catch (err) {
+      console.error("Không thể mở cửa sổ màn hình khách:", err);
+      message.error("Không thể mở cửa sổ màn hình khách.");
+    }
+  }, [message]);
+
+  // Tự động mở màn hình khách lần đầu vào POS (nếu browser cho phép)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const opened = sessionStorage.getItem("pos_customer_window_opened");
+    if (!opened) {
+      openCustomerWindow();
+    }
+  }, [openCustomerWindow]);
+
+  // Thiết lập BroadcastChannel để nhận / gửi dữ liệu với màn hình khách
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!(window as any).BroadcastChannel) {
+      console.warn("Trình duyệt không hỗ trợ BroadcastChannel cho POS 2 màn hình.");
+      return;
+    }
+
+    const channel = new BroadcastChannel("pos-dual-screen");
+    customerChannelRef.current = channel;
+
+    // Thông báo cho màn hình khách là POS đã sẵn sàng
+    channel.postMessage({ type: "SELLER_READY" });
+
+    channel.onmessage = async (event: MessageEvent) => {
+      const { type, payload } = event.data || {};
+
+      switch (type) {
+        case "REQUEST_INIT": {
+          setCustomerScreenConnected(true);
+          channel.postMessage({
+            type: "STATE_SYNC",
+            payload: {
+              cart: cartRef.current,
+              products: productsRef.current,
+            },
+          });
+          break;
+        }
+        case "ADD_PRODUCT": {
+          const productId = payload?.productId as number | undefined;
+          if (!productId) break;
+          const product = productsRef.current.find(
+            (p) => p.productId === productId
+          );
+          if (product) {
+            addProductToCart(product);
+          }
+          break;
+        }
+        case "REMOVE_PRODUCT": {
+          const productId = payload?.productId as number | undefined;
+          if (!productId) break;
+          removeFromCart(productId);
+          break;
+        }
+        case "UPDATE_QUANTITY": {
+          const productId = payload?.productId as number | undefined;
+          const quantity = payload?.quantity as number | undefined;
+          if (!productId || typeof quantity !== "number") break;
+          updateQuantity(productId, quantity);
+          break;
+        }
+        case "CLEAR_CART": {
+          resetPos();
+          break;
+        }
+        case "CUSTOMER_CONFIRM": {
+          setCustomerConfirmed(true);
+          const pendingOrder = await ensurePendingDraftOrder(true);
+          if (pendingOrder && customerChannelRef.current) {
+            const orderId =
+              (pendingOrder as any).orderId ??
+              (pendingOrder as any).OrderId ??
+              (pendingOrder as any).id;
+            customerChannelRef.current.postMessage({
+              type: "ORDER_CREATED",
+              payload: {
+                orderId,
+                status:
+                  (pendingOrder as any).status ||
+                  (pendingOrder as any).Status ||
+                  "pending",
+              },
+            });
+          }
+          break;
+        }
+        default:
+          break;
+      }
+    };
+
+    return () => {
+      channel.close();
+      customerChannelRef.current = null;
+    };
+  }, []);
+
+  // Gửi cập nhật giỏ hàng cho màn hình khách mỗi khi thay đổi
+  useEffect(() => {
+    if (!customerChannelRef.current) return;
+    try {
+      customerChannelRef.current.postMessage({
+        type: "STATE_UPDATED",
+        payload: {
+          cart,
+        },
+      });
+    } catch (err) {
+      console.warn("Gửi STATE_UPDATED tới màn hình khách thất bại:", err);
+    }
+  }, [cart]);
+
+  // Gửi danh sách sản phẩm cho màn hình khách khi dữ liệu sản phẩm thay đổi
+  useEffect(() => {
+    if (!customerChannelRef.current) return;
+    try {
+      customerChannelRef.current.postMessage({
+        type: "PRODUCTS_UPDATED",
+        payload: allProducts,
+      });
+    } catch (err) {
+      console.warn("Gửi PRODUCTS_UPDATED tới màn hình khách thất bại:", err);
+    }
+  }, [allProducts]);
 
   useEffect(() => {
     let reader: BrowserMultiFormatReader | null = null;
@@ -473,6 +649,76 @@ const PosPageInternal: React.FC = () => {
     setDraftOrder(null);
   };
 
+  // Tạo (hoặc lấy lại) đơn hàng ở trạng thái pending mà không in hóa đơn
+  const ensurePendingDraftOrder = async (
+    silent: boolean = false
+  ): Promise<Order | null> => {
+    if (!user) {
+      if (!silent) {
+        message.error("Lỗi xác thực, vui lòng đăng nhập lại!");
+      }
+      return null;
+    }
+
+    if (cartRef.current.length === 0) {
+      if (!silent) {
+        message.error("Giỏ hàng trống!");
+      }
+      return null;
+    }
+
+    try {
+      setLoadingCheckout(true);
+      if (!silent) {
+        message.loading("Đang tạo hóa đơn chờ thanh toán...", 0);
+      }
+
+      let orderForDraft = draftOrder;
+
+      if (!orderForDraft) {
+        const payload = {
+          userId: user.id,
+          customerId:
+            selectedCustomer?.customerId ?? selectedCustomer?.id ?? 0,
+          promoId: appliedPromotion?.promoId ?? null,
+          paymentMethod: paymentMethod,
+          orderItems: cartRef.current.map((item) => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          status: "pending" as const,
+        };
+
+        const createdOrder = await posApi.createFullOrder(payload);
+        orderForDraft = createdOrder;
+        setDraftOrder(createdOrder);
+      }
+
+      if (!silent) {
+        message.destroy();
+        message.success("Đã tạo hóa đơn chờ thanh toán!");
+      } else {
+        message.destroy();
+      }
+
+      return orderForDraft;
+    } catch (err: any) {
+      console.error("Lỗi khi tạo hóa đơn chờ thanh toán:", err);
+      const errorMsg =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Lỗi khi tạo hóa đơn chờ thanh toán!";
+      if (!silent) {
+        message.destroy();
+        message.error(errorMsg);
+      }
+      return null;
+    } finally {
+      setLoadingCheckout(false);
+    }
+  };
+
   const printReceipt = (
     order: Order,
     items: CartItem[],
@@ -493,16 +739,6 @@ const PosPageInternal: React.FC = () => {
   };
 
   const handlePrintInvoice = async () => {
-    if (!user) {
-      message.error("Lỗi xác thực, vui lòng đăng nhập lại!");
-      return;
-    }
-
-    if (cart.length === 0) {
-      message.error("Giỏ hàng trống!");
-      return;
-    }
-
     if (paymentMethod === "momo" || paymentMethod === "vnpay") {
       message.warning(
         "In hóa đơn tạm tính hiện chỉ hỗ trợ cho thanh toán tại quầy (tiền mặt/thẻ/chuyển khoản)."
@@ -510,52 +746,19 @@ const PosPageInternal: React.FC = () => {
       return;
     }
 
-    setLoadingCheckout(true);
-    try {
-      message.loading("Đang tạo hóa đơn chờ thanh toán...", 0);
-
-      let orderForReceipt = draftOrder;
-
-      if (!orderForReceipt) {
-        const payload = {
-          userId: user.id,
-          customerId:
-            selectedCustomer?.customerId ?? selectedCustomer?.id ?? 0,
-          promoId: appliedPromotion?.promoId ?? null,
-          paymentMethod: paymentMethod,
-          orderItems: cart.map((item) => ({
-            productId: item.productId,
-            quantity: item.quantity,
-            price: item.price,
-          })),
-          status: "pending" as const,
-        };
-
-        const createdOrder = await posApi.createFullOrder(payload);
-        orderForReceipt = createdOrder;
-        setDraftOrder(createdOrder);
-      }
-
-      message.destroy();
-      message.success("Đã tạo hóa đơn chờ thanh toán!");
-
-      printReceipt(
-        orderForReceipt,
-        cart,
-        selectedCustomer,
-        total,
-        paidAmount ?? total,
-        discount
-      );
-    } catch (err: any) {
-      message.destroy();
-      console.error("Lỗi khi tạo hóa đơn chờ thanh toán:", err);
-      const errorMsg =
-        err.response?.data?.message || "Lỗi khi tạo hóa đơn chờ thanh toán!";
-      message.error(errorMsg);
-    } finally {
-      setLoadingCheckout(false);
+    const pendingOrder = await ensurePendingDraftOrder(false);
+    if (!pendingOrder) {
+      return;
     }
+
+    printReceipt(
+      pendingOrder,
+      cart,
+      selectedCustomer,
+      total,
+      paidAmount ?? total,
+      discount
+    );
   };
 
   const handleCheckout = async () => {
@@ -860,7 +1063,25 @@ const PosPageInternal: React.FC = () => {
         <Row gutter={24}>
           {/* LEFT: products & cart */}
           <Col xs={24} md={15}>
-            <Title level={4}>Bán hàng (POS)</Title>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
+              }}
+            >
+              <Title level={4} style={{ marginBottom: 0 }}>
+                Bán hàng (POS)
+              </Title>
+              <Button
+                type="default"
+                icon={<QrcodeOutlined />}
+                onClick={openCustomerWindow}
+              >
+                Mở màn hình khách
+              </Button>
+            </div>
 
             {/* Search + actions */}
             <Space style={{ marginBottom: 12 }}>
