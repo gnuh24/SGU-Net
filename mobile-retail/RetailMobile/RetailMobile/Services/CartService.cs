@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using RetailMobile.Data;
-using SQLite;
 
 namespace RetailMobile.Services;
 public class CartService

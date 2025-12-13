@@ -8,6 +8,7 @@
     xmlns:vm="using:RetailMobile.Presentation.ViewModels"
     xmlns:utu="using:Uno.Toolkit.UI.Material"
     xmlns:conv="using:RetailMobile.Helpers"
+    xmlns:toolkit="using:Uno.Toolkit.UI"
     mc:Ignorable="d"
     Background="{ThemeResource BackgroundBrush}">
 
@@ -17,7 +18,7 @@
     </Page.Resources>
 
     <!-- Root Grid -->
-    <Grid Padding="16">
+    <Grid Padding="16" toolkit:SafeArea.Insets="Top, Bottom">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />

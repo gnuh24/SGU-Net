@@ -25,7 +25,7 @@ public partial class CheckoutViewModel:ObservableObject
 
     private readonly CartService _cartService;
 
-    private readonly TokenService _tokenService;
+    private readonly ITokenService _tokenService;
 
     [ObservableProperty]
     private List<CartItem> _cartItems = new();
@@ -57,7 +57,7 @@ public partial class CheckoutViewModel:ObservableObject
     [ObservableProperty]
     private bool _isAuthenticated;
 
-    public CheckoutViewModel(INavigator navigator, ApiClient apiClient, CartService cartService, TokenService tokenService)
+    public CheckoutViewModel(INavigator navigator, ApiClient apiClient, CartService cartService, ITokenService tokenService)
     {
         _navigator = navigator;
         _apiClient = apiClient;
@@ -160,14 +160,9 @@ public partial class CheckoutViewModel:ObservableObject
         }
         else
         {
-            //var queryParams = QueryHelper.ToQueryParams(("id", 1));
-            //CustomerResponseDTO customer = await _apiClient.GetAsync<CustomerResponseDTO>("api/v1/customers", queryParams);
-            CustomerResponseDTO customer = new CustomerResponseDTO();
-            customer.CustomerId = 1;
-            customer.Name = "Nguyen Van A";
-            customer.Phone = "0123456789";
-            customer.Email = "test@gmail.com";
-            customer.Address = "123 Le Loi, District 1, HCM City";
+            // Lay customer id o day
+            var queryParams = QueryHelper.ToQueryParams(("id", 1));
+            CustomerResponseDTO customer = await _apiClient.GetAsync<CustomerResponseDTO>("api/v1/customers", queryParams);
 
             bool flag = customer != null;
             if (flag)
@@ -194,11 +189,8 @@ public partial class CheckoutViewModel:ObservableObject
         Console.WriteLine($"Giam {DiscountAmount}");
 
         // Tạo khách hàng mới
+
         //CustomerResponseDTO customer = await CreateCustomerAsync();
-
-        //Console.WriteLine($"Khách hàng được tạo với ID: {customer.CustomerId}");
-
-        CustomerResponseDTO customer = await CreateCustomerAsync();
 
         // Tạo đơn hàng
 
@@ -210,8 +202,8 @@ public partial class CheckoutViewModel:ObservableObject
 
         OrderCreateDto orderForm = new OrderCreateDto();
 
-        orderForm.CustomerId = customer.CustomerId;
-        orderForm.UserId = null; // Chưa có user đăng nhập
+        orderForm.CustomerId = 0;
+        orderForm.UserId = null;
         orderForm.PromoId = SelectedPromotion != 0 ? SelectedPromotion : null;
         orderForm.Status = "Pending";
         orderForm.OrderItems = orderItems;
@@ -224,16 +216,8 @@ public partial class CheckoutViewModel:ObservableObject
             { "Final", FinalAmount },
         };
 
-        await _navigator.NavigateViewModelAsync<PaymentProcessingViewModel>(this, data: navigationData);
+        await _navigator.NavigateViewModelAsync<PaymentProcessingViewModel>(this, data: new PaymentProcessingData(orderForm, TotalAmount, DiscountAmount, FinalAmount));
 
-        //OrderResponseDTO createdOrder = await _apiClient.PostAsync<OrderCreateDto, OrderResponseDTO>("/api/v1/orders", orderForm);
-
-        //Console.WriteLine($"Đơn hàng được tạo với ID: {createdOrder}");
-
-        //if (createdOrder == null)
-        //{
-        //    return;
-        //}
     }
 
     private bool CanPlaceOrder()
@@ -248,10 +232,10 @@ public partial class CheckoutViewModel:ObservableObject
     public async Task<CustomerResponseDTO> CreateCustomerAsync()
     {
         CustomerCreateForm createForm = new CustomerCreateForm();
-        createForm.Name = _customerName;
-        createForm.Phone = _phoneNumber;
-        createForm.Email = _emailAddress;
-        createForm.Address = _deliveryAddress;
+        createForm.Name = CustomerName;
+        createForm.Phone = PhoneNumber;
+        createForm.Email = EmailAddress;
+        createForm.Address = DeliveryAddress;
 
         CustomerResponseDTO customer = await _apiClient.PostAsync<CustomerCreateForm, CustomerResponseDTO>("/api/v1/customers", createForm);
 
@@ -262,15 +246,13 @@ public partial class CheckoutViewModel:ObservableObject
     public async Task LoadCheckoutDataAsync()
     {
 
-        //CartItems = await _cartService.GetCartAsync();
-        //TotalAmount = CartItems.Sum(item => item.Price * item.Quantity);
-        //Promotions = await _apiClient.GetAsync<List<PromotionDTO>>("/api/v1/promotions/available",QueryHelper.ToQueryParams(("orderAmount", TotalAmount)));
-        
-        await _cartService.ClearCart(); // Xóa giỏ hàng trước khi load lại
-
-        await LoadCartData(); // Tải dữ liệu mẫu vào giỏ hàng
-
         CartItems = await _cartService.GetCartAsync();
+
+        if (CartItems.Count() == 0)
+        {
+            Console.WriteLine("Giỏ hàng trống.");
+            return;
+        }
 
         TotalAmount = CartItems.Sum(item => item.Price * item.Quantity);
 
@@ -280,79 +262,19 @@ public partial class CheckoutViewModel:ObservableObject
                 "/api/v1/promotions/available",
                 QueryHelper.ToQueryParams(("orderAmount", TotalAmount))
             );
+
+            Promotions.Insert(0, new PromotionDTO
+            {
+                PromoId = 0,
+                PromoCode = "No Promotion",
+                Description = "No Promotion Applied",
+                DiscountType = "None",
+                DiscountValue = 0
+            });
         }
         catch (Exception ex)
         {
             Console.WriteLine("API error loading promotions: " + ex.Message);
-
-            // 5) Mock fallback nếu API lỗi
-            Promotions = new List<PromotionDTO>
-        {
-            new PromotionDTO
-            {
-                PromoId = 0,
-                PromoCode = "SALE0",
-                DiscountType = "Percentage",
-                DiscountValue = 0,
-                Description = "Giảm 0%",
-                StartDate = DateTime.Now.AddDays(-5),
-                EndDate = DateTime.Now.AddDays(10),
-                MinOrderAmount = 0,
-                UsageLimit = 100,
-                UsedCount = 20,
-                Status = "Active"
-            },
-            new PromotionDTO
-            {
-                PromoId = 1,
-                PromoCode = "SALE10",
-                DiscountType = "Percentage",
-                DiscountValue = 10,
-                Description = "Giảm 10%",
-                StartDate = DateTime.Now.AddDays(-5),
-                EndDate = DateTime.Now.AddDays(10),
-                MinOrderAmount = 50000,
-                UsageLimit = 100,
-                UsedCount = 20,
-                Status = "Active"
-            },
-            new PromotionDTO
-            {
-                PromoId = 2,
-                PromoCode = "FIX20K",
-                DiscountType = "FixedAmount",
-                DiscountValue = 20000,
-                Description = "Giảm 20.000đ",
-                StartDate = DateTime.Now.AddDays(-3),
-                EndDate = DateTime.Now.AddDays(7),
-                MinOrderAmount = 100000,
-                UsageLimit = 50,
-                UsedCount = 10,
-                Status = "Active"
-            }
-        };
-        }
-    }
-
-    private async Task LoadCartData()
-    {
-        var sampleCartItems = new List<CartItem>
-        {
-            new CartItem { ProductId = 1, Name = "Nokia 3310", Quantity = 1, Price = 49999m },
-            new CartItem { ProductId = 2, Name = "iPhone 15 Pro", Quantity = 2, Price = 99999m },
-            new CartItem { ProductId = 3, Name = "Samsung Galaxy S24", Quantity = 1, Price = 89999m },
-            new CartItem { ProductId = 4, Name = "Xiaomi Redmi Note 13", Quantity = 3, Price = 19950m },
-            new CartItem { ProductId = 5, Name = "Oppo Reno 11", Quantity = 1, Price = 45000m },
-            new CartItem { ProductId = 6, Name = "Vivo V30", Quantity = 2, Price = 52000m },
-            new CartItem { ProductId = 7, Name = "MacBook Air M2", Quantity = 1, Price = 119900m },
-            new CartItem { ProductId = 8, Name = "iPad Pro 12.9", Quantity = 1, Price = 129900m },
-            new CartItem { ProductId = 9, Name = "Sony Headphones WH-1000XM5", Quantity = 2, Price = 34999m },
-            new CartItem { ProductId = 10, Name = "Logitech MX Master 3S", Quantity = 1, Price = 9999m }
-        };
-
-        foreach (var item in sampleCartItems)
-        {
-            _ = await _cartService.AddItemAsync(item);
         }
     }
 }

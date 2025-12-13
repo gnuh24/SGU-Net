@@ -1,9 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using RetailMobile.Data;
+using RetailMobile.Models.Payment;
 using RetailMobile.Presentation.ViewModels;
 using RetailMobile.Presentation.Views;
 using RetailMobile.Services;
 using Uno.Resizetizer;
+using Microsoft.UI.Xaml;
+using Windows.ApplicationModel.Activation;
 
 namespace RetailMobile;
 
@@ -21,7 +24,7 @@ public partial class App : Application
     protected Window? MainWindow { get; private set; }
     protected IHost? Host { get; private set; }
 
-    protected async override void OnLaunched(LaunchActivatedEventArgs args)
+    protected async override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
     {
         var builder = this.CreateBuilder(args)
             // Add navigation support for toolkit controls such as TabBar and NavigationView
@@ -94,7 +97,7 @@ public partial class App : Application
                     });
 
                     // Add CartService
-                    services.AddSingleton<CartService>();
+                    services.AddSingleton<CartService>();   
 
                     // Add TokenService
                     services.AddSingleton<ITokenService, TokenService>();
@@ -104,8 +107,20 @@ public partial class App : Application
 
                     // ApiClient
                     services.AddSingleton<ApiClient>();
+
+                    // Register ViewModels
+                    services.AddSingleton<SignInViewModel>();
+                    services.AddSingleton<SignUpViewModel>();
+                    services.AddSingleton<ProfileViewModel>();
+                    services.AddSingleton<ProductListViewModel>();
+                    services.AddSingleton<CheckoutViewModel>();
+                    services.AddSingleton<PaymentProcessingViewModel>();
+                    services.AddSingleton<WebViewViewModel>();
+                    services.AddSingleton<OrderConfirmationViewModel>();
+
                 })
                 .UseNavigation(RegisterRoutes)
+                
             );
         MainWindow = builder.Window;
 
@@ -120,11 +135,75 @@ public partial class App : Application
         using (var scope = Host.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            db.Database.EnsureDeleted();
+            //db.Database.EnsureDeleted();
             db.Database.EnsureCreated();
             // Initialize database
             await InitializeDatabaseAsync();
         }
+
+    }
+
+    protected override void OnActivated(IActivatedEventArgs args)
+    {
+        base.OnActivated(args);
+
+        // Kiểm tra xem ứng dụng có được kích hoạt qua Protocol/URI Scheme không
+        if (args.Kind == ActivationKind.Protocol)
+        {
+            if (args is ProtocolActivatedEventArgs protocolArgs)
+            {
+                // Host đã được tạo trong OnLaunched, giờ sử dụng nó để xử lý
+                HandleDeepLink(protocolArgs.Uri);
+            }
+        }
+    }
+
+    // Đảm bảo bạn đang sử dụng Uno.Toolkit.UI.Extensions hoặc Microsoft.Extensions.DependencyInjection
+    private void HandleDeepLink(Uri uri)
+    {
+        // Kiểm tra xem đây có phải là URL callback từ MoMo không (retailmobile://payment/result)
+        if (uri.Host.Equals("payment", StringComparison.OrdinalIgnoreCase) &&
+            uri.LocalPath.EndsWith("result", StringComparison.OrdinalIgnoreCase))
+        {
+            // 1. Phân tích tham số
+            var queryParams = ExtractQueryParameters(uri);
+
+            // 2. Lấy Navigator từ Host.Services (Đã sửa lỗi)
+            // Lấy INavigator từ DI Container của Host
+            var navigator = Host?.Services?.GetService<INavigator>();
+
+            if (navigator != null)
+            {
+                // Điều hướng đến trang xử lý kết quả
+                // Truyền tất cả các tham số query để ViewModel xử lý
+                // Lưu ý: Nếu App đang chạy, điều hướng này sẽ ghi đè lên UI hiện tại.
+                navigator.NavigateViewModelAsync<OrderConfirmationViewModel>(null, data: queryParams);
+            }
+        } 
+    }
+
+    private Dictionary<string, string> ExtractQueryParameters(Uri uri)
+    {
+        var parameters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        if (uri.Query.Length > 1)
+        {
+            // CÁCH TỐT HƠN: Sử dụng HttpUtility (cần NuGet System.Web.HttpUtility trên Wasm)
+            // hoặc System.Uri.UnescapeDataString
+
+            // Cách thủ công:
+            var query = uri.Query.Substring(1);
+            var pairs = query.Split('&');
+            foreach (var pair in pairs)
+            {
+                var parts = pair.Split('=');
+                if (parts.Length == 2)
+                {
+                    parameters[parts[0]] = parts[1];
+                }
+            }
+        }
+        return parameters;
     }
 
     private async Task InitializeDatabaseAsync()
@@ -188,8 +267,9 @@ public partial class App : Application
             new ViewMap<SignInPage, SignInViewModel>(),
             new ViewMap<SignUpPage,SignUpViewModel>(),
             new ViewMap<CheckoutPage, CheckoutViewModel>(),
-            new ViewMap<PaymentProcessingPage, PaymentProcessingViewModel>(),
-            new ViewMap<OrderConfirmationPage, OrderConfirmationViewModel>(),
+            new DataViewMap<PaymentProcessingPage, PaymentProcessingViewModel, PaymentProcessingData>(),
+            new ViewMap<WebViewPage, WebViewViewModel>(),
+            new DataViewMap<OrderConfirmationPage, OrderConfirmationViewModel, Dictionary<string, string>>(),
             new ViewMap<ProfilePage, ProfileViewModel>(),
             new ViewMap<ProductListPage, ProductListViewModel>()
         );
@@ -200,9 +280,10 @@ public partial class App : Application
                 [
                     new ("Main", View: views.FindByViewModel<MainViewModel>()),
                     new ("Second", View: views.FindByViewModel<SecondViewModel>()),
-                    new ("Checkout", View: views.FindByViewModel<CheckoutViewModel>()),
+                    new ("Checkout", View: views.FindByViewModel<CheckoutViewModel>(), IsDefault: true),
                     new ("Payment", View: views.FindByViewModel<PaymentProcessingViewModel>()),
-                    new ("SignIn", View: views.FindByViewModel<SignInViewModel>(), IsDefault: true),
+                    new ("WebView", View: views.FindByViewModel<WebViewViewModel>()),
+                    new ("SignIn", View: views.FindByViewModel<SignInViewModel>()),
                     new ("SignUp", View: views.FindByViewModel<SignUpViewModel>()),
                     new ("OrderConfirm", View: views.FindByViewModel<OrderConfirmationViewModel>()),
                     new ("Profile", View: views.FindByViewModel<ProfileViewModel>()),

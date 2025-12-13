@@ -157,6 +157,7 @@
                     Padding="0" 
                     VerticalAlignment="Center"
                     VerticalContentAlignment="Center"
+                    Command="{Binding NavigateToProductListPageCommand}"
                     Margin="0, 0, 5, 0">
                     <TextBlock Text="Click here"
                            FontFamily="Montserrat"

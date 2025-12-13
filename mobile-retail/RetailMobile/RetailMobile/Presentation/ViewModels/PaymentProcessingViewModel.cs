@@ -1,20 +1,26 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using RetailMobile.Models;
 using RetailMobile.Models.Order;
 using RetailMobile.Models.Payment;
 using RetailMobile.Services;
+using RetailMobile.Presentation.ViewModels;
 
 namespace RetailMobile.Presentation.ViewModels;
 
-public partial class PaymentProcessingViewModel:ObservableObject
+public partial class PaymentProcessingViewModel : ObservableObject
 {
     private readonly INavigator _navigator;
 
     private readonly ApiClient _apiClient;
+
+    private readonly CartService _cartService;
 
     [ObservableProperty]
     private OrderCreateDto _orderData;
@@ -33,41 +39,18 @@ public partial class PaymentProcessingViewModel:ObservableObject
 
     public PaymentProcessingViewModel(
         INavigator navigator,
-        ApiClient apiClient)
+        ApiClient apiClient,
+        CartService cartService,
+        PaymentProcessingData paymentProcessingData)
     {
         _navigator = navigator;
         _apiClient = apiClient;
+        _cartService = cartService;
+        OrderData = paymentProcessingData.OrderData;
+        TotalAmount = paymentProcessingData.TotalAmount;
+        DiscountAmount = paymentProcessingData.DiscountAmount;
+        FinalAmount = paymentProcessingData.FinalAmount;
     }
-
-    [ObservableProperty]
-    private string _paymentUrl = "https://sandbox.vnpayment.vn/paymentv2/Transaction/PaymentMethod.html?token=5cab9572da4547748527f4c6d5186848";
-
-    public void Initialize(Object parameter)
-    {
-        if (parameter is Dictionary<string, object> data)
-        {
-            if (data.TryGetValue("OrderForm", out object orderObj) && orderObj is OrderCreateDto orderForm)
-            {
-                OrderData = orderForm;
-            }
-
-            if (data.TryGetValue("Total", out object TotalObj) && TotalObj is decimal Total)
-            {
-                TotalAmount = Total;
-            }
-
-            if (data.TryGetValue("Discount", out object DiscountObj) && DiscountObj is decimal Discount)
-            {
-                DiscountAmount = Discount;
-            }
-
-            if (data.TryGetValue("Final", out object FinalObj) && FinalObj is decimal Final)
-            {
-                FinalAmount = Final;
-            }
-        }
-    }
-
     public bool IsCashSelected
     {
         get => SelectedPaymentMethod == PaymentMethod.cash;
@@ -98,6 +81,37 @@ public partial class PaymentProcessingViewModel:ObservableObject
         set => SelectPaymentMethod(PaymentMethod.vnpay);
     }
 
+    public Visibility DiscountVisibility
+    {
+        get
+        {
+            return DiscountAmount > 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+    }
+
+    public string FormattedTotalAmount
+    {
+        get
+        {
+            return TotalAmount.ToString("N0", new CultureInfo("vi-VN")).Append("₫");
+        }
+    }
+
+    public string FormattedDiscountAmount
+    {
+        get
+        {
+            return DiscountAmount.ToString("N0", new CultureInfo("vi-VN")).Append("₫");
+        }
+    }
+    public string FormattedFinalAmount
+    {
+        get
+        {
+            return FinalAmount.ToString("N0", new CultureInfo("vi-VN")).Append("₫");
+        }
+    }
+
     partial void OnSelectedPaymentMethodChanged(PaymentMethod value)
     {
         OnPropertyChanged(nameof(IsCashSelected));
@@ -117,8 +131,65 @@ public partial class PaymentProcessingViewModel:ObservableObject
             if (SelectedPaymentMethod != method)
             {
                 SelectedPaymentMethod = method;
+                Console.WriteLine(method.ToString());
             }
         }
     }
 
+    [RelayCommand]
+    private async Task PlaceOrderAsync()
+    {
+
+        OrderData.PaymentMethod = SelectedPaymentMethod.ToString();
+
+        try
+        {
+            OrderResponseDTO orderResponse = await _apiClient.PostAsync<OrderCreateDto, OrderResponseDTO>("api/v1/orders", OrderData);
+
+            if (orderResponse != null)
+            {
+                _ = await _cartService.ClearCart();
+                // api/ v1/payments momo/create vnpay/create
+                if (SelectedPaymentMethod == PaymentMethod.vnpay)
+                {
+                    VNPayPaymentRequest paymentRequest = new VNPayPaymentRequest
+                    {
+                        OrderId = orderResponse.OrderId,
+                        Amount = FinalAmount,
+                        ReturnUrl = "retailmobile://payment/result"
+                    };
+                    ApiResponse<VNPayPaymentResponse> paymentResponse = await _apiClient.PostAsync<VNPayPaymentRequest, ApiResponse<VNPayPaymentResponse>>("api/v1/payments/momo/create", paymentRequest);
+
+                    if (paymentResponse != null && paymentResponse.Status == 200)
+                    {
+                        await _navigator.NavigateViewModelAsync<WebViewViewModel>(this, data: paymentResponse.Data!.PaymentUrl);
+                    }
+                }
+                else if (SelectedPaymentMethod == PaymentMethod.momo)
+                {
+                    MoMoPaymentRequest paymentRequest = new MoMoPaymentRequest
+                    {
+                        OrderId = orderResponse.OrderId,
+                        Amount = FinalAmount,
+                        ReturnUrl = "retailmobile://payment/result"
+                    };
+                    ApiResponse<MoMoPaymentResponse> paymentResponse = await _apiClient.PostAsync<MoMoPaymentRequest, ApiResponse<MoMoPaymentResponse>>("api/v1/payments/momo/create", paymentRequest);
+
+                    if (paymentResponse != null && paymentResponse.Status == 200)
+                    {
+                        await _navigator.NavigateViewModelAsync<WebViewViewModel>(this, data: paymentResponse.Data!.PayUrl);
+                    }
+                }
+                else if (SelectedPaymentMethod == PaymentMethod.cash)
+                {
+                    await _navigator.NavigateViewModelAsync<OrderConfirmationViewModel>(this, data: new Dictionary<string, string> { { "orderId", "0"}, { "resultCode", "0"}, { "message", "Đặt hàng thành công." } });
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // Handle exceptions (e.g., show error message to user)
+            Console.WriteLine($"Error placing order: {ex.Message}");
+        }
+    }
 }

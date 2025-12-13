@@ -5,117 +5,177 @@
     xmlns:local="using:RetailMobile.Presentation.Views"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:conv="using:RetailMobile.Helpers"
+    xmlns:toolkit="using:Uno.Toolkit.UI"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
-    <Grid Margin="20, 10, 20, 10">
-        <!-- 1. Phương thức Thanh toán -->
-        <ScrollViewer VerticalScrollBarVisibility="Hidden"
+    <Page.Resources>
+        <conv:BooleanToBrushConverter x:Key="BooleanToBrushConverter"/>
+    </Page.Resources>
+    <Grid toolkit:SafeArea.Insets="Top, Bottom">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <!-- 1. Phương thức Thanh toán -->
+        <ScrollViewer Grid.Row="0"
+            VerticalScrollBarVisibility="Hidden"
                     HorizontalScrollBarVisibility="Disabled">
-            <StackPanel>
-                <StackPanel Spacing="16" Margin="0,0,0,4">
+                <StackPanel Spacing="16" Margin="20,10,20,20">
 
-                    <TextBlock Text="Phương thức Thanh toán" 
+                    <TextBlock Text="Payment method" 
                                Style="{StaticResource SubtitleTextBlockStyle}"
                                Margin="0,0,0,4" />
+                    <!---->
+                <Grid>
+                    <Border CornerRadius="8"
+                                Padding="16"
+                                BorderThickness="2"
+                                HorizontalAlignment="Stretch"
+                                Background="{ThemeResource SystemControlBackgroundChromeLowBrush}"
+                                BorderBrush="{Binding IsCashSelected, Converter={StaticResource BooleanToBrushConverter}}">
 
-                    <RadioButton Content="Thanh toán khi nhận hàng (COD)"
-                                 GroupName="PaymentMethod"
-                                 IsChecked="{Binding IsCashSelected, Mode=TwoWay}"
-                                 Command="{Binding SelectPaymentMethodCommand}"
-                                 CommandParameter="COD"/>
+                        <TextBlock Text="Thanh toán khi nhận hàng (COD)"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                    </Border>
+                    <Button Command="{Binding SelectPaymentMethodCommand}"
+                                CommandParameter="cash"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"
+                                CornerRadius="8"
+                                Margin="0"
+                                Padding="0"/>
+                </Grid>
+                    <!---->
+                <Grid>
+                    <Border CornerRadius="8"
+                                Padding="16"
+                                BorderThickness="2"
+                                HorizontalAlignment="Stretch"
+                                Background="{ThemeResource SystemControlBackgroundChromeLowBrush}"
+                                BorderBrush="{Binding IsMomoSelected, Converter={StaticResource BooleanToBrushConverter}}">
 
-                    <RadioButton Content="Thẻ tín dụng/ghi nợ (Visa/Mastercard)"
-                                 GroupName="PaymentMethod"
-                                 IsChecked="{Binding IsCardSelected, Mode=TwoWay}"
-                                 Command="{Binding SelectPaymentMethodCommand}"
-                                 CommandParameter="Card"/>
+                        <TextBlock Text="Thanh toán qua Momo"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                    </Border>
+                    <Button Command="{Binding SelectPaymentMethodCommand}"
+                                CommandParameter="momo"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"
+                                CornerRadius="8"
+                                Margin="0"
+                                Padding="0"/>
+                </Grid>
+                    <!---->
+                    <!--<Grid>
+                    --><!--    <RadioButton GroupName="PaymentMethod"
+                                     IsChecked="{Binding IsVnpaySelected, Mode=TwoWay}"
+                                     Command="{Binding SelectPaymentMethodCommand}"
+                                     CommandParameter="vnpay"
+                                     Opacity="0"
+                                     Background="Transparent"
+                                     HorizontalAlignment="Stretch"
+                                     VerticalAlignment="Stretch" />  --><!--
 
-                    <RadioButton Content="Ngân hàng"
-                                 GroupName="PaymentMethod"
-                                 IsChecked="{Binding IsBankTransferSelected, Mode=TwoWay}"
-                                 Command="{Binding SelectPaymentMethodCommand}"
-                                 CommandParameter="BankTransfer"/>
+                    <Border CornerRadius="8"
+                                Padding="16"
+                                BorderThickness="2"
+                                HorizontalAlignment="Stretch"
+                                Background="{ThemeResource SystemControlBackgroundChromeLowBrush}"
+                                BorderBrush="{Binding IsVnpaySelected, Converter={StaticResource BooleanToBrushConverter}}">
 
-                    <RadioButton Content="Momo"
-                                 GroupName="PaymentMethod"
-                                 IsChecked="{Binding IsMomoSelected, Mode=TwoWay}"
-                                 Command="{Binding SelectPaymentMethodCommand}"
-                                 CommandParameter="Momo"/>
+                            <TextBlock Text="Thanh toán qua VnPay"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                        </Border>
 
-                    <RadioButton Content="Vnpay"
-                                 GroupName="PaymentMethod"
-                                 IsChecked="{Binding IsVnpaySelected, Mode=TwoWay}"
-                                 Command="{Binding SelectPaymentMethodCommand}"
-                                 CommandParameter="Vnpay"/>
+                    <Button Command="{Binding SelectPaymentMethodCommand}"
+                                CommandParameter="vnpay"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"
+                            CornerRadius="8"
+                            Margin="0"
+                            Padding="0"/>
+                </Grid>-->
+
                 </StackPanel>
-
-                <Grid Margin="20,10,20,5"
+        </ScrollViewer>
+        <Grid Grid.Row="1"
+            Margin="20,10,20,5"
       Padding="0,0,0,5"
-            BorderThickness="0,1,0,0"
+      BorderThickness="0,1,0,0"
       RowSpacing="5"
-            BorderBrush="{ThemeResource DividerColor}">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-                    <Grid Grid.Row="0" Margin="0, 0, 0, 5">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0"
+      BorderBrush="{ThemeResource DividerColor}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid Grid.Row="0" Margin="0, 0, 0, 5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0"
                    HorizontalAlignment="Right"
                    Text="Tổng cộng:"
                    FontWeight="Bold"/>
-                        <TextBlock Grid.Column="2"
+                <TextBlock Grid.Column="2"
                    HorizontalAlignment="Left"
                    Text="{Binding FormattedTotalAmount}"
                    FontWeight="Bold"/>
-                    </Grid>
+            </Grid>
 
-                    <Grid Grid.Row="1" Margin="0, 0, 0, 5"
+            <Grid Grid.Row="1" Margin="0, 0, 0, 5"
           Visibility="{Binding DiscountVisibility}">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0"
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0"
                    HorizontalAlignment="Right"
                    Text="Giảm giá: "
                    FontWeight="Bold"/>
-                        <TextBlock Grid.Column="2"
-                    HorizontalAlignment="Left"
+                <TextBlock Grid.Column="2"
+                   HorizontalAlignment="Left"
                    Text="-"
                    FontWeight="Bold"/>
-                        <TextBlock Grid.Column="3"
-                    HorizontalAlignment="Left"
+                <TextBlock Grid.Column="3"
+                   HorizontalAlignment="Left"
                    Text="{Binding FormattedDiscountAmount}"
                    FontWeight="Bold"/>
-                    </Grid>
+            </Grid>
 
-                    <Grid Grid.Row="2" Margin="0, 0, 0, 5">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0"
+            <Grid Grid.Row="2" Margin="0, 0, 0, 5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0"
                     HorizontalAlignment="Right"
                    Text="Tổng thanh toán:"
                    FontWeight="Bold"/>
-                        <TextBlock Grid.Column="2"
+                <TextBlock Grid.Column="2"
                     HorizontalAlignment="Left"
                    Text="{Binding FormattedFinalAmount}"
                    FontWeight="Bold"/>
-                    </Grid>
+            </Grid>
 
-                    <Button Grid.Row="3"
+            <Button Grid.Row="3"
             Content="Thanh toán"
             Command="{Binding PlaceOrderCommand}"
             HorizontalAlignment="Stretch"
@@ -123,8 +183,6 @@
             Background="#F83758"
             CornerRadius="8"
             Height="48"/>
-                </Grid>
-            </StackPanel>
-        </ScrollViewer>
+        </Grid>
     </Grid>
 </Page>
