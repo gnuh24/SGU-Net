@@ -17,8 +17,6 @@ public partial class SignInViewModel:ObservableObject
 
     private ApiClient _apiClient;
 
-    private readonly CartService _cartService;
-
     private ITokenService _tokenService;
 
 
@@ -26,12 +24,10 @@ public partial class SignInViewModel:ObservableObject
     public SignInViewModel(
         INavigator navigator,
         ApiClient apiClient,
-        CartService cartService,
         ITokenService tokenService)
     {
         _navigator = navigator;
         _apiClient = apiClient;
-        _cartService = cartService;
         _tokenService = tokenService;
     }
 

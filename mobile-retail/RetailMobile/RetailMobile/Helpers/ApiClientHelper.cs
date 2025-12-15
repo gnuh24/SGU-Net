@@ -11,21 +11,20 @@ public static class ApiClientHelper
     {
 #if ANDROID
         // Android Emulator
-        if (IsEmulator())
-        {
-            return "http://10.0.2.2:5260";
-        }
+        return "http://10.0.2.2:5260";
+        //if (IsEmulator())
+        //{
+        //    return "http://10.0.2.2:5260";
+        //}
 
         // Device thật → dùng LAN IP
-        return $"http://{NetworkHelper.GetLocalIPAddress()}:5260";
+        //return $"http://{NetworkHelper.GetLocalIPAddress()}:5260";
 
         // Device thật -> dùng IP cố định
         //return "http://192.168.1.7:5260";  // Thay bằng IP thật của bạn
 #elif IOS
-        // iOS simulator chạy localhost được
         return config.Url!;
 #else
-        // Windows / WASM
         return config.Url!;
 #endif
     }

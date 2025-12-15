@@ -4,7 +4,7 @@ using RetailMobile.Models.DTOs;
 
 namespace RetailMobile.Services;
 
-public class CartService
+public class CartService: ICartService
 {
     private readonly AppDbContext _db;
     private readonly ApiClient? _apiClient;
@@ -31,7 +31,9 @@ public class CartService
         int productId, 
         string productName, 
         int quantity, 
-        decimal price, 
+        decimal price,
+        string category,
+        string imageUrl,
         bool syncToBackend = true)
     {
         try
@@ -55,7 +57,9 @@ public class CartService
                     ProductId = productId,
                     Name = productName,
                     Quantity = quantity,
-                    Price = price
+                    Price = price,
+                    Category = category,
+                    ImageUrl = imageUrl,
                 };
                 _db.CartItems.Add(cartItem);
                 System.Diagnostics.Debug.WriteLine($"[CartService] Added new cart item: {productName} x{quantity}");
@@ -109,7 +113,7 @@ public class CartService
                         System.Diagnostics.Debug.WriteLine($"[CartService] ❌ FAILED: {response?.Message ?? "Unknown error"}");
                     }
                     System.Diagnostics.Debug.WriteLine($"[CartService] ===============================");
-                }
+                    }
                 catch (Exception apiEx)
                 {
                     System.Diagnostics.Debug.WriteLine($"[CartService] ❌ API EXCEPTION: {apiEx.Message}");
@@ -118,7 +122,7 @@ public class CartService
                     System.Diagnostics.Debug.WriteLine($"[CartService] ===============================");
                     // Continue - item is still in local cart
                 }
-            }
+                }
             else
             {
                 if (!syncToBackend)

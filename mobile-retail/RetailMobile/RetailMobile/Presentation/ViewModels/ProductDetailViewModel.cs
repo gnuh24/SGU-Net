@@ -9,7 +9,7 @@ namespace RetailMobile.Presentation;
 [Bindable]
 public partial class ProductDetailViewModel : ObservableObject
 {
-    private readonly CartService _cartService;
+    private readonly ICartService _cartService;
 
     [ObservableProperty]
     private Product? product;
@@ -22,7 +22,7 @@ public partial class ProductDetailViewModel : ObservableObject
 
     public string TotalPriceText => $"{TotalPrice:N0}đ";
 
-    public ProductDetailViewModel(CartService cartService)
+    public ProductDetailViewModel(ICartService cartService)
     {
         _cartService = cartService;
     }
@@ -93,7 +93,9 @@ public partial class ProductDetailViewModel : ObservableObject
                 Product.ProductName,
                 Quantity,
                 Product.Price,
-                syncToBackend: true
+                Product.CategoryName??"",
+                Product.ImageUrl??"",
+                syncToBackend: false
             );
 
             if (success)

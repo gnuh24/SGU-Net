@@ -21,7 +21,7 @@ public partial class PaymentProcessingViewModel : ObservableObject
 
     private readonly ApiClient _apiClient;
 
-    private readonly CartService _cartService;
+    private readonly ICartService _cartService;
 
     [ObservableProperty]
     private OrderCreateDto _orderData;
@@ -44,7 +44,7 @@ public partial class PaymentProcessingViewModel : ObservableObject
     public PaymentProcessingViewModel(
         INavigator navigator,
         ApiClient apiClient,
-        CartService cartService,
+        ICartService cartService,
         PaymentProcessingData paymentProcessingData)
     {
         _navigator = navigator;
@@ -131,7 +131,7 @@ public partial class PaymentProcessingViewModel : ObservableObject
 
         try
         {
-            ApiResponse<OrderResponseDTO> orderResponse = await _apiClient.PostAsync<OrderCreateDto, ApiResponse<OrderResponseDTO>>("api/v1/orders", OrderData);
+            ApiResponse<OrderResponseDTO> orderResponse = await _apiClient.PostAsync<OrderCreateDto, ApiResponse<OrderResponseDTO>>("api/v1/orders/create", OrderData);
 
             if (orderResponse != null && orderResponse.Data != null)
             {
@@ -178,5 +178,11 @@ public partial class PaymentProcessingViewModel : ObservableObject
             // Handle exceptions (e.g., show error message to user)
             Console.WriteLine($"Error placing order: {ex.Message}");
         }
+    }
+
+    [RelayCommand]
+    public async Task GoBackAsync()
+    {
+        await _navigator.NavigateBackAsync(this);
     }
 }

@@ -10,8 +10,8 @@
               <category android:name="android.intent.category.BROWSABLE" />
 
               <data
-                  android:scheme="myapp"
-                  android:host="payment-return" />
+                  android:scheme="retailmobile"
+                  android:host="payment" />
           </intent-filter>
       </activity>
   </application>

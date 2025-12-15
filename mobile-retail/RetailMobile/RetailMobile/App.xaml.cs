@@ -99,7 +99,7 @@ public partial class App : Application
                     });
 
                     // Add CartService
-                    services.AddSingleton<CartService>();   
+                    services.AddSingleton<ICartService, CartService>();   
 
                     // Add TokenService
                     services.AddSingleton<ITokenService, TokenService>();
@@ -179,7 +179,7 @@ public partial class App : Application
                 // Điều hướng đến trang xử lý kết quả
                 // Truyền tất cả các tham số query để ViewModel xử lý
                 // Lưu ý: Nếu App đang chạy, điều hướng này sẽ ghi đè lên UI hiện tại.
-                navigator.NavigateViewModelAsync<OrderConfirmationViewModel>(null, data: queryParams);
+                navigator.NavigateViewModelAsync<OrderConfirmationViewModel>(this, data: queryParams, qualifier: Qualifiers.ClearBackStack);
             }
         } 
     }
@@ -190,10 +190,6 @@ public partial class App : Application
 
         if (uri.Query.Length > 1)
         {
-            // CÁCH TỐT HƠN: Sử dụng HttpUtility (cần NuGet System.Web.HttpUtility trên Wasm)
-            // hoặc System.Uri.UnescapeDataString
-
-            // Cách thủ công:
             var query = uri.Query.Substring(1);
             var pairs = query.Split('&');
             foreach (var pair in pairs)
@@ -201,7 +197,10 @@ public partial class App : Application
                 var parts = pair.Split('=');
                 if (parts.Length == 2)
                 {
-                    parameters[parts[0]] = parts[1];
+                    // SỬA: Sử dụng Uri.UnescapeDataString để giải mã giá trị và key
+                    string key = Uri.UnescapeDataString(parts[0]);
+                    string value = Uri.UnescapeDataString(parts[1]);
+                    parameters[key] = value;
                 }
             }
         }
