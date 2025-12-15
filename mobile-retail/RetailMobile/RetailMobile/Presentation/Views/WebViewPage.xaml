@@ -9,10 +9,17 @@
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
     mc:Ignorable="d">
 
-
     <Grid toolkit:SafeArea.Insets="Top, Bottom">
-        <WebView x:Name="MyWebView"
-                 Source="https://platform.uno/"/>
-        
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Button Grid.Row="0"
+            Content="Đóng"
+            Command="{Binding CloseCommand}"
+            HorizontalAlignment="Left"/>
+        <WebView Grid.Row="1"   
+                 x:Name="MyWebView"
+                 Source="{Binding PaymentUrl}"/>
     </Grid>
 </Page>

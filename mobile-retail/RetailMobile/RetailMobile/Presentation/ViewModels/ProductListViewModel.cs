@@ -77,8 +77,13 @@ public partial class ProductListViewModel : ObservableObject
     {
         try
         {
+            Console.WriteLine("[ProductListViewModel] LoadProductsAsync - START");
+            System.Diagnostics.Debug.WriteLine("[ProductListViewModel] LoadProductsAsync - START");
+            
             IsLoading = true;
             ErrorMessage = null;
+
+            Console.WriteLine($"[ProductListViewModel] IsLoading set to: {IsLoading}");
 
             // Gọi API public để lấy danh sách sản phẩm (không cần authentication)
             var queryParams = new Dictionary<string, string>
@@ -119,17 +124,22 @@ public partial class ProductListViewModel : ObservableObject
                 }
             }
 
+            Console.WriteLine("[ProductListViewModel] Calling API /api/v1/products/public...");
+            
             var response = await _apiClient.GetAsync<ProductApiResponse>(
                 "/api/v1/products/public",
                 queryParams
             );
-            Console.WriteLine($"[DEBUG] API Request sent to /api/v1/products/public");
+            Console.WriteLine($"[ProductListViewModel] API Request sent to /api/v1/products/public");
 
-            Console.WriteLine($"[DEBUG] Response received. Data: {response?.Data?.Data?.Count ?? 0} items");
+            Console.WriteLine($"[ProductListViewModel] Response received. Data: {response?.Data?.Data?.Count ?? 0} items");
 
             if (response?.Data?.Data != null)
             {
+                Console.WriteLine($"[ProductListViewModel] Clearing old products. Current count: {Products.Count}");
                 Products.Clear();
+                Console.WriteLine($"[ProductListViewModel] After clear: {Products.Count}");
+                
                 var baseUrl = ApiClientHelper.GetBaseUrl(_config);
                 foreach (var product in response.Data.Data)
                 {
@@ -140,6 +150,8 @@ public partial class ProductListViewModel : ObservableObject
                     }
                     Products.Add(product);
                 }
+
+                Console.WriteLine($"[ProductListViewModel] After adding products: {Products.Count}");
 
                 // Sync to SQLite (Fire and Forget or Await)
                 try

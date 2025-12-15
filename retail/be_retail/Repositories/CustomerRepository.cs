@@ -117,9 +117,5 @@ namespace be_retail.Repositories
                 .Where(c => !c.IsDeleted && c.Phone == phone)
                 .FirstOrDefaultAsync();
         }
-
- 
-
-
     }
 }

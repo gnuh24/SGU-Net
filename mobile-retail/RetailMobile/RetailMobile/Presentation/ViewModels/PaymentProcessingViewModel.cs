@@ -9,8 +9,9 @@ using CommunityToolkit.Mvvm.Input;
 using RetailMobile.Models;
 using RetailMobile.Models.Order;
 using RetailMobile.Models.Payment;
-using RetailMobile.Services;
 using RetailMobile.Presentation.ViewModels;
+using RetailMobile.Services;
+using Windows.ApplicationModel.Payments;
 
 namespace RetailMobile.Presentation.ViewModels;
 
@@ -37,6 +38,9 @@ public partial class PaymentProcessingViewModel : ObservableObject
     [ObservableProperty]
     private PaymentMethod _selectedPaymentMethod = PaymentMethod.cash;
 
+    [ObservableProperty]
+    private bool _isNoProcessing = true;
+
     public PaymentProcessingViewModel(
         INavigator navigator,
         ApiClient apiClient,
@@ -51,35 +55,15 @@ public partial class PaymentProcessingViewModel : ObservableObject
         DiscountAmount = paymentProcessingData.DiscountAmount;
         FinalAmount = paymentProcessingData.FinalAmount;
     }
-    public bool IsCashSelected
-    {
-        get => SelectedPaymentMethod == PaymentMethod.cash;
-        set => SelectPaymentMethod(PaymentMethod.cash);
-    }
+    public bool IsCashSelected => SelectedPaymentMethod == PaymentMethod.cash;
 
-    public bool IsCardSelected
-    {
-        get => SelectedPaymentMethod == PaymentMethod.card;
-        set => SelectPaymentMethod(PaymentMethod.card);
-    }
+    public bool IsCardSelected => SelectedPaymentMethod == PaymentMethod.card;
 
-    public bool IsBankTransferSelected
-    {
-        get => SelectedPaymentMethod == PaymentMethod.bank_transfer;
-        set => SelectPaymentMethod(PaymentMethod.bank_transfer);
-    }
+    public bool IsBankTransferSelected => SelectedPaymentMethod == PaymentMethod.bank_transfer;
 
-    public bool IsMomoSelected
-    {
-        get => SelectedPaymentMethod == PaymentMethod.momo;
-        set => SelectPaymentMethod(PaymentMethod.momo);
-    }
+    public bool IsMomoSelected => SelectedPaymentMethod == PaymentMethod.momo;
 
-    public bool IsVnpaySelected
-    {
-        get => SelectedPaymentMethod == PaymentMethod.vnpay;
-        set => SelectPaymentMethod(PaymentMethod.vnpay);
-    }
+    public bool IsVnpaySelected => SelectedPaymentMethod == PaymentMethod.vnpay;
 
     public Visibility DiscountVisibility
     {
@@ -93,7 +77,7 @@ public partial class PaymentProcessingViewModel : ObservableObject
     {
         get
         {
-            return TotalAmount.ToString("N0", new CultureInfo("vi-VN")).Append("₫");
+            return $"{TotalAmount:N0}₫";
         }
     }
 
@@ -101,14 +85,14 @@ public partial class PaymentProcessingViewModel : ObservableObject
     {
         get
         {
-            return DiscountAmount.ToString("N0", new CultureInfo("vi-VN")).Append("₫");
+            return $"{DiscountAmount:N0}₫";
         }
     }
     public string FormattedFinalAmount
     {
         get
         {
-            return FinalAmount.ToString("N0", new CultureInfo("vi-VN")).Append("₫");
+            return $"{FinalAmount:N0}₫";
         }
     }
 
@@ -139,14 +123,17 @@ public partial class PaymentProcessingViewModel : ObservableObject
     [RelayCommand]
     private async Task PlaceOrderAsync()
     {
+        IsNoProcessing = false;
+
+        //await _navigator.NavigateViewModelAsync<WebViewViewModel>(this, data: new WebViewData(1, "https://sandbox.vnpayment.vn/tryitnow/Home/CreateOrder") );
 
         OrderData.PaymentMethod = SelectedPaymentMethod.ToString();
 
         try
         {
-            OrderResponseDTO orderResponse = await _apiClient.PostAsync<OrderCreateDto, OrderResponseDTO>("api/v1/orders", OrderData);
+            ApiResponse<OrderResponseDTO> orderResponse = await _apiClient.PostAsync<OrderCreateDto, ApiResponse<OrderResponseDTO>>("api/v1/orders", OrderData);
 
-            if (orderResponse != null)
+            if (orderResponse != null && orderResponse.Data != null)
             {
                 _ = await _cartService.ClearCart();
                 // api/ v1/payments momo/create vnpay/create
@@ -154,22 +141,22 @@ public partial class PaymentProcessingViewModel : ObservableObject
                 {
                     VNPayPaymentRequest paymentRequest = new VNPayPaymentRequest
                     {
-                        OrderId = orderResponse.OrderId,
+                        OrderId = orderResponse.Data.OrderId,
                         Amount = FinalAmount,
                         ReturnUrl = "retailmobile://payment/result"
                     };
-                    ApiResponse<VNPayPaymentResponse> paymentResponse = await _apiClient.PostAsync<VNPayPaymentRequest, ApiResponse<VNPayPaymentResponse>>("api/v1/payments/momo/create", paymentRequest);
+                    ApiResponse<VNPayPaymentResponse> paymentResponse = await _apiClient.PostAsync<VNPayPaymentRequest, ApiResponse<VNPayPaymentResponse>>("api/v1/payments/vnpay/create", paymentRequest);
 
                     if (paymentResponse != null && paymentResponse.Status == 200)
                     {
-                        await _navigator.NavigateViewModelAsync<WebViewViewModel>(this, data: paymentResponse.Data!.PaymentUrl);
+                        await _navigator.NavigateViewModelAsync<WebViewViewModel>(this, data: new WebViewData(paymentResponse.Data!.OrderId, paymentResponse.Data!.PaymentUrl));
                     }
                 }
                 else if (SelectedPaymentMethod == PaymentMethod.momo)
                 {
                     MoMoPaymentRequest paymentRequest = new MoMoPaymentRequest
                     {
-                        OrderId = orderResponse.OrderId,
+                        OrderId = orderResponse.Data.OrderId,
                         Amount = FinalAmount,
                         ReturnUrl = "retailmobile://payment/result"
                     };
@@ -177,7 +164,7 @@ public partial class PaymentProcessingViewModel : ObservableObject
 
                     if (paymentResponse != null && paymentResponse.Status == 200)
                     {
-                        await _navigator.NavigateViewModelAsync<WebViewViewModel>(this, data: paymentResponse.Data!.PayUrl);
+                        await _navigator.NavigateViewModelAsync<WebViewViewModel>(this, data: new WebViewData(paymentResponse.Data!.OrderId, paymentResponse.Data!.PayUrl));
                     }
                 }
                 else if (SelectedPaymentMethod == PaymentMethod.cash)

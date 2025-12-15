@@ -1,5 +1,8 @@
 {
   "devDependencies": {
     "vite": "^4.5.5"
+  },
+  "dependencies": {
+    "jspdf": "^3.0.4"
   }
 }

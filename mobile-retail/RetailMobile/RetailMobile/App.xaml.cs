@@ -21,8 +21,10 @@ public partial class App : Application
         this.InitializeComponent();
     }
 
+
     protected Window? MainWindow { get; private set; }
-    protected IHost? Host { get; private set; }
+    public IHost? Host { get; private set; }
+
 
     protected async override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
     {
@@ -268,10 +270,11 @@ public partial class App : Application
             new ViewMap<SignUpPage,SignUpViewModel>(),
             new ViewMap<CheckoutPage, CheckoutViewModel>(),
             new DataViewMap<PaymentProcessingPage, PaymentProcessingViewModel, PaymentProcessingData>(),
-            new ViewMap<WebViewPage, WebViewViewModel>(),
+            new DataViewMap<WebViewPage, WebViewViewModel, WebViewData>(),
             new DataViewMap<OrderConfirmationPage, OrderConfirmationViewModel, Dictionary<string, string>>(),
             new ViewMap<ProfilePage, ProfileViewModel>(),
-            new ViewMap<ProductListPage, ProductListViewModel>()
+            new ViewMap<ProductListPage, ProductListViewModel>(),
+            new ViewMap<ProductDetailPage, ProductDetailViewModel>()
         );
 
         routes.Register(
@@ -288,6 +291,7 @@ public partial class App : Application
                     new ("OrderConfirm", View: views.FindByViewModel<OrderConfirmationViewModel>()),
                     new ("Profile", View: views.FindByViewModel<ProfileViewModel>()),
                     new ("Products", View: views.FindByViewModel<ProductListViewModel>()),
+                    new ("ProductDetail", View: views.FindByViewModel<ProductDetailViewModel>())                
                 ]
             )
         );

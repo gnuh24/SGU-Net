@@ -13,7 +13,6 @@ using RetailMobile.Models.Order;
 using RetailMobile.Models.Payment;
 using RetailMobile.Models.Promotion;
 using RetailMobile.Services;
-using Uno.Extensions.Navigation;
 
 namespace RetailMobile.Presentation.ViewModels;
 
@@ -28,6 +27,7 @@ public partial class CheckoutViewModel:ObservableObject
     private readonly ITokenService _tokenService;
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(PlaceOrderCommand))]
     private List<CartItem> _cartItems = new();
 
     [ObservableProperty]
@@ -37,21 +37,20 @@ public partial class CheckoutViewModel:ObservableObject
     private decimal _totalAmount = 0;
 
     [ObservableProperty]
-    private int _selectedPromotion;
+    private int _selectedPromotion = 0;
+
+    private int CustomerId { get; set; }
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(PlaceOrderCommand))]
     private string _customerName;
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(PlaceOrderCommand))]
     private string _phoneNumber;
 
     [ObservableProperty]
     private string _emailAddress;
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(PlaceOrderCommand))]
     private string _deliveryAddress;
 
     [ObservableProperty]
@@ -64,8 +63,7 @@ public partial class CheckoutViewModel:ObservableObject
         _cartService = cartService;
         _tokenService = tokenService;
 
-        CheckUserAuthenticationCommand.ExecuteAsync(null);
-        _ = LoadCheckoutDataAsync();
+        _ = LoadInitialDataAsync();
     }
 
     public decimal DiscountAmount
@@ -111,7 +109,7 @@ public partial class CheckoutViewModel:ObservableObject
     {
         get
         {
-            return TotalAmount.ToString("N0", new CultureInfo("vi-VN")).Append("₫");
+            return $"{TotalAmount:N0}₫";
         }
     }
 
@@ -119,14 +117,14 @@ public partial class CheckoutViewModel:ObservableObject
     {
         get
         {
-            return DiscountAmount.ToString("N0", new CultureInfo("vi-VN")).Append("₫");
+            return $"{DiscountAmount:N0}₫";
         }
     }
     public string FormattedFinalAmount
     {
         get
         {
-            return FinalAmount.ToString("N0", new CultureInfo("vi-VN")).Append("₫");
+            return $"{FinalAmount:N0}₫";
         }
     }
 
@@ -149,6 +147,12 @@ public partial class CheckoutViewModel:ObservableObject
         OnPropertyChanged(nameof(FormattedFinalAmount));
     }
 
+    private async Task LoadInitialDataAsync()
+    {
+        await CheckUserAuthenticationAsync();
+        await LoadCheckoutDataAsync();
+    }
+
     [RelayCommand]
     private async Task CheckUserAuthenticationAsync()
     {        
@@ -162,17 +166,17 @@ public partial class CheckoutViewModel:ObservableObject
         {
             // Lay customer id o day
             var queryParams = QueryHelper.ToQueryParams(("id", 1));
-            CustomerResponseDTO customer = await _apiClient.GetAsync<CustomerResponseDTO>("api/v1/customers", queryParams);
+            ApiResponse<CustomerResponseDTO> response = await _apiClient.GetAsync<ApiResponse<CustomerResponseDTO>>("api/v1/customers", queryParams);
 
-            bool flag = customer != null;
-            if (flag)
+            if (response != null)
             {
-                CustomerName = customer.Name;
-                PhoneNumber = customer.Phone;
-                EmailAddress = customer.Email;
-                DeliveryAddress = customer.Address;
+                CustomerId = response.Data!.CustomerId;
+                CustomerName = response.Data.Name;
+                PhoneNumber = response.Data.Phone!;
+                EmailAddress = response.Data.Email!;
+                DeliveryAddress = response.Data.Address!;
             }
-            IsAuthenticated = flag;
+            IsAuthenticated = response != null;
         }
 
         Console.WriteLine($"User authenticated: {IsAuthenticated}");
@@ -188,12 +192,20 @@ public partial class CheckoutViewModel:ObservableObject
         Console.WriteLine($"Khuyến mãi áp dụng: {SelectedPromotion}");
         Console.WriteLine($"Giam {DiscountAmount}");
 
-        // Tạo khách hàng mới
+        int finalCustomerId = 0;
 
-        //CustomerResponseDTO customer = await CreateCustomerAsync();
+        if (IsAuthenticated)
+        {
+            finalCustomerId = CustomerId;
+        }
+        // Tạo khách hàng mới
+        else if (IsCustomerInfoComplete()) 
+        {
+            CustomerResponseDTO? customer = await CreateCustomerAsync();
+            finalCustomerId = customer?.CustomerId ?? 0;
+        }
 
         // Tạo đơn hàng
-
         List<OrderItemCreateDto> orderItems = CartItems.Select(item => new OrderItemCreateDto
         {
             ProductId = item.ProductId,
@@ -202,7 +214,7 @@ public partial class CheckoutViewModel:ObservableObject
 
         OrderCreateDto orderForm = new OrderCreateDto();
 
-        orderForm.CustomerId = 0;
+        orderForm.CustomerId = finalCustomerId;
         orderForm.UserId = null;
         orderForm.PromoId = SelectedPromotion != 0 ? SelectedPromotion : null;
         orderForm.Status = "Pending";
@@ -222,6 +234,11 @@ public partial class CheckoutViewModel:ObservableObject
 
     private bool CanPlaceOrder()
     {
+        return CartItems.Count > 0;
+    }
+
+    private bool IsCustomerInfoComplete()
+    {
         bool hasCustomerInfo = !string.IsNullOrWhiteSpace(CustomerName) &&
                                !string.IsNullOrWhiteSpace(PhoneNumber) &&
                                !string.IsNullOrWhiteSpace(DeliveryAddress);
@@ -237,9 +254,9 @@ public partial class CheckoutViewModel:ObservableObject
         createForm.Email = EmailAddress;
         createForm.Address = DeliveryAddress;
 
-        CustomerResponseDTO customer = await _apiClient.PostAsync<CustomerCreateForm, CustomerResponseDTO>("/api/v1/customers", createForm);
+        ApiResponse<CustomerResponseDTO> response = await _apiClient.PostAsync<CustomerCreateForm, ApiResponse<CustomerResponseDTO>>("/api/v1/customers", createForm);
 
-        return customer;
+        return response.Data!;
     }
 
     [RelayCommand]
@@ -248,7 +265,7 @@ public partial class CheckoutViewModel:ObservableObject
 
         CartItems = await _cartService.GetCartAsync();
 
-        if (CartItems.Count() == 0)
+        if (CartItems.Count == 0)
         {
             Console.WriteLine("Giỏ hàng trống.");
             return;
@@ -258,19 +275,15 @@ public partial class CheckoutViewModel:ObservableObject
 
         try
         {
-            Promotions = await _apiClient.GetAsync<List<PromotionDTO>>(
+            ApiResponse<List<PromotionDTO>> response = await _apiClient.GetAsync<ApiResponse<List<PromotionDTO>>>(
                 "/api/v1/promotions/available",
                 QueryHelper.ToQueryParams(("orderAmount", TotalAmount))
             );
 
-            Promotions.Insert(0, new PromotionDTO
+            if (response != null && response.Data != null)
             {
-                PromoId = 0,
-                PromoCode = "No Promotion",
-                Description = "No Promotion Applied",
-                DiscountType = "None",
-                DiscountValue = 0
-            });
+                Promotions = response.Data;
+            }
         }
         catch (Exception ex)
         {

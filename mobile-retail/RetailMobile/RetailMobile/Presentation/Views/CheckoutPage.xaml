@@ -206,7 +206,6 @@
                 <Border CornerRadius="8">
                     <ComboBox ItemsSource="{Binding Promotions}"
                               Margin="20, 0, 20, 0"
-                                SelectedItem="{Binding SelectedPromotion}"
                                 DisplayMemberPath="Description"
                                 SelectedValuePath="PromoId"
                                 SelectedValue="{Binding SelectedPromotion, Mode=TwoWay}"

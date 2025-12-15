@@ -178,6 +178,7 @@
             <Button Grid.Row="3"
             Content="Thanh toán"
             Command="{Binding PlaceOrderCommand}"
+            IsEnabled="{Binding IsNoProcessing}"
             HorizontalAlignment="Stretch"
             Style="{StaticResource AccentButtonStyle}"
             Background="#F83758"

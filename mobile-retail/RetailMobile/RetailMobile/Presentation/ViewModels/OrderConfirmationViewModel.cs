@@ -15,20 +15,21 @@ public partial class OrderConfirmationViewModel:ObservableObject
     private ApiClient _apiClient;
 
     [ObservableProperty]
-    private string _orderId;
+    private string _orderId = null!;
 
     [ObservableProperty]
-    private string _resultCode;
+    private string _resultCode = null!;
 
     [ObservableProperty]
-    private string _message;
+    private string _message = null!;
 
     public bool IsSuccess => ResultCode == "0";
 
     public OrderConfirmationViewModel(
         INavigator navigator,
         ApiClient apiClient,
-        Dictionary<string, string> queryParams)
+        Dictionary<string, string> queryParams
+    )
     {
         _navigator = navigator;
         _apiClient = apiClient;
