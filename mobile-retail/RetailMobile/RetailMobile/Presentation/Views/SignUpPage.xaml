@@ -177,11 +177,7 @@
                      Background="Transparent"
                      BorderThickness="0"
                      Foreground="Black"
-                     PasswordChanged="PasswordBox_PasswordChanged"
-/>
-
-            <!-- Password Eye Icon -->
-            <TextBlock Grid.Column="2" Text="👁️" Margin="0, 0, 16, 0" VerticalAlignment="Center" FontSize="18" Foreground="#676767"/>
+                     PasswordChanged="PasswordBox_PasswordChanged"/>
         </Grid>
 
         <!-- 10. CONFIRM PASSWORD FIELD -->
@@ -209,12 +205,8 @@
                      Background="Transparent"
                      BorderThickness="0"
                      Foreground="Black"
-                     PasswordChanged="ConfirmPasswordBox_PasswordChanged"
+                     PasswordChanged="ConfirmPasswordBox_PasswordChanged"/>
 
-/>
-
-            <!-- Confirm Password Eye Icon -->
-            <TextBlock Grid.Column="2" Text="👁️" Margin="0, 0, 16, 0" VerticalAlignment="Center" FontSize="18" Foreground="#676767"/>
         </Grid>
 
         <!-- 12. Sign Up Button (Functional Button) -->
