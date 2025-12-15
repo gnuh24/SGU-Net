@@ -83,20 +83,6 @@
                      Foreground="Black"
                      PasswordChanged="PasswordBox_PasswordChanged"/>
 
-            <!-- Eye Icon Container -->
-            <Border Grid.Column="1"
-                Width="36"
-                Height="36"
-                HorizontalAlignment="Right"
-                VerticalAlignment="Center"
-                Margin="0, 0, 8, 0">
-                <!-- Thay đổi style của icon mắt để phù hợp hơn với thiết kế phẳng -->
-                <TextBlock Text="👁️" 
-                       VerticalAlignment="Center" 
-                       HorizontalAlignment="Center" 
-                       FontSize="18" 
-                       Foreground="#676767"/>
-            </Border>
         </Grid>
 
         <!-- 6. Login Button: Giữ màu chủ đạo, thêm chút CornerRadius lớn hơn và đảm bảo Auto Height -->
