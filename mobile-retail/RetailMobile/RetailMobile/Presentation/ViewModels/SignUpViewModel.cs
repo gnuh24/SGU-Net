@@ -28,8 +28,8 @@ public partial class SignUpViewModel: ObservableObject
     }
 
     [RelayCommand]
-    public async Task NavigateToCheckoutPageAsync()
+    public async Task NavigateToProductListPageAsync()
     {
-        await _navigator.NavigateViewModelAsync<CheckoutViewModel>(this);
+        await _navigator.NavigateViewModelAsync<ProductListViewModel>(this);
     }
 }

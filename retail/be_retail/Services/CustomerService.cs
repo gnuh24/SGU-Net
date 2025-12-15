@@ -31,8 +31,20 @@ namespace be_retail.Services
             return await _repository.GetByIdAsync(id);
         }
 
-        public async Task<Customer> CreateAsync(CustomerCreateForm form)
+        public async Task<Customer?> CreateAsync(CustomerCreateForm form)
         {
+
+            var c = await _repository.GetByPhoneAsync(form.Phone!);
+
+            if (c != null) {
+                c.Name = form.Name;
+                c.Phone = form.Phone;
+                c.Email = form.Email;
+                c.Address = form.Address;
+
+                return await _repository.UpdateAsync(c.CustomerId, c);
+            }
+
             // Map DTO → Entity ở Service
             var customer = new Customer
             {

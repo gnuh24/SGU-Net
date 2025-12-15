@@ -24,6 +24,16 @@
       <uap:VisualElements  DisplayName="RetailMobile" Description="Ung dung mua hang truc tuyen">
         <uap:DefaultTile/>
       </uap:VisualElements >
+
+        <Extensions>
+            <uap:Extension Category="windows.protocol">
+                <uap:Protocol Name="myapp">
+                    <uap:DisplayName>RetailMobile Payment Callback</uap:DisplayName>
+                </uap:Protocol>
+            </uap:Extension>
+        </Extensions>
+
+
     </Application>
   </Applications>
 

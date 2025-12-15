@@ -89,7 +89,27 @@ namespace be_retail.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CustomerCreateForm form)
         {
+            if (string.IsNullOrEmpty(form.Phone))
+            {
+                return BadRequest(new ApiResponse<CustomerResponseDTO>
+                {
+                    Status = 400,
+                    Message = "Customer created failed.",
+                    Data = null
+                });
+            }
+
             var created = await _customerService.CreateAsync(form);
+
+            if (created == null) 
+            {
+                return BadRequest(new ApiResponse<CustomerResponseDTO>
+                {
+                    Status = 400,
+                    Message = "Customer created failed.",
+                    Data = null
+                });
+            }
 
             var dto = new CustomerResponseDTO
             {

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using RetailMobile.Models.Payment;
 
@@ -17,6 +18,6 @@ public class OrderResponseDTO
     public decimal DiscountAmount { get; set; }
     public string Status { get; set; } = string.Empty;
     public DateTime OrderDate { get; set; }
-    public List<OrderItemResponseDTO> OrderItems { get; set; } = new List<OrderItemResponseDTO>();
+    public List<OrderItemResponseDTO> OrderItems { get; set; } = new();
     public PaymentResponseDTO Payment { get; set; } = null!;
 }
