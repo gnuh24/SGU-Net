@@ -54,7 +54,8 @@
              BorderThickness="0"
              Background="#F3F3F3"
              CornerRadius="12"
-             Foreground="Black"/>
+             Foreground="Black"
+             Text="{Binding Username, Mode=TwoWay}"/>
 
         <!-- 4. Password Input Section -->
         <Grid Grid.Row="4"
@@ -77,7 +78,8 @@
                      Padding="16, 0, 0, 0"
                      Background="Transparent"
                      BorderThickness="0"
-                     Foreground="Black"/>
+                     Foreground="Black"
+                     PasswordChanged="PasswordBox_PasswordChanged"/>
 
             <!-- Eye Icon Container -->
             <Border Grid.Column="1"
@@ -104,7 +106,8 @@
             HorizontalAlignment="Center"
             VerticalAlignment="Center"
             Width="175"
-            Padding="0">
+            Padding="0"
+            Command="{Binding LoginCommand}">
             <TextBlock Text="Login"
                    HorizontalAlignment="Center"
                    VerticalAlignment="Center"

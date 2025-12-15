@@ -137,7 +137,7 @@ public partial class App : Application
         using (var scope = Host.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            //db.Database.EnsureDeleted();
+            db.Database.EnsureDeleted();
             db.Database.EnsureCreated();
             // Initialize database
             await InitializeDatabaseAsync();
@@ -283,10 +283,10 @@ public partial class App : Application
                 [
                     new ("Main", View: views.FindByViewModel<MainViewModel>()),
                     new ("Second", View: views.FindByViewModel<SecondViewModel>()),
-                    new ("Checkout", View: views.FindByViewModel<CheckoutViewModel>(), IsDefault: true),
+                    new ("Checkout", View: views.FindByViewModel<CheckoutViewModel>()),
                     new ("Payment", View: views.FindByViewModel<PaymentProcessingViewModel>()),
                     new ("WebView", View: views.FindByViewModel<WebViewViewModel>()),
-                    new ("SignIn", View: views.FindByViewModel<SignInViewModel>()),
+                    new ("SignIn", View: views.FindByViewModel<SignInViewModel>(), IsDefault: true),
                     new ("SignUp", View: views.FindByViewModel<SignUpViewModel>()),
                     new ("OrderConfirm", View: views.FindByViewModel<OrderConfirmationViewModel>()),
                     new ("Profile", View: views.FindByViewModel<ProfileViewModel>()),
