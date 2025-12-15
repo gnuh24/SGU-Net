@@ -28,4 +28,13 @@ public sealed partial class SignInPage : Page
     {
         this.InitializeComponent();
     }
+
+      private void PasswordBox_PasswordChanged(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is SignInViewModel vm &&
+            sender is PasswordBox pb)
+        {
+            vm.Password = pb.Password;
+        }
+    }
 }

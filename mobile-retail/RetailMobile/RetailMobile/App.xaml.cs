@@ -137,7 +137,7 @@ public partial class App : Application
         using (var scope = Host.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            //db.Database.EnsureDeleted();
+            db.Database.EnsureDeleted();
             db.Database.EnsureCreated();
             // Initialize database
             await InitializeDatabaseAsync();
