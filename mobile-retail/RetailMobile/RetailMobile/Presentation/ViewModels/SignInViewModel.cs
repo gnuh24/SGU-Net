@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using RetailMobile.Services;
 using RetailMobile.Models.Auth;
 using RetailMobile.Models;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 
 namespace RetailMobile.Presentation.ViewModels;
 
@@ -33,6 +35,19 @@ public partial class SignInViewModel:ObservableObject
         _tokenService = tokenService;
     }
 
+    private async Task ShowAlertAsync(string title, string message)
+    {
+        var dialog = new ContentDialog
+        {
+            Title = title,
+            Content = message,
+            CloseButtonText = "OK",
+            XamlRoot = Window.Current.Content.XamlRoot
+        };
+
+        await dialog.ShowAsync();
+    }
+
     // =====================
     // 🔑 INPUT PROPERTIES
     // =====================
@@ -51,11 +66,15 @@ public partial class SignInViewModel:ObservableObject
             if (string.IsNullOrWhiteSpace(Username) ||
                 string.IsNullOrWhiteSpace(Password))
             {
-                Console.WriteLine("❌ Username hoặc Password trống");
+                await ShowAlertAsync(
+                    "Thiếu thông tin",
+                    "Vui lòng nhập đầy đủ Username và Password"
+                );
                 return;
             }
 
-            var response = await _apiClient.PostAsync<
+
+            var response = await _apiClient.PostRawAsync<
                 object,
                 ApiResponse<AuthResponse>
             >(
@@ -67,66 +86,66 @@ public partial class SignInViewModel:ObservableObject
                 }
             );
 
-            // 2️⃣ Validate response wrapper
+
+
+            // 2️⃣ Response null (lỗi bất thường)
             if (response == null)
             {
-                Console.WriteLine("❌ Response null");
+                await ShowAlertAsync(
+                    "Lỗi hệ thống",
+                    "Không nhận được phản hồi từ máy chủ"
+                );
                 return;
             }
 
-            if (response.Data == null)
+
+
+            // 3️⃣ ❗ Lỗi nghiệp vụ (401, 403, ...)
+            if (response.Data == null || string.IsNullOrEmpty(response.Data.AccessToken))
             {
-                Console.WriteLine("❌ Response.Data null");
-                Console.WriteLine($"Status  : {response.Status}");
-                Console.WriteLine($"Message : {response.Message}");
+                await ShowAlertAsync(
+                    "Đăng nhập thất bại",
+                    response.Message ?? "Đã xảy ra lỗi khi đăng nhập"
+                );
                 return;
             }
 
-            if (string.IsNullOrEmpty(response.Data.AccessToken))
-            {
-                Console.WriteLine("❌ Login failed - AccessToken empty");
-                Console.WriteLine($"Message : {response.Message}");
-                return;
-            }
-
-            // 3️⃣ Log wrapper info
+            // 4️⃣ Login thành công
             Console.WriteLine("✅ LOGIN SUCCESS");
-            Console.WriteLine($"Status  : {response.Status}");
-            Console.WriteLine($"Message : {response.Message}");
-
-            // 4️⃣ Log AuthResponse (DATA)
-            Console.WriteLine("----- AUTH DATA -----");
-            Console.WriteLine($"UserId       : {response.Data.UserId}");
-            Console.WriteLine($"Username     : {response.Data.Username}");
-            Console.WriteLine($"FullName     : {response.Data.FullName}");
-            Console.WriteLine($"Role         : {response.Data.Role}");
-            Console.WriteLine($"AccessToken  : {response.Data.AccessToken}");
-            Console.WriteLine($"RefreshToken : {response.Data.RefreshToken}");
-
+            Console.WriteLine($"UserId   : {response.Data.UserId}");
+            Console.WriteLine($"Username : {response.Data.Username}");
+            Console.WriteLine($"Role     : {response.Data.Role}");
 
             await _tokenService.SaveAuthAsync(response.Data);
-       
-            // 5️⃣ Navigate sau khi login
+
+            // 5️⃣ Navigate
             await _navigator.NavigateViewModelAsync<ProductListViewModel>(this);
         }
-        catch (Exception ex)
+      catch (Exception ex)
         {
-            Console.WriteLine("❌ UNEXPECTED ERROR");
-            Console.WriteLine(ex);
+        
+
+            await ShowAlertAsync(
+                "Lỗi hệ thống",
+                ex.Message
+            );
         }
+
     }
+
+
 
 
 
     [RelayCommand]
     public async Task NavigateToSignUpPageAsync()
     {
-        await _navigator.NavigateViewModelAsync<SignUpViewModel>(this);
+        await _navigator.NavigateViewModelAsync<SignUpViewModel>(this, qualifier: Qualifiers.ClearBackStack);
     }
 
     [RelayCommand]
     public async Task NavigateToProductListPageAsync()
     {
-        await _navigator.NavigateViewModelAsync<ProductListViewModel>(this);
+        await _navigator.NavigateViewModelAsync<ProductListViewModel>(this, qualifier: Qualifiers.ClearBackStack);
     }
 }

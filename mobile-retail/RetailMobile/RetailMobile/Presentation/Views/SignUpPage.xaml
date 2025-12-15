@@ -96,7 +96,8 @@
                  Padding="8, 0, 16, 0"
                  BorderThickness="0"
                  Background="Transparent"
-                 Foreground="Black"/>
+                 Foreground="Black"
+                 Text="{Binding Username, Mode=TwoWay}"/>
         </Grid>
 
         <!-- 4. FULLNAME FIELD -->
@@ -121,7 +122,8 @@
                  Padding="8, 0, 16, 0"
                  BorderThickness="0"
                  Background="Transparent"
-                 Foreground="Black"/>
+                 Foreground="Black"
+                 Text="{Binding Fullname, Mode=TwoWay}"/>
         </Grid>
 
         <!-- 6. PHONE FIELD -->
@@ -146,7 +148,8 @@
                  Padding="8, 0, 16, 0"
                  BorderThickness="0"
                  Background="Transparent"
-                 Foreground="Black"/>
+                 Foreground="Black"
+                 Text="{Binding Phone, Mode=TwoWay}"/>
         </Grid>
 
         <!-- 8. PASSWORD FIELD -->
@@ -173,7 +176,9 @@
                      Padding="8, 0, 0, 0"
                      Background="Transparent"
                      BorderThickness="0"
-                     Foreground="Black"/>
+                     Foreground="Black"
+                     PasswordChanged="PasswordBox_PasswordChanged"
+/>
 
             <!-- Password Eye Icon -->
             <TextBlock Grid.Column="2" Text="👁️" Margin="0, 0, 16, 0" VerticalAlignment="Center" FontSize="18" Foreground="#676767"/>
@@ -203,7 +208,10 @@
                      Padding="8, 0, 0, 0"
                      Background="Transparent"
                      BorderThickness="0"
-                     Foreground="Black"/>
+                     Foreground="Black"
+                     PasswordChanged="ConfirmPasswordBox_PasswordChanged"
+
+/>
 
             <!-- Confirm Password Eye Icon -->
             <TextBlock Grid.Column="2" Text="👁️" Margin="0, 0, 16, 0" VerticalAlignment="Center" FontSize="18" Foreground="#676767"/>
@@ -217,7 +225,8 @@
             BorderThickness="0"
             HorizontalAlignment="Center"
             VerticalAlignment="Center"
-            Padding="0">
+            Padding="0"
+            Command="{Binding RegisterCommand}">
             <TextBlock Text="Create Account"
                    HorizontalAlignment="Center"
                    VerticalAlignment="Center"

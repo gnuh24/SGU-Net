@@ -29,4 +29,24 @@ public sealed partial class SignUpPage : Page
     {
         this.InitializeComponent();
     }
+    private void PasswordBox_PasswordChanged(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is SignUpViewModel vm &&
+            sender is PasswordBox pb)
+        {
+            vm.Password = pb.Password;
+        }
+    }
+
+    private void ConfirmPasswordBox_PasswordChanged(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is SignUpViewModel vm &&
+            sender is PasswordBox pb)
+        {
+            vm.ConfirmPassword = pb.Password;
+        }
+    }
+
+
+
 }
