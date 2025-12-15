@@ -5,11 +5,13 @@
     xmlns:local="using:RetailMobile.Presentation.Views"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:toolkit="using:Uno.Toolkit.UI"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
     <Grid Background="White"
-      Padding="32">
+      Padding="32"
+          toolkit:SafeArea.Insets="Top, Bottom">
 
         <!-- 
     Cấu trúc Grid cho trang Đăng ký (5 ô input + 1 nút + 1 footer)

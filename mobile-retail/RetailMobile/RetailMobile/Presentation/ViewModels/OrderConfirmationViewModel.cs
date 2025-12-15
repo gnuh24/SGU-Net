@@ -71,6 +71,6 @@ public partial class OrderConfirmationViewModel:ObservableObject
     [RelayCommand]
     public async Task NavigateToProductListPageAsync()
     {
-        await _navigator.NavigateViewModelAsync<ProductListViewModel>(this);
+        await _navigator.NavigateViewModelAsync<ProductListViewModel>(this, qualifier: Qualifiers.ClearBackStack);
     }
 }

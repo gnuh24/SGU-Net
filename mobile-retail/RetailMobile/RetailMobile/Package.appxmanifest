@@ -27,7 +27,7 @@
 
         <Extensions>
             <uap:Extension Category="windows.protocol">
-                <uap:Protocol Name="myapp">
+                <uap:Protocol Name="retailmobile">
                     <uap:DisplayName>RetailMobile Payment Callback</uap:DisplayName>
                 </uap:Protocol>
             </uap:Extension>

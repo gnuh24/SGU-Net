@@ -7,19 +7,16 @@ using RetailMobile.Services;
 
 namespace RetailMobile.Presentation.ViewModels;
 
-public partial class ProfileViewModel: ObservableObject
+public partial class CartViewModel
 {
     private readonly INavigator _navigator;
 
-    private readonly ApiClient _apiClient;
 
-    public ProfileViewModel(
-        INavigator navigator,
-        ApiClient apiClient
+    public CartViewModel(
+        INavigator navigator
     )
     {
         _navigator = navigator;
-        _apiClient = apiClient;
     }
 
     [RelayCommand]
@@ -29,8 +26,8 @@ public partial class ProfileViewModel: ObservableObject
     }
 
     [RelayCommand]
-    private async Task NavigateToCartAsync()
+    private async Task NavigateToProfileAsync()
     {
-        await _navigator.NavigateViewModelAsync<CartViewModel>(this, qualifier: Qualifiers.ClearBackStack);
+        await _navigator.NavigateViewModelAsync<ProfileViewModel>(this, qualifier: Qualifiers.ClearBackStack);
     }
 }

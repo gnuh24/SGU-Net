@@ -8,6 +8,7 @@ using Microsoft.Extensions.Options;
 using RetailMobile.Helpers;
 using RetailMobile.Data;
 using Microsoft.EntityFrameworkCore;
+using RetailMobile.Presentation.ViewModels;
 
 namespace RetailMobile.Presentation;
 
@@ -221,6 +222,19 @@ public partial class ProductListViewModel : ObservableObject
         // Show a dialog or toast if possible, or just log for now as requested "trả về id"
         // For demonstration, we can change the title or show a message
         // await _navigator.ShowMessageDialogAsync(this, title: "Product ID", content: $"{product.ProductId}");
+    }
+
+
+    [RelayCommand]
+    private async Task NavigateToCartAsync()
+    {
+        await _navigator.NavigateViewModelAsync<CartViewModel>(this, qualifier: Qualifiers.ClearBackStack);
+    }
+
+    [RelayCommand]
+    private async Task NavigateToProfileAsync()
+    {
+        await _navigator.NavigateViewModelAsync<ProfileViewModel>(this, qualifier: Qualifiers.ClearBackStack);
     }
 }
 

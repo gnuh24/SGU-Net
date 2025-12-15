@@ -33,13 +33,6 @@ public partial class WebViewViewModel:ObservableObject
     [RelayCommand]
     private async Task CloseAsync()
     {
-        if(OrderId != null)
-        {
-            OrderUpdateForm form = new OrderUpdateForm();
-            form.Status = "pending";
-            ApiResponse<bool> response = await _apiClient.PatchAsync<OrderUpdateForm, ApiResponse<bool>>($"api/v1/orders/update/{Int32.Parse(OrderId)}", form);
-        }
-
         await _navigator.NavigateBackAsync(this);
     }
 }

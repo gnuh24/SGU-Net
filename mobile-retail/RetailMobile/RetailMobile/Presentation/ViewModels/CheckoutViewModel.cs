@@ -42,19 +42,25 @@ public partial class CheckoutViewModel:ObservableObject
     private int CustomerId { get; set; }
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(PlaceOrderCommand))]
     private string _customerName;
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(PlaceOrderCommand))]
     private string _phoneNumber;
 
     [ObservableProperty]
     private string _emailAddress;
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(PlaceOrderCommand))]
     private string _deliveryAddress;
 
     [ObservableProperty]
     private bool _isAuthenticated;
+
+    [ObservableProperty]
+    private bool _isNotShipping = true;
 
     public CheckoutViewModel(INavigator navigator, ApiClient apiClient, CartService cartService, ITokenService tokenService)
     {
@@ -77,11 +83,11 @@ public partial class CheckoutViewModel:ObservableObject
                 {
                     return 0;
                 }
-                if (promo.DiscountType == "Percentage")
+                if (promo.DiscountType == "percent")
                 {
                     return TotalAmount * (promo.DiscountValue / 100);
                 }
-                else if (promo.DiscountType == "FixedAmount")
+                else if (promo.DiscountType == "fixed")
                 {
                     return promo.DiscountValue;
                 }
@@ -171,10 +177,10 @@ public partial class CheckoutViewModel:ObservableObject
             if (response != null)
             {
                 CustomerId = response.Data!.CustomerId;
-                CustomerName = response.Data.Name;
-                PhoneNumber = response.Data.Phone!;
-                EmailAddress = response.Data.Email!;
-                DeliveryAddress = response.Data.Address!;
+                CustomerName = response.Data?.Name ?? "";
+                PhoneNumber = response.Data?.Phone ?? "";
+                EmailAddress = response.Data?.Email ?? "";
+                DeliveryAddress = response.Data?.Address ?? "";
             }
             IsAuthenticated = response != null;
         }
@@ -185,6 +191,8 @@ public partial class CheckoutViewModel:ObservableObject
     [RelayCommand(CanExecute = nameof(CanPlaceOrder))]
     private async Task PlaceOrderAsync()
     {
+        IsNotShipping = false;
+
         Console.WriteLine($"Đặt hàng được xác nhận!");
         Console.WriteLine($"Khách hàng: {CustomerName}, SĐT: {PhoneNumber}");
         Console.WriteLine($"Địa chỉ: {DeliveryAddress}");
@@ -192,15 +200,14 @@ public partial class CheckoutViewModel:ObservableObject
         Console.WriteLine($"Khuyến mãi áp dụng: {SelectedPromotion}");
         Console.WriteLine($"Giam {DiscountAmount}");
 
-        int finalCustomerId = 0;
+        int finalCustomerId;
 
         if (IsAuthenticated)
         {
             finalCustomerId = CustomerId;
         }
         // Tạo khách hàng mới
-        else if (IsCustomerInfoComplete()) 
-        {
+        else        {
             CustomerResponseDTO? customer = await CreateCustomerAsync();
             finalCustomerId = customer?.CustomerId ?? 0;
         }
@@ -234,14 +241,10 @@ public partial class CheckoutViewModel:ObservableObject
 
     private bool CanPlaceOrder()
     {
-        return CartItems.Count > 0;
-    }
-
-    private bool IsCustomerInfoComplete()
-    {
         bool hasCustomerInfo = !string.IsNullOrWhiteSpace(CustomerName) &&
-                               !string.IsNullOrWhiteSpace(PhoneNumber) &&
-                               !string.IsNullOrWhiteSpace(DeliveryAddress);
+                       !string.IsNullOrWhiteSpace(PhoneNumber) &&
+                       !string.IsNullOrWhiteSpace(DeliveryAddress) &&
+                       CartItems.Count > 0;
 
         return hasCustomerInfo;
     }
@@ -283,11 +286,20 @@ public partial class CheckoutViewModel:ObservableObject
             if (response != null && response.Data != null)
             {
                 Promotions = response.Data;
+                Promotions.ForEach(item => {
+                    Console.WriteLine($"Id {item.PromoId} code {item.PromoCode} value {item.DiscountValue} type {item.DiscountType} description {item.Description}");
+                } );
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine("API error loading promotions: " + ex.Message);
         }
+    }
+
+    [RelayCommand]
+    public async Task GoBackAsync()
+    {
+        await _navigator.NavigateBackAsync(this);
     }
 }

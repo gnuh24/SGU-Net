@@ -60,7 +60,7 @@ namespace be_retail.Services
                 // Tạo payment request với MoMo
                 var momoResponse = await _momoService.CreatePaymentAsync(
                     momoOrderId,
-                    request.Amount,
+                    order.Payment.Amount,
                     orderInfo,
                     request.ReturnUrl,
                     request.NotifyUrl

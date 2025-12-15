@@ -93,7 +93,9 @@ public partial class ProductDetailViewModel : ObservableObject
                 Product.ProductName,
                 Quantity,
                 Product.Price,
-                syncToBackend: true
+                Product.CategoryName??"",
+                Product.ImageUrl??"",
+                syncToBackend: false
             );
 
             if (success)

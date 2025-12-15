@@ -210,7 +210,7 @@ app.UseStaticFiles(new StaticFileOptions
     OnPrepareResponse = ctx =>
     {
         // Add CORS headers for static files
-        ctx.Context.Response.Headers.Append("Access-Control-Allow-Origin", "http://localhost:3000");
+        ctx.Context.Response.Headers.Append("Access-Control-Allow-Origin", "*");
         ctx.Context.Response.Headers.Append("Access-Control-Allow-Methods", "GET");
         ctx.Context.Response.Headers.Append("Access-Control-Allow-Headers", "Content-Type");
     }

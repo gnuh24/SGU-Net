@@ -20,9 +20,43 @@
     <!-- Root Grid -->
     <Grid Padding="16" toolkit:SafeArea.Insets="Top, Bottom">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0"
+              Height="48"
+              ColumnSpacing="12"
+              VerticalAlignment="Center">
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Back button -->
+            <Button Grid.Column="0"
+                    Command="{Binding GoBackCommand}"
+                    Style="{StaticResource TextButtonStyle}"
+                    Width="40"
+                    Height="40"
+                    Padding="0">
+                <SymbolIcon Symbol="Back" Width="20" Height="20"/>
+            </Button>
+
+            <!-- Title -->
+            <TextBlock Grid.Column="1"
+                       Text="Checkout"
+                       FontSize="20"
+                       FontWeight="SemiBold"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"/>
+
+            <!-- Spacer -->
+            <Border Grid.Column="2" Width="40"/>
+        </Grid>
 
         <!-- Customer Info -->
         <ScrollViewer Grid.Row="1"
@@ -40,23 +74,27 @@
 
                     <TextBox Text="{Binding CustomerName, Mode=TwoWay}"
                          PlaceholderText="Họ và Tên"
-                         Header="Họ và Tên (*)" />
+                         Header="Họ và Tên (*)"
+                         IsEnabled="{Binding IsNotShipping}"/>
 
                     <TextBox Text="{Binding PhoneNumber, Mode=TwoWay}"
                          PlaceholderText="Số Điện thoại"
                          Header="Số Điện thoại (*)"
-                         InputScope="TelephoneNumber" />
+                         InputScope="TelephoneNumber"
+                         IsEnabled="{Binding IsNotShipping}"/>
 
                     <TextBox Text="{Binding EmailAddress, Mode=TwoWay}"
                          PlaceholderText="Địa chỉ Email"
                          Header="Email"
-                         InputScope="EmailSmtpAddress" />
+                         InputScope="EmailSmtpAddress"
+                         IsEnabled="{Binding IsNotShipping}"/>
 
                     <TextBox Text="{Binding DeliveryAddress, Mode=TwoWay}"
                          PlaceholderText="Địa chỉ Chi tiết (Số nhà, Tên đường)"
                          Header="Địa chỉ Giao hàng (*)"
                          AcceptsReturn="True"
-                         TextWrapping="Wrap" />
+                         TextWrapping="Wrap"
+                         IsEnabled="{Binding IsNotShipping}"/>
                 </StackPanel>
                 <!-- 2. Thông tin Khách hàng khi dang nhap -->
                 <StackPanel Spacing="16"
@@ -206,10 +244,10 @@
                 <Border CornerRadius="8">
                     <ComboBox ItemsSource="{Binding Promotions}"
                               Margin="20, 0, 20, 0"
-                                DisplayMemberPath="Description"
-                                SelectedValuePath="PromoId"
-                                SelectedValue="{Binding SelectedPromotion, Mode=TwoWay}"
-                                />
+                              DisplayMemberPath="Description"
+                              SelectedValuePath="PromoId"
+                              SelectedValue="{Binding SelectedPromotion, Mode=TwoWay}"
+                              IsEnabled="{Binding IsNotShipping}"/>
                 </Border>
 
                 <!-- Footer: Tổng tiền & Thanh toán -->
