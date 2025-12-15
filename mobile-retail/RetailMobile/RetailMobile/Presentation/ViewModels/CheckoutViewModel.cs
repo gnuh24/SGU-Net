@@ -22,7 +22,7 @@ public partial class CheckoutViewModel:ObservableObject
 
     private readonly ApiClient _apiClient;
 
-    private readonly CartService _cartService;
+    private readonly ICartService _cartService;
 
     private readonly ITokenService _tokenService;
 
@@ -62,7 +62,7 @@ public partial class CheckoutViewModel:ObservableObject
     [ObservableProperty]
     private bool _isNotShipping = true;
 
-    public CheckoutViewModel(INavigator navigator, ApiClient apiClient, CartService cartService, ITokenService tokenService)
+    public CheckoutViewModel(INavigator navigator, ApiClient apiClient, ICartService cartService, ITokenService tokenService)
     {
         _navigator = navigator;
         _apiClient = apiClient;

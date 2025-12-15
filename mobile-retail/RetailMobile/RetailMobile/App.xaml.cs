@@ -99,7 +99,7 @@ public partial class App : Application
                     });
 
                     // Add CartService
-                    services.AddSingleton<CartService>();   
+                    services.AddSingleton<ICartService, CartService>();   
 
                     // Add TokenService
                     services.AddSingleton<ITokenService, TokenService>();

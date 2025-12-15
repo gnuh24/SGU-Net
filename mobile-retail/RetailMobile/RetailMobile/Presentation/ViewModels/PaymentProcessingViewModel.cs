@@ -21,7 +21,7 @@ public partial class PaymentProcessingViewModel : ObservableObject
 
     private readonly ApiClient _apiClient;
 
-    private readonly CartService _cartService;
+    private readonly ICartService _cartService;
 
     [ObservableProperty]
     private OrderCreateDto _orderData;
@@ -44,7 +44,7 @@ public partial class PaymentProcessingViewModel : ObservableObject
     public PaymentProcessingViewModel(
         INavigator navigator,
         ApiClient apiClient,
-        CartService cartService,
+        ICartService cartService,
         PaymentProcessingData paymentProcessingData)
     {
         _navigator = navigator;

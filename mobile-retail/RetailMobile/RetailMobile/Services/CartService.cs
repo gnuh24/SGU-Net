@@ -4,7 +4,7 @@ using RetailMobile.Models.DTOs;
 
 namespace RetailMobile.Services;
 
-public class CartService
+public class CartService: ICartService
 {
     private readonly AppDbContext _db;
     private readonly ApiClient? _apiClient;

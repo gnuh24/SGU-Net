@@ -15,7 +15,7 @@ public sealed partial class ProductDetailPage : Page
         this.InitializeComponent();
 
         // Get CartService from DI
-        var cartService = (Application.Current as App)?.Host?.Services?.GetService(typeof(CartService)) as CartService;
+        var cartService = (Application.Current as App)?.Host?.Services?.GetService(typeof(ICartService)) as ICartService;
         
         // Create ViewModel instance with CartService
         ViewModel = new ProductDetailViewModel(cartService ?? throw new InvalidOperationException("CartService not found"));

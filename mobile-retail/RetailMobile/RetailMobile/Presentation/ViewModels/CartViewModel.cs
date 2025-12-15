@@ -11,13 +11,20 @@ public partial class CartViewModel
 {
     private readonly INavigator _navigator;
 
+    private readonly ICartService _cartService;
 
     public CartViewModel(
-        INavigator navigator
+        INavigator navigator,
+        ICartService cartService
     )
     {
         _navigator = navigator;
+        _cartService = cartService;
     }
+
+
+
+
 
     [RelayCommand]
     private async Task NavigateToProductListAsync()
