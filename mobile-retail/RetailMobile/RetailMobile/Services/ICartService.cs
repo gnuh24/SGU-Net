@@ -20,6 +20,7 @@ public interface ICartService
 
     Task<int> UpdateItemAsync(CartItem item);
     Task<List<CartItem>> GetCartAsync();
+    Task<CartItem> GetByProductIdAsync(int productId);
     Task<int> RemoveItemAsync(CartItem item);
     Task<int> ClearCart();
 }

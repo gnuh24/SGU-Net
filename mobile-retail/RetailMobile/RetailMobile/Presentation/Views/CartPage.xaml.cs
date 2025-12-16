@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -10,6 +10,7 @@ using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
+using RetailMobile.Presentation.ViewModels;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 
@@ -22,6 +23,7 @@ namespace RetailMobile.Presentation.Views;
 /// </summary>
 public sealed partial class CartPage : Page
 {
+    public CartViewModel ViewModel => (CartViewModel)this.DataContext;
     public CartPage()
     {
         this.InitializeComponent();

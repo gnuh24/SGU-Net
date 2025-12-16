@@ -12,4 +12,7 @@ public class CartItem
 
     [System.ComponentModel.DataAnnotations.Schema.NotMapped]
     public decimal TotalPrice => Quantity * Price;
+
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public bool IsSelected { get; set; } = false;
 }
