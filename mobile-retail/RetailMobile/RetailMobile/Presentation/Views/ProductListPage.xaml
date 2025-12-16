@@ -204,7 +204,7 @@
         </Grid>
 
         <!-- Product Grid Container -->
-        <ScrollViewer Grid.Row="2" 
+        <ScrollViewer Grid.Row="2"
                      VerticalScrollBarVisibility="Auto">
             <ItemsRepeater ItemsSource="{Binding Products}"
                           Margin="8">

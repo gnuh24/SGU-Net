@@ -39,7 +39,7 @@
                         Background="Green"
                         Visibility="{Binding IsSuccess, Converter={StaticResource BooleanToVisibilityConverter}}">
                     <SymbolIcon Symbol="Accept"
-                                Foreground="{ThemeResource SystemControlForegroundBaseHighBrush}" 
+                                Foreground="White" 
                                 Visibility="{Binding IsSuccess, Converter={StaticResource BooleanToVisibilityConverter}}" />
                 </Border>
                 <Border Width="80" 
@@ -48,7 +48,7 @@
                         Background="#F83758"
                         Visibility="{Binding IsSuccess, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
                     <SymbolIcon Symbol="Clear"
-                                Foreground="{ThemeResource SystemControlForegroundBaseHighBrush}"
+                                Foreground="White"
                                 Visibility="{Binding IsSuccess, Converter={StaticResource InverseBooleanToVisibilityConverter}}" />
                 </Border>
             </Grid>
