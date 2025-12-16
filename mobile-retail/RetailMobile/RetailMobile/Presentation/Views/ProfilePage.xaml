@@ -149,14 +149,37 @@
                              FontSize="12"/>
 
                     <!-- SAVE BUTTON -->
-                    <Button Content="Save"
-                            Height="48"
-                            Background="#F83758"
-                            Foreground="White"
-                            FontSize="15"
-                            FontWeight="SemiBold"
-                            CornerRadius="8"
-                            Command="{Binding SaveCommand}"/>
+                    <StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Button Content="Save"
+                                Grid.Column="0"
+                                Height="48"
+                                Background="#F83758"
+                                Foreground="White"
+                                FontSize="15"
+                                FontWeight="SemiBold"
+                                CornerRadius="8"
+                                HorizontalAlignment="Left"
+                                Command="{Binding SaveCommand}"/>
+                            <!-- Logout BUTTON -->
+                            <Button Content="Logout"
+                                Grid.Column="1"
+                                Height="48"
+                                Background="#F83758"
+                                Foreground="White"
+                                FontSize="15"
+                                FontWeight="SemiBold"
+                                CornerRadius="8"
+                                HorizontalAlignment="Right"
+                                Command="{Binding LogoutCommand}"/>
+                        </Grid>
+
+                    </StackPanel>
+
                 </StackPanel>
             </Grid>
         </ScrollViewer>

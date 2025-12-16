@@ -27,5 +27,15 @@ public sealed partial class CheckoutPage : Page
     public CheckoutPage()
     {
         this.InitializeComponent();
+        this.DataContextChanged += OnDataContextChanged;
+    }
+
+    private async void OnDataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
+    {
+        if (args.NewValue is CheckoutViewModel viewModel)
+        {
+            // DÙNG AWAIT: Đảm bảo View chờ cho đến khi dữ liệu được load
+            await viewModel.LoadInitialDataAsync();
+        }
     }
 }
