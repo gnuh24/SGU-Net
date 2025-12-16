@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -23,6 +23,7 @@ using RetailMobile.Presentation.ViewModels;
 /// </summary>
 public sealed partial class ProfilePage : Page
 {
+    public ProfileViewModel ViewModel => (ProfileViewModel)this.DataContext;
     public ProfilePage()
     {
         InitializeComponent();

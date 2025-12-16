@@ -155,6 +155,11 @@ public class CartService: ICartService
         return await _db.CartItems.ToListAsync();
     }
 
+    public async Task<CartItem> GetByProductIdAsync(int productId)
+    {
+        return await _db.CartItems.FirstAsync(x => x.ProductId == productId);
+    }
+
     public async Task<int> RemoveItemAsync(CartItem item)
     {
         _db.CartItems.Remove(item);

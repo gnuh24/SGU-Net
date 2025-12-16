@@ -34,7 +34,7 @@ public partial class CheckoutViewModel:ObservableObject
     private List<PromotionDTO> _promotions = new();
 
     [ObservableProperty]
-    private decimal _totalAmount = 0;
+    private decimal _totalAmount;
 
     [ObservableProperty]
     private int _selectedPromotion = 0;
@@ -275,6 +275,8 @@ public partial class CheckoutViewModel:ObservableObject
         }
 
         TotalAmount = CartItems.Sum(item => item.Price * item.Quantity);
+
+        OnPropertyChanged(nameof(FormattedTotalAmount));
 
         try
         {

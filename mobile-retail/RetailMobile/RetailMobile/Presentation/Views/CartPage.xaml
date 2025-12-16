@@ -6,6 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:toolkit="using:Uno.Toolkit.UI"
+    x:Name="PageRoot"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
@@ -26,7 +27,7 @@
         </ResourceDictionary>
     </Page.Resources>
     
-    <Grid Padding="16" toolkit:SafeArea.Insets="Top, Bottom">
+    <Grid toolkit:SafeArea.Insets="Top, Bottom">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
@@ -39,24 +40,212 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <TextBlock Grid.Row="0"/>
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Border Grid.Column="0" HorizontalAlignment="Center"/>
+                <TextBlock Grid.Column="1"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           FontSize="16"
+                           Text="Cart"/>
+                <Button Grid.Column="2"
+                        HorizontalAlignment="Right"
+                        Height="40"
+                        Background="Transparent"
+                        Command="{Binding RemoveSelectedItemsCommand}">
+                        <FontIcon Glyph="&#xE74D;" FontFamily="Segoe MDL2 Assets" 
+                                    FontSize="16" Margin="0,0,0,3" Foreground="{StaticResource ActiveBrush}"/>
+                </Button>
+            </Grid>
             <ScrollViewer Grid.Row="1">
-                <ListView ItemsSource="{Binding CartItems}">
-                    
+                <ListView ItemsSource="{Binding CartItems}"
+                                  SelectionMode="None"
+                                  Margin="12,0,12,0">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="Padding" Value="0, 8, 0, 8"/>
+                            <Setter Property="MinHeight" Value="0" />
+                            <Setter Property="BorderThickness" Value="0" />
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="VerticalAlignment" Value="Stretch" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="{ThemeResource SystemControlBackgroundChromeLowBrush}"
+                                        CornerRadius="10"
+                                        Margin="0, 4, 0, 4"
+                                        HorizontalAlignment="Stretch">
+
+                                <Grid ColumnSpacing="6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="80" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <CheckBox Grid.Column="0" Width="30" Padding="0" Margin="-4, 0, 0, 0" 
+                                              IsChecked="{Binding IsSelected, Mode=TwoWay}"/>
+
+
+                                    <Border Grid.Column="1"
+                                                Width="80" Height="80"
+                                                Background="#F0F0F0" 
+                                                CornerRadius="8"
+                                                HorizontalAlignment="Left">
+                                        <Image Source="{Binding ImageUrl}" 
+                                                   Stretch="UniformToFill"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"/>
+                                    </Border>
+
+                                    <Grid Grid.Column="2" VerticalAlignment="Center">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock Grid.Row="0"
+                                                   Text="{Binding Name}" 
+                                                   FontSize="11"
+                                                   FontWeight="Bold"
+                                                   TextWrapping="Wrap"/>
+
+                                        <TextBlock Grid.Row="1"
+                                                   Text="{Binding Category}" 
+                                                   FontSize="11"
+                                                   Foreground="{ThemeResource ForegroundSecondaryBrush}"
+                                                   Margin="0, 2, 0, 0"/>
+
+                                        <Grid Grid.Row="2" Margin="0, 8, 0, 0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding FormattedPrice}" 
+                                                       FontWeight="Bold"
+                                                       FontSize="11"
+                                                       Margin="2, 0, 0, 0"/>
+                                            </StackPanel>
+
+                                            <StackPanel Grid.Column="1"
+                                                        Background="{ThemeResource SystemControlBackgroundChromeHighBrush}" 
+                                                        CornerRadius="8" 
+                                                        MinHeight="12"
+                                                        MinWidth="12"
+                                                        Spacing="8"
+                                                        Orientation="Horizontal"
+                                                        HorizontalAlignment="Right"
+                                                        VerticalAlignment="Center">
+                                                <Button Width="24"
+                                                        Height="24"
+                                                        CornerRadius="8"
+                                                        Background="{StaticResource ActiveBrush}"
+                                                        VerticalAlignment="Center"
+                                                        Style="{StaticResource AccentButtonStyle}"
+                                                        Command="{Binding DataContext.DecreaseQuantityCommand, ElementName=PageRoot}"
+                                                        CommandParameter="{Binding ProductId}">
+                                                        <FontIcon Glyph="&#xE108;"
+                                                                  FontSize="12"
+                                                                    FontFamily="Segoe MDL2 Assets"
+                                                                    Foreground="White"/>
+                                                </Button>
+
+                                                    <TextBlock Text="{Binding Quantity}" 
+                                                               HorizontalAlignment="Center"
+                                                               VerticalAlignment="Center"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{ThemeResource ForegroundSecondaryBrush}"/>
+                                                <Button Width="24"
+                                                        Height="24"
+                                                        CornerRadius="8"
+                                                        Background="{StaticResource ActiveBrush}"
+                                                        VerticalAlignment="Center"
+                                                        Style="{StaticResource AccentButtonStyle}"
+                                                        Command="{Binding DataContext.IncreaseQuantityCommand, ElementName=PageRoot}"
+                                                        CommandParameter="{Binding ProductId}">
+                                                        <FontIcon Glyph="&#xE109;"
+                                                                  FontSize="12"
+                                                                    FontFamily="Segoe MDL2 Assets"
+                                                                    Foreground="White"/>
+                                                </Button>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Grid>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
                 </ListView>
             </ScrollViewer>
-            <Grid Grid.Row="2">
-                
+            <Grid Grid.Row="2"
+                  Margin="12,10,12,5"
+                  Padding="0,0,0,5"
+                  BorderThickness="0,1,0,0"
+                  RowSpacing="5"
+                  BorderBrush="{ThemeResource DividerColor}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid Grid.Row="0" Margin="0, 0, 0, 5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0"
+                                   HorizontalAlignment="Right"
+                                   Text="Tổng số sản phẩm:"
+                                   FontWeight="Bold"/>
+                    <TextBlock Grid.Column="2"
+                                   HorizontalAlignment="Left"
+                                   Text="{Binding TotalQuantity}"
+                                   FontWeight="Bold"/>
+                </Grid>
+
+                <Grid Grid.Row="1" Margin="0, 0, 0, 5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0"
+                                    HorizontalAlignment="Right"
+                                   Text="Tổng cộng:"
+                                   FontWeight="Bold"/>
+                    <TextBlock Grid.Column="2"
+                                    HorizontalAlignment="Left"
+                                   Text="{Binding TotalAmountFormatted}"
+                                   FontWeight="Bold"/>
+                </Grid>
+
+                <Button Grid.Row="2"
+                            Content="Đặt hàng"
+                            Command="{Binding NavigateToCheckoutCommand}"
+                            HorizontalAlignment="Stretch"
+                            Style="{StaticResource AccentButtonStyle}"
+                            Background="#F83758"
+                            CornerRadius="8"
+                            Height="48"/>
             </Grid>
         </Grid>
         
         <Grid Grid.Row="1"
-      x:Name="BottomNavBar" 
-      Height="60" 
-      VerticalAlignment="Bottom"
-      Background="White"
-      BorderBrush="#E0E0E0" 
-      BorderThickness="0,1,0,0">
+              x:Name="BottomNavBar" 
+              Height="60" 
+              VerticalAlignment="Bottom"
+              Background="White"
+              BorderBrush="#E0E0E0" 
+              BorderThickness="0,1,0,0">
 
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>

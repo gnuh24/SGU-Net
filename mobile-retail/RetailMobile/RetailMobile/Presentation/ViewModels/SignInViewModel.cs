@@ -48,10 +48,10 @@ public partial class SignInViewModel:ObservableObject
     // 🔑 INPUT PROPERTIES
     // =====================
     [ObservableProperty]
-    private string? username;
+    private string? _username;
 
     [ObservableProperty]
-    private string? password;
+    private string? _password;
 
     [RelayCommand]
     public async Task LoginAsync()

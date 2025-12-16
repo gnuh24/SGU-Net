@@ -18,7 +18,7 @@
     </Page.Resources>
 
     <!-- Root Grid -->
-    <Grid Padding="16" toolkit:SafeArea.Insets="Top, Bottom">
+    <Grid toolkit:SafeArea.Insets="Top, Bottom">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*" />
@@ -49,7 +49,7 @@
             <!-- Title -->
             <TextBlock Grid.Column="1"
                        Text="Checkout"
-                       FontSize="20"
+                       FontSize="16"
                        FontWeight="SemiBold"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"/>
@@ -66,7 +66,7 @@
 
                 <!-- 1. Thông tin Khách hàng -->
                 <StackPanel Spacing="16"
-                            Margin="20,0,20,4"
+                            Margin="12,0,12,4"
                             Visibility="{Binding IsAuthenticated, Converter={StaticResource InverseBooleanToVisibilityConverter}}" >
                     <TextBlock Text="Thông tin Khách hàng"
                            Style="{StaticResource SubtitleTextBlockStyle}" 
@@ -98,7 +98,7 @@
                 </StackPanel>
                 <!-- 2. Thông tin Khách hàng khi dang nhap -->
                 <StackPanel Spacing="16"
-                            Margin="20,0,20,4"
+                            Margin="12,0,12,4"
                             Visibility="{Binding IsAuthenticated, Converter={StaticResource BooleanToVisibilityConverter}}" >
                     <Border Background="{ThemeResource SystemControlBackgroundChromeLowBrush}"
                                 BorderBrush="{ThemeResource DividerColor}"
@@ -111,15 +111,15 @@
                             </Grid.ColumnDefinitions>
 
                             <StackPanel Grid.Column="0" Spacing="4">
-                                <TextBlock FontSize="14" TextWrapping="Wrap">
+                                <TextBlock FontSize="12" TextWrapping="Wrap">
                                             <Run Text="Address: " Foreground="{ThemeResource ForegroundSecondaryBrush}"/>
                                             <Run Text="{Binding DeliveryAddress}" FontWeight="SemiBold"/>
                                 </TextBlock>
-                                <TextBlock FontSize="14">
+                                <TextBlock FontSize="12">
                                             <Run Text="Contact: " Foreground="{ThemeResource ForegroundSecondaryBrush}"/>
                                             <Run Text="{Binding PhoneNumber}" FontWeight="SemiBold"/>
                                 </TextBlock>
-                                <TextBlock FontSize="14">
+                                <TextBlock FontSize="12">
                                             <Run Text="Fullname: " Foreground="{ThemeResource ForegroundSecondaryBrush}"/>
                                             <Run Text="{Binding CustomerName}" FontWeight="SemiBold"/>
                                 </TextBlock>
@@ -143,11 +143,12 @@
 
                     <TextBlock Text="Shopping List"
                                Style="{StaticResource SubtitleTextBlockStyle}"
-                               Margin="20,0,20,4" />
+                               FontSize="16"
+                               Margin="12,0,12,4" />
 
                     <ListView ItemsSource="{Binding CartItems}"
                                   SelectionMode="None"
-                                  Margin="20,-16,20,0">
+                                  Margin="12,-16,12,0">
                         <ListView.ItemContainerStyle>
                             <Style TargetType="ListViewItem">
                                 <Setter Property="Padding" Value="8,8,8,8" />
@@ -190,13 +191,13 @@
 
                                             <TextBlock Grid.Row="0"
                                                    Text="{Binding Name}" 
-                                                   FontSize="18"
+                                                   FontSize="12"
                                                    FontWeight="Bold"
                                                    TextWrapping="Wrap"/>
 
                                             <TextBlock Grid.Row="1"
                                                    Text="{Binding Category}" 
-                                                   FontSize="14"
+                                                   FontSize="11"
                                                    Foreground="{ThemeResource ForegroundSecondaryBrush}"
                                                    Margin="0, 2, 0, 0"/>
 
@@ -209,11 +210,11 @@
                                                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                                                     <TextBlock Text="{Binding Price}" 
                                                        FontWeight="Bold"
-                                                       FontSize="18"
+                                                       FontSize="11"
                                                        Margin="2, 0, 0, 0"/>
                                                     <TextBlock Text="₫" 
                                                        FontWeight="Bold"
-                                                       FontSize="18"/>
+                                                       FontSize="11"/>
                                                 </StackPanel>
 
                                                 <Border Grid.Column="1"
@@ -243,7 +244,7 @@
                 <!-- 3. Mã giảm giá -->
                 <Border CornerRadius="8">
                     <ComboBox ItemsSource="{Binding Promotions}"
-                              Margin="20, 0, 20, 0"
+                              Margin="12, 0, 12, 0"
                               DisplayMemberPath="Description"
                               SelectedValuePath="PromoId"
                               SelectedValue="{Binding SelectedPromotion, Mode=TwoWay}"
@@ -251,7 +252,7 @@
                 </Border>
 
                 <!-- Footer: Tổng tiền & Thanh toán -->
-                <Grid Margin="20,10,20,5"
+                <Grid Margin="12,10,12,5"
                       Padding="0,0,0,5"
                             BorderThickness="0,1,0,0"
                       RowSpacing="5"

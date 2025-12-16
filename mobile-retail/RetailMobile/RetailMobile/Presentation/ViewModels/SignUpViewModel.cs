@@ -27,11 +27,11 @@ public partial class SignUpViewModel: ObservableObject
     // =====================
     // 🔑 PROPERTIES
     // =====================
-    [ObservableProperty] private string? username;
-    [ObservableProperty] private string? fullname;
-    [ObservableProperty] private string? phone;
-    [ObservableProperty] private string? password;
-    [ObservableProperty] private string? confirmPassword;
+    [ObservableProperty] private string? _username;
+    [ObservableProperty] private string? _fullname;
+    [ObservableProperty] private string? _phone;
+    [ObservableProperty] private string? _password;
+    [ObservableProperty] private string? _confirmPassword;
 
    [RelayCommand]
     public async Task RegisterAsync()

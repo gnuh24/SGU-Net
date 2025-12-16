@@ -34,13 +34,13 @@ public partial class ProfileViewModel : ObservableObject
 
     }
 
-    [ObservableProperty] private string? fullname;
-    [ObservableProperty] private string? phone;
-    [ObservableProperty] private string? email;
-    [ObservableProperty] private string? address;
-    [ObservableProperty] private string? createdAt;
-    [ObservableProperty] private int customerId;
-    [ObservableProperty] private ImageSource? qrImage;
+    [ObservableProperty] private string? _fullname;
+    [ObservableProperty] private string? _phone;
+    [ObservableProperty] private string? _email;
+    [ObservableProperty] private string? _address;
+    [ObservableProperty] private string? _createdAt;
+    [ObservableProperty] private int _customerId;
+    [ObservableProperty] private ImageSource? _qrImage;
 
 
     [RelayCommand]
@@ -48,7 +48,7 @@ public partial class ProfileViewModel : ObservableObject
     {
         try
         {
-            if (customerId <= 0)
+            if (CustomerId <= 0)
             {
                 Console.WriteLine("❌ CustomerId invalid");
                 return;
@@ -56,15 +56,15 @@ public partial class ProfileViewModel : ObservableObject
 
             var payload = new
             {
-                Name = fullname,
-                Phone = phone,
-                Email = email,
-                Address = address
+                Name = Fullname,
+                Phone = Phone,
+                Email = Email,
+                Address = Address
             };
 
             // Gọi API PUT với TRequest là payload, TResponse là ApiResponse<object>
             var response = await _apiClient.PutAsync<object, ApiResponse<object>>(
-                $"/api/v1/customers/{customerId}",
+                $"/api/v1/customers/{CustomerId}",
                 payload
             );
 
