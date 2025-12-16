@@ -367,8 +367,8 @@ const PosPageInternal: React.FC = () => {
     };
   }, [scannerOpen, message, scanMode, customers]);
 
-  useEffect(() => {
-    const fetchInitialData = async () => {
+  
+    const fetchInitialData = useCallback(async () => {
       setLoadingCustomers(true);
       setLoadingProducts(true);
       try {
@@ -418,9 +418,10 @@ const PosPageInternal: React.FC = () => {
         setLoadingCustomers(false);
         setLoadingProducts(false);
       }
-    };
+    },[])
+  useEffect(() => {
     fetchInitialData();
-  }, []);
+  }, [fetchInitialData]);
 
   const addProductToCart = (p: SwaggerProduct) => {
     const stock = p.currentStock ?? p.inventory?.quantity ?? 0;
@@ -947,7 +948,7 @@ const PosPageInternal: React.FC = () => {
 
       message.destroy();
       message.success("Thanh toán thành công!");
-
+      await fetchInitialData();
       resetPos();
     } catch (err: any) {
       message.destroy();
