@@ -69,7 +69,7 @@ public partial class CheckoutViewModel:ObservableObject
         _cartService = cartService;
         _tokenService = tokenService;
 
-        _ = LoadInitialDataAsync();
+        //_ = LoadInitialDataAsync();
     }
 
     public decimal DiscountAmount
@@ -153,7 +153,7 @@ public partial class CheckoutViewModel:ObservableObject
         OnPropertyChanged(nameof(FormattedFinalAmount));
     }
 
-    private async Task LoadInitialDataAsync()
+    public async Task LoadInitialDataAsync()
     {
         await CheckUserAuthenticationAsync();
         await LoadCheckoutDataAsync();

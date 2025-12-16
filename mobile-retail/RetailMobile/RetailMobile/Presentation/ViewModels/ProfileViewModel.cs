@@ -30,7 +30,7 @@ public partial class ProfileViewModel : ObservableObject
         _navigator = navigator;
         _apiClient = apiClient;
         _tokenService = tokenService;
-        _ = LoadAsync();
+        //_ = LoadAsync();
     }
 
     [ObservableProperty] private string? _fullname;
@@ -194,6 +194,13 @@ public partial class ProfileViewModel : ObservableObject
         }
 
         QrImage = bmp; // QrImage phải là WriteableBitmap
+    }
+
+    [RelayCommand]
+    private async Task LogoutAsync()
+    {
+        await _tokenService.DeleteTokensAsync();
+        await _navigator.NavigateViewModelAsync<SignInViewModel>(this, qualifier: Qualifiers.ClearBackStack);
     }
 
     [RelayCommand]

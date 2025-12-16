@@ -27,7 +27,15 @@ public sealed partial class ProfilePage : Page
     public ProfilePage()
     {
         InitializeComponent();
+        this.DataContextChanged += OnDataContextChanged;
     }
 
-
+    private async void OnDataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
+    {
+        if (args.NewValue is ProfileViewModel viewModel)
+        {
+            // DÙNG AWAIT: Đảm bảo View chờ cho đến khi dữ liệu được load
+            await viewModel.LoadAsync();
+        }
+    }
 }
