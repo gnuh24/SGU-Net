@@ -12,11 +12,11 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using RetailMobile.Presentation.ViewModels;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
 namespace RetailMobile.Presentation.Views;
-using RetailMobile.Presentation.ViewModels;
 
 /// <summary>
 /// An empty page that can be used on its own or navigated to within a Frame.

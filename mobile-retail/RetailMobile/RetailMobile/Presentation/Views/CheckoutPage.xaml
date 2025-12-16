@@ -65,77 +65,85 @@
             <StackPanel Spacing="24">
 
                 <!-- 1. Thông tin Khách hàng -->
-                <StackPanel Spacing="16"
-                            Margin="12,0,12,4"
-                            Visibility="{Binding IsAuthenticated, Converter={StaticResource InverseBooleanToVisibilityConverter}}" >
-                    <TextBlock Text="Thông tin Khách hàng"
-                           Style="{StaticResource SubtitleTextBlockStyle}" 
-                           Margin="0,0,0,4"/>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                
+                    <StackPanel Grid.Row="0"
+                                Spacing="16"
+                                Margin="12,0,12,4"
+                                Visibility="{Binding IsAuthenticated, Converter={StaticResource InverseBooleanToVisibilityConverter}}" >
+                        <TextBlock Text="Thông tin Khách hàng"
+                               Style="{StaticResource SubtitleTextBlockStyle}" 
+                               Margin="0,0,0,4"/>
 
-                    <TextBox Text="{Binding CustomerName, Mode=TwoWay}"
-                         PlaceholderText="Họ và Tên"
-                         Header="Họ và Tên (*)"
-                         IsEnabled="{Binding IsNotShipping}"/>
+                        <TextBox Text="{Binding CustomerName, Mode=TwoWay}"
+                             PlaceholderText="Họ và Tên"
+                             Header="Họ và Tên (*)"
+                             IsEnabled="{Binding IsNotShipping}"/>
 
-                    <TextBox Text="{Binding PhoneNumber, Mode=TwoWay}"
-                         PlaceholderText="Số Điện thoại"
-                         Header="Số Điện thoại (*)"
-                         InputScope="TelephoneNumber"
-                         IsEnabled="{Binding IsNotShipping}"/>
+                        <TextBox Text="{Binding PhoneNumber, Mode=TwoWay}"
+                             PlaceholderText="Số Điện thoại"
+                             Header="Số Điện thoại (*)"
+                             InputScope="TelephoneNumber"
+                             IsEnabled="{Binding IsNotShipping}"/>
 
-                    <TextBox Text="{Binding EmailAddress, Mode=TwoWay}"
-                         PlaceholderText="Địa chỉ Email"
-                         Header="Email"
-                         InputScope="EmailSmtpAddress"
-                         IsEnabled="{Binding IsNotShipping}"/>
+                        <TextBox Text="{Binding EmailAddress, Mode=TwoWay}"
+                             PlaceholderText="Địa chỉ Email"
+                             Header="Email"
+                             InputScope="EmailSmtpAddress"
+                             IsEnabled="{Binding IsNotShipping}"/>
 
-                    <TextBox Text="{Binding DeliveryAddress, Mode=TwoWay}"
-                         PlaceholderText="Địa chỉ Chi tiết (Số nhà, Tên đường)"
-                         Header="Địa chỉ Giao hàng (*)"
-                         AcceptsReturn="True"
-                         TextWrapping="Wrap"
-                         IsEnabled="{Binding IsNotShipping}"/>
-                </StackPanel>
-                <!-- 2. Thông tin Khách hàng khi dang nhap -->
-                <StackPanel Spacing="16"
-                            Margin="12,0,12,4"
-                            Visibility="{Binding IsAuthenticated, Converter={StaticResource BooleanToVisibilityConverter}}" >
-                    <Border Background="{ThemeResource SystemControlBackgroundChromeLowBrush}"
-                                BorderBrush="{ThemeResource DividerColor}"
-                                BorderThickness="1"
-                                CornerRadius="8">
-                        <Grid ColumnSpacing="12">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
+                        <TextBox Text="{Binding DeliveryAddress, Mode=TwoWay}"
+                             PlaceholderText="Địa chỉ Chi tiết (Số nhà, Tên đường)"
+                             Header="Địa chỉ Giao hàng (*)"
+                             AcceptsReturn="True"
+                             TextWrapping="Wrap"
+                             IsEnabled="{Binding IsNotShipping}"/>
+                    </StackPanel>
+                    <!-- 2. Thông tin Khách hàng khi dang nhap -->
+                    <StackPanel Grid.Row="0"
+                                Spacing="16"
+                                Margin="12,0,12,4"
+                                Visibility="{Binding IsAuthenticated, Converter={StaticResource BooleanToVisibilityConverter}}" >
+                        <Border Background="{ThemeResource SystemControlBackgroundChromeLowBrush}"
+                                    BorderBrush="{ThemeResource DividerColor}"
+                                    BorderThickness="1"
+                                    CornerRadius="8">
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
 
-                            <StackPanel Grid.Column="0" Spacing="4">
-                                <TextBlock FontSize="12" TextWrapping="Wrap">
-                                            <Run Text="Address: " Foreground="{ThemeResource ForegroundSecondaryBrush}"/>
-                                            <Run Text="{Binding DeliveryAddress}" FontWeight="SemiBold"/>
-                                </TextBlock>
-                                <TextBlock FontSize="12">
-                                            <Run Text="Contact: " Foreground="{ThemeResource ForegroundSecondaryBrush}"/>
-                                            <Run Text="{Binding PhoneNumber}" FontWeight="SemiBold"/>
-                                </TextBlock>
-                                <TextBlock FontSize="12">
-                                            <Run Text="Fullname: " Foreground="{ThemeResource ForegroundSecondaryBrush}"/>
-                                            <Run Text="{Binding CustomerName}" FontWeight="SemiBold"/>
-                                </TextBlock>
-                            </StackPanel>
+                                <StackPanel Grid.Column="0" Spacing="4">
+                                    <TextBlock FontSize="12" TextWrapping="Wrap">
+                                                <Run Text="Address: " Foreground="{ThemeResource ForegroundSecondaryBrush}"/>
+                                                <Run Text="{Binding DeliveryAddress}" FontWeight="SemiBold"/>
+                                    </TextBlock>
+                                    <TextBlock FontSize="12">
+                                                <Run Text="Contact: " Foreground="{ThemeResource ForegroundSecondaryBrush}"/>
+                                                <Run Text="{Binding PhoneNumber}" FontWeight="SemiBold"/>
+                                    </TextBlock>
+                                    <TextBlock FontSize="12">
+                                                <Run Text="Fullname: " Foreground="{ThemeResource ForegroundSecondaryBrush}"/>
+                                                <Run Text="{Binding CustomerName}" FontWeight="SemiBold"/>
+                                    </TextBlock>
+                                </StackPanel>
 
-                            <Button Grid.Column="1" 
-                                        Style="{StaticResource TextButtonStyle}" 
-                                        Command="{Binding EditAddressCommand}" 
-                                        VerticalAlignment="Top"
-                                        Height="26"
-                                        Padding="10">
-                                <SymbolIcon Symbol="Edit" Width="16" Height="16" Foreground="{ThemeResource ForegroundSecondaryBrush}"/>
-                            </Button>
-                        </Grid>
-                    </Border>
-                </StackPanel>
+                                <Button Grid.Column="1" 
+                                            Style="{StaticResource TextButtonStyle}" 
+                                            Command="{Binding EditAddressCommand}" 
+                                            VerticalAlignment="Top"
+                                            Height="26"
+                                            Padding="10">
+                                    <SymbolIcon Symbol="Edit" Width="16" Height="16" Foreground="{ThemeResource ForegroundSecondaryBrush}"/>
+                                </Button>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </Grid>
 
                 <!-- Danh sách Sản phẩm trong Giỏ hàng -->
 

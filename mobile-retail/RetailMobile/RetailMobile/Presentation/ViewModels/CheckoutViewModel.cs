@@ -161,32 +161,46 @@ public partial class CheckoutViewModel:ObservableObject
 
     [RelayCommand]
     private async Task CheckUserAuthenticationAsync()
-    {        
-        string token = await _tokenService.GetAccessTokenAsync();
+    {
+        IsAuthenticated = false;
+        CustomerId = 0;
 
-        if (token.IsNullOrEmpty())
-        {
-            IsAuthenticated = false;
-        }
-        else
-        {
-            // Lay customer id o day
-            var queryParams = QueryHelper.ToQueryParams(("id", 1));
-            ApiResponse<CustomerResponseDTO> response = await _apiClient.GetAsync<ApiResponse<CustomerResponseDTO>>("api/v1/customers", queryParams);
+        // 1️⃣ Lấy auth từ SQLite
+        var auth = await _tokenService.GetAuthAsync();
 
-            if (response != null)
-            {
-                CustomerId = response.Data!.CustomerId;
-                CustomerName = response.Data?.Name ?? "";
-                PhoneNumber = response.Data?.Phone ?? "";
-                EmailAddress = response.Data?.Email ?? "";
-                DeliveryAddress = response.Data?.Address ?? "";
-            }
-            IsAuthenticated = response != null;
+        if (auth == null)
+        {
+            Console.WriteLine("❌ Chưa đăng nhập");
+            return;
         }
 
-        Console.WriteLine($"User authenticated: {IsAuthenticated}");
+        Console.WriteLine($"✅ Logged in userId = {auth.UserId}");
+
+        // 2️⃣ Call API lấy user + customer
+        var response = await _apiClient.GetAsync<
+            ApiResponse<UserWithCustomerResponse>
+        >($"/api/v1/users/{auth.UserId}");
+
+        if (response?.Data?.Customer == null)
+        {
+            Console.WriteLine("⚠️ User chưa có customer");
+            return;
+        }
+
+        var customer = response.Data.Customer;
+
+        // 3️⃣ Bind data customer
+        CustomerId = customer.CustomerId;
+        CustomerName = customer.Name ?? "";
+        PhoneNumber = customer.Phone ?? "";
+        EmailAddress = customer.Email ?? "";
+        DeliveryAddress = customer.Address ?? "";
+
+        IsAuthenticated = true;
+
+        Console.WriteLine($"✅ Customer loaded: {CustomerName}");
     }
+
 
     [RelayCommand(CanExecute = nameof(CanPlaceOrder))]
     private async Task PlaceOrderAsync()
