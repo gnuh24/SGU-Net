@@ -19,6 +19,8 @@ const MoMoReturn: React.FC = () => {
   const RETRY_DELAY = 3000; // Retry sau 3 giây (thay vì 2 giây)
   const retryTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const isPosDual = searchParams.get("source") === "posdual";
+
   useEffect(() => {
     const checkPaymentStatus = async () => {
       try {
@@ -42,7 +44,11 @@ const MoMoReturn: React.FC = () => {
             // MoMo báo thành công - hiển thị success ngay (chỉ 1 lần)
             if (!hasShownSuccess) {
               setPaymentStatus("success");
-              message.success("Thanh toán MoMo thành công!", 3); // Duration 3 giây
+              // Với luồng POS 2 màn hình, màn hình khách sẽ hiển thị thông báo riêng,
+              // nên ở đây chỉ cần cập nhật trạng thái, không cần Result to nữa.
+              if (!isPosDual) {
+                message.success("Thanh toán MoMo thành công!", 3); // Duration 3 giây
+              }
               setHasShownSuccess(true);
               setLoading(false);
             }
@@ -170,7 +176,31 @@ const MoMoReturn: React.FC = () => {
         clearTimeout(retryTimeoutRef.current);
       }
     };
-  }, [searchParams]);
+  }, [searchParams, hasShownSuccess, isChecking, retryCount, paymentStatus]);
+
+  // Khi thanh toán thành công và là luồng POS 2 màn hình,
+  // broadcast cho POS & POS USER rồi điều hướng về màn hình khách.
+  useEffect(() => {
+    if (paymentStatus !== "success" || !orderId || !isPosDual) return;
+
+    try {
+      if (typeof window !== "undefined" && (window as any).BroadcastChannel) {
+        const channel = new window.BroadcastChannel("pos-dual-screen");
+        channel.postMessage({
+          type: "MOMO_PAID",
+          payload: {
+            orderId,
+          },
+        });
+        channel.close();
+      }
+    } catch (err) {
+      console.error("Không thể broadcast MOMO_PAID tới POS:", err);
+    }
+
+    // Điều hướng trở lại màn hình POS USER
+    navigate("/pos/customer", { replace: true });
+  }, [paymentStatus, orderId, isPosDual, navigate]);
 
   if (loading) {
     return (
@@ -181,6 +211,16 @@ const MoMoReturn: React.FC = () => {
   }
 
   if (paymentStatus === "success") {
+    // Với luồng POS 2 màn hình, component này sẽ ngay lập tức điều hướng về /pos/customer
+    // nên ở đây chỉ hiển thị một màn hình chờ đơn giản (trong trường hợp redirect chậm).
+    if (isPosDual) {
+      return (
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh" }}>
+          <Spin size="large" tip="Đang chuyển về màn hình khách..." />
+        </div>
+      );
+    }
+
     return (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", padding: "20px" }}>
         <Result

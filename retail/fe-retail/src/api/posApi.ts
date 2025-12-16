@@ -189,19 +189,53 @@ export const posApi = {
   },
 
   // Tạo payment request với MoMo
-  createMoMoPayment: async (orderId: number, amount: number, returnUrl?: string): Promise<{ payUrl: string; qrCodeUrl?: string }> => {
+  createMoMoPayment: async (
+    orderId: number,
+    amount: number,
+    returnUrl?: string
+  ): Promise<{ payUrl: string; qrCodeUrl?: string }> => {
     try {
       const response = await apiClient.post(`/payments/momo/create`, {
         orderId,
         amount,
         returnUrl: returnUrl || `${window.location.origin}/payment/momo/return`,
-        notifyUrl: `${BACKEND_BASE_URL}/api/v1/payments/momo/callback`
+        notifyUrl: `${BACKEND_BASE_URL}/api/v1/payments/momo/callback`,
       });
       const result = response.data?.data || response.data;
       if (result?.payUrl) {
         return result;
       }
       throw new Error(result?.message || "Không thể tạo payment URL");
+    } catch (error: any) {
+      throw error;
+    }
+  },
+
+  // Lấy trạng thái thanh toán MoMo theo orderId
+  getMoMoPaymentStatus: async (
+    orderId: number
+  ): Promise<{
+    orderId: number;
+    status: string;
+    paymentMethod?: string;
+    paymentDate?: string | null;
+    paymentTranId?: number | null;
+  }> => {
+    try {
+      const response = await apiClient.get(`/payments/momo/status/${orderId}`);
+      const api = response.data?.data || response.data;
+      const data = api?.data ?? api;
+
+      const status =
+        data?.status ?? data?.Status ?? data?.orderStatus ?? "unknown";
+
+      return {
+        orderId: data?.orderId ?? data?.OrderId ?? orderId,
+        status,
+        paymentMethod: data?.paymentMethod ?? data?.PaymentMethod,
+        paymentDate: data?.paymentDate ?? data?.PaymentDate ?? null,
+        paymentTranId: data?.paymentTranId ?? data?.PaymentTranId ?? null,
+      };
     } catch (error: any) {
       throw error;
     }
@@ -230,13 +264,18 @@ export const posApi = {
   },
 
   // Tạo payment request với VNPay
-  createVNPayPayment: async (orderId: number, amount: number, returnUrl?: string): Promise<{ paymentUrl: string }> => {
+  createVNPayPayment: async (
+    orderId: number,
+    amount: number,
+    returnUrl?: string
+  ): Promise<{ paymentUrl: string }> => {
     try {
       const response = await apiClient.post(`/payments/vnpay/create`, {
         orderId,
         amount,
-        returnUrl: returnUrl || `${window.location.origin}/payment/vnpay/return`,
-        orderInfo: `Thanh toan don hang #${orderId}`
+        returnUrl:
+          returnUrl || `${window.location.origin}/payment/vnpay/return`,
+        orderInfo: `Thanh toan don hang #${orderId}`,
       });
       const result = response.data?.data || response.data;
       if (result?.paymentUrl) {
