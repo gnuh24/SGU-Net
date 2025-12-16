@@ -31,7 +31,6 @@ public partial class ProfileViewModel : ObservableObject
         _apiClient = apiClient;
         _tokenService = tokenService;
         _ = LoadAsync();
-
     }
 
     [ObservableProperty] private string? _fullname;
