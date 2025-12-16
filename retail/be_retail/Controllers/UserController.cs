@@ -13,9 +13,14 @@ namespace be_retail.Controllers
     {
         private readonly UserService _userService;
 
-        public UserController(UserService userService)
+        private readonly CustomerService _customerService;
+
+
+        public UserController(UserService userService, CustomerService customerService)
         {
             _userService = userService;
+            _customerService = customerService;
+
         }
 
         [HttpGet]
@@ -77,7 +82,7 @@ namespace be_retail.Controllers
             }
         }
 
-        [HttpGet("{id}")]
+       [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
             try
@@ -93,13 +98,33 @@ namespace be_retail.Controllers
                     });
                 }
 
+                // ✅ FIX 1: khai báo đúng kiểu
+                Customer? customer = null;
+
+                // 🔹 Lấy customer theo CustomerId (nếu có)
+                if (user.CustomerId != null)
+                {
+                    // ✅ FIX 2: dùng .Value
+                    customer = await _customerService.GetByIdAsync(user.CustomerId.Value);
+                }
+
                 var data = new UserResponseDTO
                 {
                     UserId = user.UserId,
                     Username = user.Username!,
                     FullName = user.FullName!,
                     Role = user.Role!,
-                    Status = user.Status!
+                    Status = user.Status!,
+
+                    Customer = customer == null ? null : new CustomerResponseDTO
+                    {
+                        CustomerId = customer.CustomerId,
+                        Name = customer.Name,
+                        Phone = customer.Phone,
+                        Email = customer.Email,
+                        Address = customer.Address,
+                        CreatedAt = customer.CreatedAt
+                    }
                 };
 
                 return Ok(new ApiResponse<UserResponseDTO>
@@ -119,6 +144,7 @@ namespace be_retail.Controllers
                 });
             }
         }
+
 
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] UserCreateRequest request)

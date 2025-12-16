@@ -15,11 +15,47 @@
     </Page.Resources>
     <Grid toolkit:SafeArea.Insets="Top, Bottom">
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0"
+              Height="48"
+              ColumnSpacing="12"
+              VerticalAlignment="Center">
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Back button -->
+            <Button Grid.Column="0"
+                    Command="{Binding GoBackCommand}"
+                    Style="{StaticResource TextButtonStyle}"
+                    IsEnabled="{Binding IsNoProcessing}"
+                    Width="40"
+                    Height="40"
+                    Padding="0">
+                <SymbolIcon Symbol="Back" Width="20" Height="20"/>
+            </Button>
+
+            <!-- Title -->
+            <TextBlock Grid.Column="1"
+                       Text="Payment"
+                       FontSize="20"
+                       FontWeight="SemiBold"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"/>
+
+            <!-- Spacer -->
+            <Border Grid.Column="2" Width="40"/>
+        </Grid>
+        
             <!-- 1. Phương thức Thanh toán -->
-        <ScrollViewer Grid.Row="0"
+        <ScrollViewer Grid.Row="1"
             VerticalScrollBarVisibility="Hidden"
                     HorizontalScrollBarVisibility="Disabled">
                 <StackPanel Spacing="16" Margin="20,10,20,20">
@@ -109,7 +145,7 @@
 
                 </StackPanel>
         </ScrollViewer>
-        <Grid Grid.Row="1"
+        <Grid Grid.Row="2"
             Margin="20,10,20,5"
       Padding="0,0,0,5"
       BorderThickness="0,1,0,0"
@@ -176,7 +212,7 @@
             </Grid>
 
             <Button Grid.Row="3"
-            Content="Thanh toán"
+            Content="Tiếp tục"
             Command="{Binding PlaceOrderCommand}"
             IsEnabled="{Binding IsNoProcessing}"
             HorizontalAlignment="Stretch"

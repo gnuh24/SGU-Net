@@ -9,23 +9,38 @@
       NavigationCacheMode="Required"
       Background="#F9F9F9">
     <Page.Resources>
-        <helpers:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
-        <helpers:InvertedBoolToVisibilityConverter x:Key="InvertedBoolToVisibilityConverter" />
-        <helpers:StringToVisibilityConverter x:Key="StringToVisibilityConverter" />
-        <helpers:DecimalToCurrencyConverter x:Key="DecimalToCurrencyConverter" />
-        <helpers:StockTextConverter x:Key="StockTextConverter" />
+        <ResourceDictionary>
+            <helpers:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+            <helpers:InvertedBoolToVisibilityConverter x:Key="InvertedBoolToVisibilityConverter" />
+            <helpers:StringToVisibilityConverter x:Key="StringToVisibilityConverter" />
+            <helpers:DecimalToCurrencyConverter x:Key="DecimalToCurrencyConverter" />
+            <helpers:StockTextConverter x:Key="StockTextConverter" />
+            <Color x:Key="ActiveColor">#F83758</Color>
+            <Color x:Key="InactiveColor">#666666</Color>
+            <SolidColorBrush x:Key="ActiveBrush" Color="{StaticResource ActiveColor}"/>
+            <SolidColorBrush x:Key="InactiveBrush" Color="{StaticResource InactiveColor}"/>
+
+            <Style x:Key="BottomBarItemStyle" TargetType="Button">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="Height" Value="60"/>
+                <Setter Property="VerticalAlignment" Value="Stretch"/>
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            </Style>
+        </ResourceDictionary>
     </Page.Resources>
-    
+
+
     <Grid utu:SafeArea.Insets="VisibleBounds">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="*"/>
             <RowDefinition Height="Auto" />
-            <RowDefinition />
         </Grid.RowDefinitions>
 
         <!-- Custom Header Bar -->
-        <Grid Grid.Row="0" 
+        <!--<Grid Grid.Row="0" 
               Height="56" 
               Background="White"
               Padding="16,0">
@@ -35,20 +50,21 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
-            <!-- Menu Button -->
+            --><!-- Menu Button --><!--
             <Button Grid.Column="0" 
                     Width="32" 
                     Height="32"
                     Background="#F2F2F2"
                     CornerRadius="100"
                     Padding="0"
+                    Command="{Binding NavigateToCheckoutCommand}"
                     VerticalAlignment="Center">
                 <FontIcon Glyph="&#xE700;" 
                           FontSize="16"
                           Foreground="#323232" />
             </Button>
 
-            <!-- Logo -->
+            --><!-- Logo --><!--
             <Image Grid.Column="1"
                    Width="50"
                    Height="40"
@@ -56,7 +72,7 @@
                    VerticalAlignment="Center"
                    Source="ms-appx:///Assets/logo.png" />
 
-            <!-- Profile Picture -->
+            --><!-- Profile Picture --><!--
             <Ellipse Grid.Column="2"
                      Width="40"
                      Height="40"
@@ -65,10 +81,10 @@
                     <ImageBrush ImageSource="ms-appx:///Assets/profile.png" />
                 </Ellipse.Fill>
             </Ellipse>
-        </Grid>
+        </Grid>-->
 
         <!-- Search Bar -->
-        <Grid Grid.Row="1" 
+        <Grid Grid.Row="0" 
               Margin="16,12,16,8">
             <Border Background="White"
                     CornerRadius="6"
@@ -109,7 +125,7 @@
         </Grid>
 
         <!-- Items Count and Filter/Sort Bar -->
-        <Grid Grid.Row="2" 
+        <Grid Grid.Row="1" 
               Margin="16,8,16,12">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition />
@@ -188,7 +204,7 @@
         </Grid>
 
         <!-- Product Grid Container -->
-        <ScrollViewer Grid.Row="3" 
+        <ScrollViewer Grid.Row="2" 
                      VerticalScrollBarVisibility="Auto">
             <ItemsRepeater ItemsSource="{Binding Products}"
                           Margin="8">
@@ -265,5 +281,51 @@
                 </ItemsRepeater.ItemTemplate>
             </ItemsRepeater>
         </ScrollViewer>
+
+        <Grid Grid.Row="3"
+              x:Name="BottomNavBar" 
+              Height="60" 
+              VerticalAlignment="Bottom"
+              Background="White"
+              BorderBrush="#E0E0E0" 
+              BorderThickness="0,1,0,0">
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Button Grid.Column="0" 
+                    Style="{StaticResource BottomBarItemStyle}"
+                    Command="{Binding NavigateToProductListCommand}">
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <FontIcon Glyph="&#xE80F;" FontFamily="Segoe MDL2 Assets" 
+                              FontSize="22" Margin="0,0,0,3" Foreground="{StaticResource ActiveBrush}"/>
+                    <TextBlock Text="Home" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource ActiveBrush}"/>
+                </StackPanel>
+            </Button>
+
+            <Button Grid.Column="1" 
+                    Style="{StaticResource BottomBarItemStyle}"
+                    Command="{Binding NavigateToCartCommand}"
+                    Padding="15,0">
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <FontIcon Glyph="&#xE7BF;" FontFamily="Segoe MDL2 Assets" 
+                              FontSize="22" Margin="0,0,0,3" Foreground="{StaticResource InactiveBrush}"/>
+                    <TextBlock Text="Cart" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource InactiveBrush}"/>
+                </StackPanel>
+            </Button>
+
+            <Button Grid.Column="2" 
+                    Style="{StaticResource BottomBarItemStyle}"
+                    Command="{Binding NavigateToProfileCommand}">
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <FontIcon Glyph="&#xE77B;" FontFamily="Segoe MDL2 Assets" 
+                              FontSize="22" Margin="0,0,0,3" Foreground="{StaticResource InactiveBrush}"/>
+                    <TextBlock Text="Account" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource InactiveBrush}"/>
+                </StackPanel>
+            </Button>
+        </Grid>
     </Grid>
 </Page>

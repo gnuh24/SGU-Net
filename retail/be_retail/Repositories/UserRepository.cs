@@ -24,6 +24,7 @@ namespace be_retail.Repositories
                 .FirstOrDefaultAsync(u => u.CustomerId == customerId);
         }
 
+
         public async Task<User> CreateAsync(User user)
         {
             _context.Users.Add(user);

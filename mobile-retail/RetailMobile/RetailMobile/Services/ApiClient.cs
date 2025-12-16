@@ -5,6 +5,7 @@ using RetailMobile.Helpers;
 using Microsoft.Extensions.Options;
 
 namespace RetailMobile.Services;
+
 public class ApiClient
 {
     private readonly HttpClient _http;
@@ -43,6 +44,16 @@ public class ApiClient
 
     public Task<TResponse> PostAsync<TRequest, TResponse>(string path, TRequest body) =>
         SendRequestAsync<TResponse>(HttpMethod.Post, path, body);
+
+    public Task<TResponse> PostRawAsync<TRequest, TResponse>(
+        string path,
+        TRequest body)
+        => SendRequestRawAsync<TResponse>(
+            HttpMethod.Post,
+            path,
+            body
+        );
+
 
     public Task<TResponse> PutAsync<TRequest, TResponse>(string path, TRequest body) =>
         SendRequestAsync<TResponse>(HttpMethod.Put, path, body);
@@ -101,6 +112,46 @@ public class ApiClient
         var resultJson = await response.Content.ReadAsStringAsync();
         return JsonSerializer.Deserialize<T>(resultJson, _jsonOptions)!;
     }
+
+    private async Task<T> SendRequestRawAsync<T>(
+        HttpMethod method,
+        string path,
+        object? bodyOrQuery = null)
+    {
+        HttpRequestMessage request;
+
+        // Build URL + query
+        if (bodyOrQuery is IDictionary<string, string> queryParams)
+            request = new HttpRequestMessage(method, BuildUrl(path, queryParams));
+        else
+            request = new HttpRequestMessage(method, path);
+
+        // Add body
+        if (bodyOrQuery != null && !(bodyOrQuery is IDictionary<string, string>))
+        {
+            var json = JsonSerializer.Serialize(bodyOrQuery, _jsonOptions);
+            request.Content = new StringContent(
+                json,
+                Encoding.UTF8,
+                "application/json"
+            );
+        }
+
+        var response = await _http.SendAsync(request);
+
+        // ❌ KHÔNG refresh token
+        // ❌ KHÔNG retry
+        // ❌ KHÔNG EnsureSuccessStatusCode
+
+        var responseJson = await response.Content.ReadAsStringAsync();
+
+        // Backend trả JSON chuẩn → deserialize luôn
+        if (!string.IsNullOrWhiteSpace(responseJson))
+            return JsonSerializer.Deserialize<T>(responseJson, _jsonOptions)!;
+
+        return default!;
+    }
+
 
     // ----- Refresh -----
     private async Task AddAuthHeader(HttpRequestMessage request)

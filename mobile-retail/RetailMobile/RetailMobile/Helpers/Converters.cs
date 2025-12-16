@@ -106,5 +106,8 @@ public class StockTextConverter : IValueConverter
     {
         throw new NotImplementedException();
     }
+
+
+    
 }
 

@@ -99,7 +99,7 @@ public partial class App : Application
                     });
 
                     // Add CartService
-                    services.AddSingleton<CartService>();   
+                    services.AddSingleton<ICartService, CartService>();
 
                     // Add TokenService
                     services.AddSingleton<ITokenService, TokenService>();
@@ -122,7 +122,7 @@ public partial class App : Application
 
                 })
                 .UseNavigation(RegisterRoutes)
-                
+
             );
         MainWindow = builder.Window;
 
@@ -137,7 +137,7 @@ public partial class App : Application
         using (var scope = Host.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            //db.Database.EnsureDeleted();
+            // db.Database.EnsureDeleted();
             db.Database.EnsureCreated();
             // Initialize database
             await InitializeDatabaseAsync();
@@ -179,9 +179,9 @@ public partial class App : Application
                 // Điều hướng đến trang xử lý kết quả
                 // Truyền tất cả các tham số query để ViewModel xử lý
                 // Lưu ý: Nếu App đang chạy, điều hướng này sẽ ghi đè lên UI hiện tại.
-                navigator.NavigateViewModelAsync<OrderConfirmationViewModel>(null, data: queryParams);
+                navigator.NavigateViewModelAsync<OrderConfirmationViewModel>(this, data: queryParams, qualifier: Qualifiers.ClearBackStack);
             }
-        } 
+        }
     }
 
     private Dictionary<string, string> ExtractQueryParameters(Uri uri)
@@ -190,10 +190,6 @@ public partial class App : Application
 
         if (uri.Query.Length > 1)
         {
-            // CÁCH TỐT HƠN: Sử dụng HttpUtility (cần NuGet System.Web.HttpUtility trên Wasm)
-            // hoặc System.Uri.UnescapeDataString
-
-            // Cách thủ công:
             var query = uri.Query.Substring(1);
             var pairs = query.Split('&');
             foreach (var pair in pairs)
@@ -201,7 +197,10 @@ public partial class App : Application
                 var parts = pair.Split('=');
                 if (parts.Length == 2)
                 {
-                    parameters[parts[0]] = parts[1];
+                    // SỬA: Sử dụng Uri.UnescapeDataString để giải mã giá trị và key
+                    string key = Uri.UnescapeDataString(parts[0]);
+                    string value = Uri.UnescapeDataString(parts[1]);
+                    parameters[key] = value;
                 }
             }
         }
@@ -267,7 +266,7 @@ public partial class App : Application
             new ViewMap<MainPage, MainViewModel>(),
             new DataViewMap<SecondPage, SecondViewModel, Entity>(),
             new ViewMap<SignInPage, SignInViewModel>(),
-            new ViewMap<SignUpPage,SignUpViewModel>(),
+            new ViewMap<SignUpPage, SignUpViewModel>(),
             new ViewMap<CheckoutPage, CheckoutViewModel>(),
             new DataViewMap<PaymentProcessingPage, PaymentProcessingViewModel, PaymentProcessingData>(),
             new DataViewMap<WebViewPage, WebViewViewModel, WebViewData>(),
@@ -283,15 +282,15 @@ public partial class App : Application
                 [
                     new ("Main", View: views.FindByViewModel<MainViewModel>()),
                     new ("Second", View: views.FindByViewModel<SecondViewModel>()),
-                    new ("Checkout", View: views.FindByViewModel<CheckoutViewModel>(), IsDefault: true),
+                    new ("Checkout", View: views.FindByViewModel<CheckoutViewModel>()),
                     new ("Payment", View: views.FindByViewModel<PaymentProcessingViewModel>()),
                     new ("WebView", View: views.FindByViewModel<WebViewViewModel>()),
-                    new ("SignIn", View: views.FindByViewModel<SignInViewModel>()),
+                    new ("SignIn", View: views.FindByViewModel<SignInViewModel>(), IsDefault: true),
                     new ("SignUp", View: views.FindByViewModel<SignUpViewModel>()),
                     new ("OrderConfirm", View: views.FindByViewModel<OrderConfirmationViewModel>()),
                     new ("Profile", View: views.FindByViewModel<ProfileViewModel>()),
                     new ("Products", View: views.FindByViewModel<ProductListViewModel>()),
-                    new ("ProductDetail", View: views.FindByViewModel<ProductDetailViewModel>())                
+                    new ("ProductDetail", View: views.FindByViewModel<ProductDetailViewModel>())
                 ]
             )
         );
