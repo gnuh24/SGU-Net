@@ -221,7 +221,17 @@ public partial class CheckoutViewModel:ObservableObject
             finalCustomerId = CustomerId;
         }
         // Tạo khách hàng mới
-        else        {
+        else        
+        {
+            //if (HasFullCustomerInfo())
+            //{
+            //    var customer = await CreateCustomerAsync();
+            //    finalCustomerId = customer?.CustomerId ?? 0;
+            //}
+            //else
+            //{
+            //    finalCustomerId = 0;
+            //}
             CustomerResponseDTO? customer = await CreateCustomerAsync();
             finalCustomerId = customer?.CustomerId ?? 0;
         }
@@ -253,6 +263,18 @@ public partial class CheckoutViewModel:ObservableObject
 
     }
 
+    //private bool CanPlaceOrder()
+    //{
+    //    return CartItems != null && CartItems.Count > 0;
+    //}
+
+    //private bool HasFullCustomerInfo()
+    //{
+    //    return !string.IsNullOrWhiteSpace(CustomerName)
+    //        && !string.IsNullOrWhiteSpace(PhoneNumber)
+    //        && !string.IsNullOrWhiteSpace(DeliveryAddress);
+    //}
+
     private bool CanPlaceOrder()
     {
         bool hasCustomerInfo = !string.IsNullOrWhiteSpace(CustomerName) &&
@@ -262,7 +284,7 @@ public partial class CheckoutViewModel:ObservableObject
 
         return hasCustomerInfo;
     }
-    
+
     public async Task<CustomerResponseDTO> CreateCustomerAsync()
     {
         CustomerCreateForm createForm = new CustomerCreateForm();
