@@ -13,15 +13,23 @@
         <ResourceDictionary>
             <Color x:Key="ActiveColor">#F83758</Color>
             <Color x:Key="InactiveColor">#666666</Color>
-            <SolidColorBrush x:Key="ActiveBrush" Color="{StaticResource ActiveColor}"/>
-            <SolidColorBrush x:Key="InactiveBrush" Color="{StaticResource InactiveColor}"/>
+            <SolidColorBrush x:Key="ActiveBrush"
+                             Color="{StaticResource ActiveColor}"/>
+            <SolidColorBrush x:Key="InactiveBrush"
+                             Color="{StaticResource InactiveColor}"/>
 
-            <Style x:Key="BottomBarItemStyle" TargetType="Button">
-                <Setter Property="Background" Value="Transparent"/>
-                <Setter Property="Padding" Value="0"/>
-                <Setter Property="Height" Value="60"/>
-                <Setter Property="VerticalAlignment" Value="Stretch"/>
-                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Style x:Key="BottomBarItemStyle"
+                   TargetType="Button">
+                <Setter Property="Background"
+                        Value="Transparent"/>
+                <Setter Property="Padding"
+                        Value="0"/>
+                <Setter Property="Height"
+                        Value="60"/>
+                <Setter Property="VerticalAlignment"
+                        Value="Stretch"/>
+                <Setter Property="HorizontalAlignment"
+                        Value="Stretch"/>
             </Style>
         </ResourceDictionary>
     </Page.Resources>
@@ -29,18 +37,24 @@
     <Grid toolkit:SafeArea.Insets="Top, Bottom">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
+            <!-- Scroll content -->
             <RowDefinition Height="Auto"/>
+            <!-- Bottom nav -->
         </Grid.RowDefinitions>
-        <!-- MAIN SCROLL -->
+
+        <!-- SCROLL CONTENT -->
         <ScrollViewer Grid.Row="0">
             <Grid HorizontalAlignment="Center">
-
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
+                    <!-- Title -->
                     <RowDefinition Height="Auto"/>
+                    <!-- QR -->
                     <RowDefinition Height="*"/>
+                    <!-- Form + Save -->
                 </Grid.RowDefinitions>
 
+                <!-- TITLE -->
                 <TextBlock Grid.Row="0"
                            Text="Profile"
                            HorizontalAlignment="Center"
@@ -48,147 +62,168 @@
                            FontWeight="Bold"
                            Margin="0,0,0,0"/>
 
-                <!-- ===== FORM SECTION ===== -->
+                <!-- QR CODE -->
                 <StackPanel Grid.Row="1"
-                            Margin="20,20,20,20"
+                            HorizontalAlignment="Center"
+                            Margin="0,20,0,20"
+                            Spacing="8">
+                    <TextBlock Text="Customer QR"
+                               FontSize="12"
+                               HorizontalAlignment="Center"/>
+                    <Image Source="{Binding QrImage}"
+                           Width="300"
+                           Height="300"/>
+
+                    <TextBlock Text="{Binding CustomerId}"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               HorizontalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- FORM + SAVE BUTTON -->
+                <StackPanel Grid.Row="2"
+                            Margin="20,0,20,20"
                             Spacing="20">
 
-                    <!-- Name Label -->
+                    <!-- Full Name -->
                     <TextBlock Text="Full Name"
                                FontSize="12"
                                Margin="0,0,0,-10"/>
-
-                    <!-- Name Box -->
                     <TextBox Height="32"
-                             Text="a"
-                            Background="White"
+                             Text="{Binding Fullname, Mode=TwoWay}"
+                             Background="White"
                              Foreground="Black"
-                            BorderThickness="1"
-                            CornerRadius="8"
-                            FontSize="12">
-                    </TextBox>
+                             BorderThickness="1"
+                             CornerRadius="8"
+                             FontSize="12"/>
 
-                    <!-- Phone Label -->
+                    <!-- Phone -->
                     <TextBlock Text="Phone Number"
                                FontSize="12"
                                Margin="0,0,0,-10"/>
-
-                    <!-- Phone Box -->
                     <TextBox Height="32"
-                             Text="a"
-                            Background="White"
+                             Text="{Binding Phone, Mode=TwoWay}"
+                             Background="White"
                              Foreground="Black"
-                            BorderThickness="1"
-                            CornerRadius="8"
-                            FontSize="12">
-                    </TextBox>
+                             BorderThickness="1"
+                             CornerRadius="8"
+                             FontSize="12"/>
 
-                    <!-- Email Label -->
+                    <!-- Email -->
                     <TextBlock Text="Email Address"
                                FontSize="12"
                                Margin="0,0,0,-10"/>
-
-                    <!-- Email Box -->
                     <TextBox Height="32"
-                             Text="a"
-                            Background="White"
+                             Text="{Binding Email, Mode=TwoWay}"
+                             Background="White"
                              Foreground="Black"
-                            BorderThickness="1"
-                            CornerRadius="8"
-                            FontSize="12">
-                    </TextBox>
+                             BorderThickness="1"
+                             CornerRadius="8"
+                             FontSize="12"/>
 
-                    <!-- Address label-->
+                    <!-- Address -->
                     <TextBlock Text="Address"
                                FontSize="12"
                                Margin="0,0,0,-10"/>
-
-                    <!-- Address box-->
                     <TextBox Height="32"
-                             Text="a"
-                            Background="White"
+                             Text="{Binding Address, Mode=TwoWay}"
+                             Background="White"
                              Foreground="Black"
-                            BorderThickness="1"
-                            CornerRadius="8"
-                            FontSize="12">
-                    </TextBox>
-                </StackPanel>
+                             BorderThickness="1"
+                             CornerRadius="8"
+                             FontSize="12"/>
 
-                <!-- SAVE BUTTON -->
-                <Grid Grid.Row="3"
-                        Margin="20, 20, 20, 0"
-                        VerticalAlignment="Top">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="10"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <Button Grid.Column="0"
-                        Content="Edit"
-                        Height="48"
-                        Width="165"
-                        Background="#F83758"
-                        Foreground="White"
-                        FontSize="15"
-                        FontWeight="SemiBold"
-                        CornerRadius="8"/>
-                    <Button Grid.Column="2"
-                        Content="Save"
-                        Height="48"
-                        Width="165"
-                        Background="#F83758"
-                        Foreground="White"
-                        FontSize="15"
-                        FontWeight="SemiBold"
-                        CornerRadius="8"/>
-                </Grid>
+                    <!-- Created Date (LOCKED) -->
+                    <TextBlock Text="Account Created"
+                               FontSize="12"
+                               Margin="0,0,0,-10"/>
+                    <TextBox Height="32"
+                             Text="{Binding CreatedAt}"
+                             IsReadOnly="True"
+                             IsEnabled="False"
+                             Background="#F3F3F3"
+                             Foreground="#666666"
+                             BorderThickness="1"
+                             CornerRadius="8"
+                             FontSize="12"/>
+
+                    <!-- SAVE BUTTON -->
+                    <Button Content="Save"
+                            Height="48"
+                            Background="#F83758"
+                            Foreground="White"
+                            FontSize="15"
+                            FontWeight="SemiBold"
+                            CornerRadius="8"
+                            Command="{Binding SaveCommand}"/>
+                </StackPanel>
             </Grid>
         </ScrollViewer>
 
+        <!-- BOTTOM NAV -->
         <Grid Grid.Row="1"
-              x:Name="BottomNavBar" 
-              Height="60" 
+              x:Name="BottomNavBar"
+              Height="60"
               VerticalAlignment="Bottom"
               Background="White"
-              BorderBrush="#E0E0E0" 
+              BorderBrush="#E0E0E0"
               BorderThickness="0,1,0,0">
-
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <Button Grid.Column="0" 
+            <Button Grid.Column="0"
                     Style="{StaticResource BottomBarItemStyle}"
                     Command="{Binding NavigateToProductListCommand}">
-                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <FontIcon Glyph="&#xE80F;" FontFamily="Segoe MDL2 Assets" 
-                              FontSize="22" Margin="0,0,0,3" Foreground="{StaticResource InactiveBrush}"/>
-                    <TextBlock Text="Home" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource InactiveBrush}"/>
+                <StackPanel VerticalAlignment="Center"
+                            HorizontalAlignment="Center">
+                    <FontIcon Glyph="&#xE80F;"
+                              FontFamily="Segoe MDL2 Assets"
+                              FontSize="22"
+                              Margin="0,0,0,3"
+                              Foreground="{StaticResource InactiveBrush}"/>
+                    <TextBlock Text="Home"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource InactiveBrush}"/>
                 </StackPanel>
             </Button>
-
-            <Button Grid.Column="1" 
+            <Button Grid.Column="1"
                     Style="{StaticResource BottomBarItemStyle}"
                     Command="{Binding NavigateToCartCommand}"
                     Padding="15,0">
-                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <FontIcon Glyph="&#xE7BF;" FontFamily="Segoe MDL2 Assets" 
-                              FontSize="22" Margin="0,0,0,3" Foreground="{StaticResource InactiveBrush}"/>
-                    <TextBlock Text="Cart" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource InactiveBrush}"/>
+                <StackPanel VerticalAlignment="Center"
+                            HorizontalAlignment="Center">
+                    <FontIcon Glyph="&#xE7BF;"
+                              FontFamily="Segoe MDL2 Assets"
+                              FontSize="22"
+                              Margin="0,0,0,3"
+                              Foreground="{StaticResource InactiveBrush}"/>
+                    <TextBlock Text="Cart"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource InactiveBrush}"/>
                 </StackPanel>
             </Button>
-
-            <Button Grid.Column="2" 
+            <Button Grid.Column="2"
                     Style="{StaticResource BottomBarItemStyle}"
                     Command="{Binding NavigateToProfileCommand}">
-                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <FontIcon Glyph="&#xE77B;" FontFamily="Segoe MDL2 Assets" 
-                              FontSize="22" Margin="0,0,0,3" Foreground="{StaticResource ActiveBrush}"/>
-                    <TextBlock Text="Account" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource ActiveBrush}"/>
+                <StackPanel VerticalAlignment="Center"
+                            HorizontalAlignment="Center">
+                    <FontIcon Glyph="&#xE77B;"
+                              FontFamily="Segoe MDL2 Assets"
+                              FontSize="22"
+                              Margin="0,0,0,3"
+                              Foreground="{StaticResource ActiveBrush}"/>
+                    <TextBlock Text="Account"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource ActiveBrush}"/>
                 </StackPanel>
             </Button>
         </Grid>
     </Grid>
+
 </Page>

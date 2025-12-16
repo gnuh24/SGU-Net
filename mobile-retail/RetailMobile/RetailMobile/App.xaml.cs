@@ -99,7 +99,7 @@ public partial class App : Application
                     });
 
                     // Add CartService
-                    services.AddSingleton<ICartService, CartService>();   
+                    services.AddSingleton<ICartService, CartService>();
 
                     // Add TokenService
                     services.AddSingleton<ITokenService, TokenService>();
@@ -122,7 +122,7 @@ public partial class App : Application
 
                 })
                 .UseNavigation(RegisterRoutes)
-                
+
             );
         MainWindow = builder.Window;
 
@@ -137,7 +137,7 @@ public partial class App : Application
         using (var scope = Host.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            db.Database.EnsureDeleted();
+            // db.Database.EnsureDeleted();
             db.Database.EnsureCreated();
             // Initialize database
             await InitializeDatabaseAsync();
@@ -181,7 +181,7 @@ public partial class App : Application
                 // Lưu ý: Nếu App đang chạy, điều hướng này sẽ ghi đè lên UI hiện tại.
                 navigator.NavigateViewModelAsync<OrderConfirmationViewModel>(this, data: queryParams, qualifier: Qualifiers.ClearBackStack);
             }
-        } 
+        }
     }
 
     private Dictionary<string, string> ExtractQueryParameters(Uri uri)
@@ -266,7 +266,7 @@ public partial class App : Application
             new ViewMap<MainPage, MainViewModel>(),
             new DataViewMap<SecondPage, SecondViewModel, Entity>(),
             new ViewMap<SignInPage, SignInViewModel>(),
-            new ViewMap<SignUpPage,SignUpViewModel>(),
+            new ViewMap<SignUpPage, SignUpViewModel>(),
             new ViewMap<CheckoutPage, CheckoutViewModel>(),
             new DataViewMap<PaymentProcessingPage, PaymentProcessingViewModel, PaymentProcessingData>(),
             new DataViewMap<WebViewPage, WebViewViewModel, WebViewData>(),
@@ -285,12 +285,12 @@ public partial class App : Application
                     new ("Checkout", View: views.FindByViewModel<CheckoutViewModel>()),
                     new ("Payment", View: views.FindByViewModel<PaymentProcessingViewModel>()),
                     new ("WebView", View: views.FindByViewModel<WebViewViewModel>()),
-                    new ("SignIn", View: views.FindByViewModel<SignInViewModel>()),
-                    new ("SignUp", View: views.FindByViewModel<SignUpViewModel>(), IsDefault: true),
+                    new ("SignIn", View: views.FindByViewModel<SignInViewModel>(), IsDefault: true),
+                    new ("SignUp", View: views.FindByViewModel<SignUpViewModel>()),
                     new ("OrderConfirm", View: views.FindByViewModel<OrderConfirmationViewModel>()),
                     new ("Profile", View: views.FindByViewModel<ProfileViewModel>()),
                     new ("Products", View: views.FindByViewModel<ProductListViewModel>()),
-                    new ("ProductDetail", View: views.FindByViewModel<ProductDetailViewModel>())                
+                    new ("ProductDetail", View: views.FindByViewModel<ProductDetailViewModel>())
                 ]
             )
         );

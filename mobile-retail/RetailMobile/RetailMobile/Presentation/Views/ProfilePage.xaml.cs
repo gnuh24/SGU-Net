@@ -16,6 +16,7 @@ using Windows.Foundation.Collections;
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
 namespace RetailMobile.Presentation.Views;
+using RetailMobile.Presentation.ViewModels;
 
 /// <summary>
 /// An empty page that can be used on its own or navigated to within a Frame.
@@ -24,6 +25,8 @@ public sealed partial class ProfilePage : Page
 {
     public ProfilePage()
     {
-        this.InitializeComponent();
+        InitializeComponent();
     }
+
+
 }

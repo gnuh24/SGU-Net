@@ -5,6 +5,7 @@ using RetailMobile.Helpers;
 using Microsoft.Extensions.Options;
 
 namespace RetailMobile.Services;
+
 public class ApiClient
 {
     private readonly HttpClient _http;
@@ -135,9 +136,6 @@ public class ApiClient
                 "application/json"
             );
         }
-
-        // ❗ vẫn add token nếu có (login có thể không cần)
-        await AddAuthHeader(request);
 
         var response = await _http.SendAsync(request);
 
