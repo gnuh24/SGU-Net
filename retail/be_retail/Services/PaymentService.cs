@@ -68,6 +68,13 @@ namespace be_retail.Services
 
                 if (momoResponse.ResultCode == 0 && !string.IsNullOrEmpty(momoResponse.PayUrl))
                 {
+                    // Nếu MoMo không trả về mã QR, tự tạo QR từ PayUrl để hiển thị cho khách
+                    if (string.IsNullOrEmpty(momoResponse.QrCodeUrl) && !string.IsNullOrEmpty(momoResponse.PayUrl))
+                    {
+                        var encoded = Uri.EscapeDataString(momoResponse.PayUrl);
+                        momoResponse.QrCodeUrl = $"https://api.qrserver.com/v1/create-qr-code/?size=260x260&data={encoded}";
+                    }
+
                     // Cập nhật payment với transaction ID từ MoMo
                     var payment = await _repository.GetByOrderIdAsync(order.OrderId);
                     if (payment != null)

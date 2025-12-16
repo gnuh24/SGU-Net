@@ -23,7 +23,7 @@ import {
   DeleteOutlined,
   TagOutlined,
   SearchOutlined,
-  QrcodeOutlined, 
+  QrcodeOutlined,
 } from "@ant-design/icons";
 
 import {
@@ -54,7 +54,7 @@ const { Title, Text } = Typography;
 const { Option } = Select;
 
 type StockFilter = "all" | "in" | "out";
-type ScanMode = "product" | "customer"; 
+type ScanMode = "product" | "customer";
 
 const GRID_CARD_WIDTH = 180;
 
@@ -94,7 +94,7 @@ const PosPageInternal: React.FC = () => {
 
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanning, setScanning] = useState(false);
-  const [scanMode, setScanMode] = useState<ScanMode>("product"); 
+  const [scanMode, setScanMode] = useState<ScanMode>("product");
   const videoRef = React.useRef<HTMLVideoElement>(null);
 
   const [categories, setCategories] = useState<
@@ -111,6 +111,11 @@ const PosPageInternal: React.FC = () => {
   // Refs để luôn nắm state mới nhất khi xử lý message từ BroadcastChannel
   const cartRef = React.useRef<CartItem[]>([]);
   const productsRef = React.useRef<SwaggerProduct[]>([]);
+  const summaryRef = React.useRef<{
+    subtotal: number;
+    discount: number;
+    total: number;
+  }>({ subtotal: 0, discount: 0, total: 0 });
 
   useEffect(() => {
     cartRef.current = cart;
@@ -152,11 +157,6 @@ const PosPageInternal: React.FC = () => {
 
       if (win) {
         customerWindowRef.current = win;
-        sessionStorage.setItem("pos_customer_window_opened", "true");
-      } else {
-        message.warning(
-          "Trình duyệt đã chặn cửa sổ màn hình khách. Vui lòng cho phép popup hoặc mở thủ công."
-        );
       }
     } catch (err) {
       console.error("Không thể mở cửa sổ màn hình khách:", err);
@@ -164,20 +164,37 @@ const PosPageInternal: React.FC = () => {
     }
   }, [message]);
 
-  // Tự động mở màn hình khách lần đầu vào POS (nếu browser cho phép)
+  // Tự động mở màn hình khách lần đầu:
+  // - Nếu đã có tab POS USER đang mở (đã kết nối qua BroadcastChannel) → KHÔNG mở thêm.
+  // - Nếu chưa có → sau một khoảng trễ ngắn sẽ tự mở /pos/customer.
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const opened = sessionStorage.getItem("pos_customer_window_opened");
-    if (!opened) {
+
+    // Trình duyệt không hỗ trợ BroadcastChannel → luôn auto mở 1 lần
+    if (!(window as any).BroadcastChannel) {
       openCustomerWindow();
+      return;
     }
-  }, [openCustomerWindow]);
+
+    const timer = window.setTimeout(() => {
+      // Nếu sau một lúc mà vẫn chưa kết nối với màn hình khách thì tự mở
+      if (!customerScreenConnected) {
+        openCustomerWindow();
+      }
+    }, 600);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [customerScreenConnected, openCustomerWindow]);
 
   // Thiết lập BroadcastChannel để nhận / gửi dữ liệu với màn hình khách
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!(window as any).BroadcastChannel) {
-      console.warn("Trình duyệt không hỗ trợ BroadcastChannel cho POS 2 màn hình.");
+      console.warn(
+        "Trình duyệt không hỗ trợ BroadcastChannel cho POS 2 màn hình."
+      );
       return;
     }
 
@@ -198,6 +215,9 @@ const PosPageInternal: React.FC = () => {
             payload: {
               cart: cartRef.current,
               products: productsRef.current,
+              subtotal: summaryRef.current.subtotal,
+              discount: summaryRef.current.discount,
+              total: summaryRef.current.total,
             },
           });
           break;
@@ -251,6 +271,17 @@ const PosPageInternal: React.FC = () => {
           }
           break;
         }
+        case "MOMO_PAID": {
+          const paidOrderId =
+            payload?.orderId ?? payload?.OrderId ?? payload?.id ?? null;
+          console.log("POS nhận MOMO_PAID cho order:", paidOrderId);
+          message.destroy();
+          // Đảm bảo modal thanh toán đóng và POS trở về trạng thái ban đầu
+          setPaymentModalOpen(false);
+          resetPos();
+          App.useApp().message?.success?.("Đơn hàng đã thanh toán MoMo thành công!");
+          break;
+        }
         default:
           break;
       }
@@ -261,34 +292,6 @@ const PosPageInternal: React.FC = () => {
       customerChannelRef.current = null;
     };
   }, []);
-
-  // Gửi cập nhật giỏ hàng cho màn hình khách mỗi khi thay đổi
-  useEffect(() => {
-    if (!customerChannelRef.current) return;
-    try {
-      customerChannelRef.current.postMessage({
-        type: "STATE_UPDATED",
-        payload: {
-          cart,
-        },
-      });
-    } catch (err) {
-      console.warn("Gửi STATE_UPDATED tới màn hình khách thất bại:", err);
-    }
-  }, [cart]);
-
-  // Gửi danh sách sản phẩm cho màn hình khách khi dữ liệu sản phẩm thay đổi
-  useEffect(() => {
-    if (!customerChannelRef.current) return;
-    try {
-      customerChannelRef.current.postMessage({
-        type: "PRODUCTS_UPDATED",
-        payload: allProducts,
-      });
-    } catch (err) {
-      console.warn("Gửi PRODUCTS_UPDATED tới màn hình khách thất bại:", err);
-    }
-  }, [allProducts]);
 
   useEffect(() => {
     let reader: BrowserMultiFormatReader | null = null;
@@ -321,17 +324,22 @@ const PosPageInternal: React.FC = () => {
             // --- LOGIC QUÉT KHÁCH HÀNG ---
             message.success(`Đã quét mã khách hàng: ${code}`);
             const foundCustomer = customers.find((c) => {
-                // So sánh số điện thoại (xóa khoảng trắng nếu có để chính xác hơn)
-                const phoneInDb = (c.phoneNumber || c.phone || "").replace(/\s/g, "");
-                const codeClean = code.replace(/\s/g, "");
-                return phoneInDb === codeClean || phoneInDb.endsWith(codeClean);
+              // So sánh số điện thoại (xóa khoảng trắng nếu có để chính xác hơn)
+              const phoneInDb = (c.phoneNumber || c.phone || "").replace(
+                /\s/g,
+                ""
+              );
+              const codeClean = code.replace(/\s/g, "");
+              return phoneInDb === codeClean || phoneInDb.endsWith(codeClean);
             });
 
             if (foundCustomer) {
-                setSelectedCustomer(foundCustomer);
-                message.success(`Đã chọn khách hàng: ${foundCustomer.customerName}`);
+              setSelectedCustomer(foundCustomer);
+              message.success(
+                `Đã chọn khách hàng: ${foundCustomer.customerName}`
+              );
             } else {
-                message.warning(`Không tìm thấy khách hàng có SĐT: ${code}`);
+              message.warning(`Không tìm thấy khách hàng có SĐT: ${code}`);
             }
           }
         })
@@ -357,7 +365,7 @@ const PosPageInternal: React.FC = () => {
       }
       reader = null;
     };
-  }, [scannerOpen, message, scanMode, customers]); 
+  }, [scannerOpen, message, scanMode, customers]);
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -510,6 +518,29 @@ const PosPageInternal: React.FC = () => {
     return { subtotal: sub, discount: disc, total: finalTotal };
   }, [cart, appliedPromotion]);
 
+  // Cập nhật summaryRef để BroadcastChannel luôn lấy được giá trị mới nhất
+  useEffect(() => {
+    summaryRef.current = { subtotal, discount, total };
+  }, [subtotal, discount, total]);
+
+  // Gửi cập nhật giỏ hàng + tổng tiền/giảm giá cho màn hình khách mỗi khi thay đổi
+  useEffect(() => {
+    if (!customerChannelRef.current) return;
+    try {
+      customerChannelRef.current.postMessage({
+        type: "STATE_UPDATED",
+        payload: {
+          cart,
+          subtotal,
+          discount,
+          total,
+        },
+      });
+    } catch (err) {
+      console.warn("Gửi STATE_UPDATED tới màn hình khách thất bại:", err);
+    }
+  }, [cart, subtotal, discount, total]);
+
   useEffect(() => {
     const loadAvailablePromotions = async () => {
       if (cart.length === 0 || subtotal === 0) {
@@ -564,7 +595,9 @@ const PosPageInternal: React.FC = () => {
   };
 
   const applyPromotion = async (codeOverride?: string) => {
-    const codeToCheck = (typeof codeOverride === "string" ? codeOverride : promoCode)
+    const codeToCheck = (
+      typeof codeOverride === "string" ? codeOverride : promoCode
+    )
       .trim()
       .toUpperCase();
     if (!codeToCheck.trim()) {
@@ -678,8 +711,7 @@ const PosPageInternal: React.FC = () => {
       if (!orderForDraft) {
         const payload = {
           userId: user.id,
-          customerId:
-            selectedCustomer?.customerId ?? selectedCustomer?.id ?? 0,
+          customerId: selectedCustomer?.customerId ?? selectedCustomer?.id ?? 0,
           promoId: appliedPromotion?.promoId ?? null,
           paymentMethod: paymentMethod,
           orderItems: cartRef.current.map((item) => ({
@@ -739,13 +771,6 @@ const PosPageInternal: React.FC = () => {
   };
 
   const handlePrintInvoice = async () => {
-    if (paymentMethod === "momo" || paymentMethod === "vnpay") {
-      message.warning(
-        "In hóa đơn tạm tính hiện chỉ hỗ trợ cho thanh toán tại quầy (tiền mặt/thẻ/chuyển khoản)."
-      );
-      return;
-    }
-
     const pendingOrder = await ensurePendingDraftOrder(false);
     if (!pendingOrder) {
       return;
@@ -800,7 +825,7 @@ const PosPageInternal: React.FC = () => {
         message.destroy();
 
         message.loading("Đang tạo yêu cầu thanh toán MoMo...", 0);
-        const returnUrl = `${window.location.origin}/payment/momo/return?orderId=${createdOrder.orderId}`;
+        const returnUrl = `${window.location.origin}/payment/momo/return?orderId=${createdOrder.orderId}&source=posdual`;
         const momoPayment = await posApi.createMoMoPayment(
           createdOrder.orderId,
           total,
@@ -809,11 +834,42 @@ const PosPageInternal: React.FC = () => {
 
         message.destroy();
 
-        if (momoPayment.payUrl) {
-          window.location.href = momoPayment.payUrl;
-        } else {
+        const payUrl =
+          (momoPayment as any).payUrl ||
+          (momoPayment as any).PayUrl ||
+          (momoPayment as any).paymentUrl ||
+          momoPayment.payUrl ||
+          null;
+
+        if (!payUrl) {
           message.error("Không thể tạo link thanh toán MoMo!");
+          return;
         }
+
+        // Nếu có màn hình khách: yêu cầu POS USER mở trang thanh toán MoMo trong tab của họ
+        if (customerScreenConnected && customerChannelRef.current) {
+          try {
+            customerChannelRef.current.postMessage({
+              type: "OPEN_MOMO_PAY_URL",
+              payload: {
+                payUrl,
+              },
+            });
+            message.success(
+              "Đang mở trang thanh toán MoMo trên màn hình khách. Vui lòng yêu cầu khách quét mã."
+            );
+          } catch (err) {
+            console.error(
+              "Không thể gửi yêu cầu mở trang MoMo tới màn hình khách:",
+              err
+            );
+            window.open(payUrl, "_blank");
+          }
+        } else {
+          // Không có màn hình khách → mở như luồng cũ
+          window.open(payUrl, "_blank");
+        }
+
         return;
       }
 
@@ -1058,8 +1114,24 @@ const PosPageInternal: React.FC = () => {
   }, [printData, message]);
 
   return (
-    <div style={{ padding: 24 }}>
-      <Card>
+    <div
+      style={{
+        minHeight: "100vh",
+        padding: "16px",
+        background: "#f5f5f5",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "flex-start",
+      }}
+    >
+      <Card
+        style={{
+          width: "100%",
+          maxWidth: 1440,
+          boxShadow: "0 8px 24px rgba(15, 23, 42, 0.08)",
+          borderRadius: 12,
+        }}
+      >
         <Row gutter={24}>
           {/* LEFT: products & cart */}
           <Col xs={24} md={15}>
@@ -1084,13 +1156,20 @@ const PosPageInternal: React.FC = () => {
             </div>
 
             {/* Search + actions */}
-            <Space style={{ marginBottom: 12 }}>
+            <Space
+              style={{
+                marginBottom: 12,
+                display: "flex",
+                flexWrap: "wrap",
+              }}
+              size="middle"
+            >
               <Input
                 id="product-search"
                 placeholder="Nhập tên sản phẩm"
                 value={productQuery}
                 onChange={(e) => setProductQuery(e.target.value)}
-                style={{ width: 320 }}
+                style={{ minWidth: 220, maxWidth: 360, flex: 1 }}
                 onPressEnter={handleSearch}
                 prefix={<SearchOutlined />}
                 allowClear
@@ -1188,7 +1267,7 @@ const PosPageInternal: React.FC = () => {
 
             <div
               style={{
-                maxHeight: "420px",
+                maxHeight: "calc(100vh - 260px)",
                 overflowY: "auto",
                 paddingBottom: "10px",
                 background: "#f9f9f9",
@@ -1414,12 +1493,12 @@ const PosPageInternal: React.FC = () => {
                   ))}
                 </Select>
                 <Button
-                    icon={<QrcodeOutlined />}
-                    onClick={() => {
-                        setScanMode("customer"); // Chế độ quét khách hàng
-                        setScannerOpen(true);
-                    }}
-                    title="Quét QR khách hàng"
+                  icon={<QrcodeOutlined />}
+                  onClick={() => {
+                    setScanMode("customer"); // Chế độ quét khách hàng
+                    setScannerOpen(true);
+                  }}
+                  title="Quét QR khách hàng"
                 />
               </div>
 
@@ -1586,31 +1665,31 @@ const PosPageInternal: React.FC = () => {
                     />
                   </Form.Item>
                 )}
-                <Space
-                  style={{
-                    width: "100%",
-                    display: "flex",
-                    justifyContent: "flex-end",
-                  }}
-                >
-                  <Button
-                    size="large"
-                    onClick={handlePrintInvoice}
-                    disabled={cart.length === 0 || loadingCheckout}
-                    loading={loadingCheckout && !paymentModalOpen}
-                  >
-                    In hóa đơn
-                  </Button>
-                  <Button
-                    type="primary"
-                    size="large"
-                    onClick={() => setPaymentModalOpen(true)}
-                    disabled={cart.length === 0 || loadingCheckout}
-                    loading={loadingCheckout && paymentModalOpen}
-                  >
-                    Xác nhận & Thanh toán
-                  </Button>
-                </Space>
+                <Row gutter={[8, 8]} justify="end">
+                  <Col xs={24} sm="auto">
+                    <Button
+                      size="large"
+                      block
+                      onClick={handlePrintInvoice}
+                      disabled={cart.length === 0 || loadingCheckout}
+                      loading={loadingCheckout && !paymentModalOpen}
+                    >
+                      In hóa đơn
+                    </Button>
+                  </Col>
+                  <Col xs={24} sm="auto">
+                    <Button
+                      type="primary"
+                      size="large"
+                      block
+                      onClick={() => setPaymentModalOpen(true)}
+                      disabled={cart.length === 0 || loadingCheckout}
+                      loading={loadingCheckout && paymentModalOpen}
+                    >
+                      Xác nhận & Thanh toán
+                    </Button>
+                  </Col>
+                </Row>
               </Form>
             </Card>
           </Col>
@@ -1663,7 +1742,11 @@ const PosPageInternal: React.FC = () => {
       {/* Scanner modal */}
       <Modal
         open={scannerOpen}
-        title={scanMode === 'product' ? "Quét mã vạch sản phẩm" : "Quét mã QR khách hàng"}
+        title={
+          scanMode === "product"
+            ? "Quét mã vạch sản phẩm"
+            : "Quét mã QR khách hàng"
+        }
         onCancel={() => setScannerOpen(false)}
         footer={null}
         width={600}
@@ -1680,7 +1763,13 @@ const PosPageInternal: React.FC = () => {
           />
           <div style={{ marginTop: 12 }}>
             {scanning ? (
-              <Spin tip={scanMode === 'product' ? "Đang quét sản phẩm..." : "Đang tìm số điện thoại..."} />
+              <Spin
+                tip={
+                  scanMode === "product"
+                    ? "Đang quét sản phẩm..."
+                    : "Đang tìm số điện thoại..."
+                }
+              />
             ) : (
               <Button onClick={() => setScannerOpen(false)}>Đóng</Button>
             )}
