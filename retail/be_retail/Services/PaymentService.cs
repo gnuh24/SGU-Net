@@ -4,6 +4,7 @@ using be_retail.DTOs;
 using be_retail.Models;
 using be_retail.Repositories;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace be_retail.Services
 {
@@ -180,20 +181,66 @@ namespace be_retail.Services
                 }
                 else
                 {
+                    var isCanceled = IsUserCanceled(callback);
 
-                    _logger.LogWarning($"MoMo payment failed for order {orderId}: {callback.Message}");
-                    
-                    // Có thể cập nhật payment để ghi nhận lỗi (optional)
-                    var payment = order.Payment;
-                    if (payment != null)
+                    if (isCanceled)
                     {
-                        // Ghi nhận payment method đã thử
-                        payment.PaymentMethod = "momo";
-                        // PaymentDate vẫn null vì chưa thanh toán thành công
-                        await _repository.UpdateAsync(payment);
+                        using var transaction = await _context.Database.BeginTransactionAsync();
+                        try
+                        {
+                            var orderInTransaction = await _context.Orders
+                                .FirstOrDefaultAsync(o => o.OrderId == orderId);
+                            
+                            if (orderInTransaction == null)
+                            {
+                                await transaction.RollbackAsync();
+                                return new ApiResponse<bool>(404, "Order not found", false);
+                            }
+
+                            if (orderInTransaction.Status != "paid" && orderInTransaction.Status != "canceled")
+                            {
+                                orderInTransaction.Status = "canceled";
+                                _context.Orders.Update(orderInTransaction);
+
+                                var payment = await _context.Payments
+                                    .FirstOrDefaultAsync(p => p.OrderId == orderId);
+                                    
+                                if (payment != null)
+                                {
+                                    payment.PaymentMethod = "momo";
+                                    _context.Payments.Update(payment);
+                                }
+
+                                await _context.SaveChangesAsync();
+                                await transaction.CommitAsync();
+
+                                return new ApiResponse<bool>(200, "Payment canceled by user", true);
+                            }
+                            else
+                            {
+                                await transaction.RollbackAsync();
+                                return new ApiResponse<bool>(400, $"Cannot cancel order - current status: {orderInTransaction.Status}", false);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            await transaction.RollbackAsync();
+                            throw;
+                        }
                     }
-                    
-                    return new ApiResponse<bool>(400, $"Payment failed: {callback.Message}", false);
+                    else
+                    {
+                        _logger.LogWarning($"MoMo payment failed for order {orderId}: {callback.Message}");
+                        
+                        var payment = order.Payment;
+                        if (payment != null)
+                        {
+                            payment.PaymentMethod = "momo";
+                            await _repository.UpdateAsync(payment);
+                        }
+                        
+                        return new ApiResponse<bool>(400, $"Payment failed: {callback.Message}", false);
+                    }
                 }
             }
             catch (Exception ex)
@@ -443,6 +490,28 @@ namespace be_retail.Services
                 _logger.LogError(ex, "Error handling VNPay callback");
                 return new ApiResponse<bool>(500, $"Lỗi hệ thống: {ex.Message}", false);
             }
+        }
+        private bool IsUserCanceled(MoMoCallbackRequest callback)
+        {
+            var cancelResultCodes = new[] { 1001, 1002, 1006 };
+            
+            if (cancelResultCodes.Contains(callback.ResultCode))
+            {
+                return true;
+            }
+
+            if (!string.IsNullOrEmpty(callback.Message))
+            {
+                var messageLower = callback.Message.ToLowerInvariant();
+                var cancelKeywords = new[] { "cancel", "hủy", "huy", "user cancel", "người dùng hủy", "đã hủy", "da huy" };
+                
+                if (cancelKeywords.Any(keyword => messageLower.Contains(keyword)))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }
