@@ -314,10 +314,7 @@ const OrdersList: React.FC = () => {
       onOk: async () => {
         try {
           await apiService.patch<boolean>(
-            `/orders/update/${orderId}`,
-            {
-              status: "canceled",
-            } as OrderUpdateForm
+            `/orders/cancel/${orderId}`
           );
 
           message.success("Hủy đơn hàng thành công");
