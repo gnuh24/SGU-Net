@@ -58,6 +58,15 @@ interface Payment {
   paymentDate: string;
 }
 
+const ORDERS_API_URL = "/orders";
+
+interface OrderUpdateForm {
+  userId?: number | null;
+  promoId?: number | null;
+  status?: string | null;
+  paymentMethod?: string | null;
+}
+
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
@@ -294,6 +303,48 @@ const OrdersList: React.FC = () => {
     }
   };
 
+  const cancelOrder = (orderId: number) => {
+    Modal.confirm({
+      title: "Xác nhận hủy đơn",
+      content: "Bạn có chắc chắn muốn hủy đơn hàng này?",
+      okText: "Hủy đơn",
+      cancelText: "Không",
+      okButtonProps: { danger: true },
+
+      onOk: async () => {
+        try {
+          await apiService.patch<boolean>(
+            `/orders/update/${orderId}`,
+            {
+              status: "canceled",
+            } as OrderUpdateForm
+          );
+
+          message.success("Hủy đơn hàng thành công");
+          fetchOrders(); // reload list
+        } catch (error: any) {
+          message.error(error.message);
+        }
+      },
+    });
+  };
+
+  const payOrder = async (orderId: number) => {
+    try {
+      await apiService.patch<boolean>(
+        `/orders/update/${orderId}`,
+        {
+          status: "paid",
+        } as OrderUpdateForm
+      );
+
+      message.success("Thanh toán thành công");
+      fetchOrders();
+    } catch (error: any) {
+      message.error(error.message);
+    }
+  };
+
   const columns = [
     {
       title: "Mã HĐ",
@@ -327,6 +378,7 @@ const OrdersList: React.FC = () => {
       title: "Khách hàng",
       dataIndex: "customerName",
       key: "customerName",
+      width: 130,
       render: (name: string) => name || "Khách vãng lai",
     },
     {
@@ -374,6 +426,7 @@ const OrdersList: React.FC = () => {
       title: "Nhân viên",
       dataIndex: "userName",
       key: "userName",
+      width: 130,
       render: (name: string) => name || "N/A",
     },
     {
@@ -381,15 +434,35 @@ const OrdersList: React.FC = () => {
       key: "action",
       width: 100,
       fixed: "right" as const,
-      render: (_: any, record: Order) => (
-        <Button
-          type="link"
-          icon={<EyeOutlined />}
-          onClick={() => fetchOrderDetail(record.orderId)}
-        >
-          Xem
-        </Button>
-      ),
+      render: (_: any, record: Order) => {
+        const isLocked =
+          record.status === "paid" || record.status === "canceled";
+        return (
+          <Space>
+            <Button
+              type="link"
+              icon={<EyeOutlined />}
+              onClick={() => fetchOrderDetail(record.orderId)}
+            >
+              Xem
+            </Button>
+            <Button
+              danger
+              disabled={isLocked}
+              onClick={() => cancelOrder(record.orderId)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="primary"
+              disabled={isLocked}
+              onClick={() => payOrder(record.orderId)}
+            >
+              Pay
+            </Button>
+          </Space>
+        );
+      },
     },
   ];
 
