@@ -293,7 +293,7 @@ const PosPageInternal: React.FC = () => {
     };
   }, []);
 
-  useEffect(() => {
+useEffect(() => {
     let reader: BrowserMultiFormatReader | null = null;
     let activeStream: MediaStream | null = null;
 
@@ -304,42 +304,53 @@ const PosPageInternal: React.FC = () => {
       reader
         .decodeOnceFromVideoDevice(undefined, videoRef.current!)
         .then(async (result) => {
-          const code = result.getText();
-          // Đóng modal sau khi quét thành công
+          const rawCode = result.getText(); 
+          
           setScannerOpen(false);
           setScanning(false);
 
           if (scanMode === "product") {
-            // --- LOGIC QUÉT SẢN PHẨM ---
-            message.success(`Đã quét mã sản phẩm: ${code}`);
+            const productCode = rawCode.trim(); 
+            message.success(`Đã quét mã SP: ${productCode}`);
             try {
-              const product = await posApi.scanBarcode(code);
+              const product = await posApi.scanBarcode(productCode);
               addProductToCart(product);
-              message.success(`Đã thêm sản phẩm: ${product.productName}`);
+              message.success(`Đã thêm: ${product.productName}`);
             } catch (error) {
-              console.error(error);
+              console.error("Lỗi scan sản phẩm:", error); 
               message.error("Không tìm thấy sản phẩm tương ứng!");
             }
-          } else {
-            // --- LOGIC QUÉT KHÁCH HÀNG ---
-            message.success(`Đã quét mã khách hàng: ${code}`);
+
+          } else {            
+            const cleanCode = rawCode.trim().replace(/\s/g, ""); 
+            const isPhone = /^0\d{9}$/.test(cleanCode); 
+            const isId = /^\d+$/.test(cleanCode);       
+
             const foundCustomer = customers.find((c) => {
-              // So sánh số điện thoại (xóa khoảng trắng nếu có để chính xác hơn)
-              const phoneInDb = (c.phoneNumber || c.phone || "").replace(
-                /\s/g,
-                ""
-              );
-              const codeClean = code.replace(/\s/g, "");
-              return phoneInDb === codeClean || phoneInDb.endsWith(codeClean);
+              if (isPhone) {
+                const dbPhone = (c.phoneNumber || c.phone || "").replace(/\s/g, "");
+                if (dbPhone === cleanCode) return true;
+              }
+
+              if (isId) {
+                const dbId = String(c.customerId ?? c.id);
+                if (dbId === cleanCode) return true;
+              }
+
+              return false;
             });
 
             if (foundCustomer) {
               setSelectedCustomer(foundCustomer);
-              message.success(
-                `Đã chọn khách hàng: ${foundCustomer.customerName}`
-              );
+              message.success(`Đã chọn khách hàng: ${foundCustomer.customerName}`);
             } else {
-              message.warning(`Không tìm thấy khách hàng có SĐT: ${code}`);
+              if (isId && !isPhone) {
+                 message.warning(`Không tìm thấy khách hàng có Mã số: ${cleanCode}`);
+              } else if (isPhone) {
+                 message.warning(`Không tìm thấy khách hàng có SĐT: ${cleanCode}`);
+              } else {
+                 message.error("Mã QR không hợp lệ (Không phải SĐT hoặc Mã số)");
+              }
             }
           }
         })

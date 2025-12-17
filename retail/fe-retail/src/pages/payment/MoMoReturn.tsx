@@ -4,6 +4,7 @@ import { Result, Button, Spin, message } from "antd";
 import { CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
 import axios from "axios";
 import { API_BASE_URL } from "../../constants";
+import apiService from "@/services/apiService";
 
 const MoMoReturn: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -55,8 +56,9 @@ const MoMoReturn: React.FC = () => {
             
             // Chỉ kiểm tra database 1 lần để xác nhận, không retry liên tục
             if (!isChecking && retryCount === 0) {
+              console.log("resultCode: ",resultCode);
               verifyOrderStatus(id, true);
-              
+
               // Sau 5 giây, nếu vẫn pending, thử manual update
               setTimeout(async () => {
                 try {
@@ -73,10 +75,50 @@ const MoMoReturn: React.FC = () => {
               }, 5000);
             }
           } else {
-            setPaymentStatus("failed");
-            setErrorMessage(messageParam || "Thanh toán thất bại");
-            message.error(messageParam || "Thanh toán thất bại", 5);
-            setLoading(false);
+            const isCanceled = 
+              resultCode === "1001" || 
+              resultCode === "1002" || 
+              resultCode === "1006" ||
+              resultCode === "1003" ||
+              (messageParam && (
+                messageParam.toLowerCase().includes("cancel") ||
+                messageParam.toLowerCase().includes("hủy") ||
+                messageParam.toLowerCase().includes("huy")
+              ));
+
+            if (isCanceled) {
+              console.log("resultCode: ",resultCode);
+
+              try {
+                await apiService.patch<boolean>(
+                  `/orders/cancel/${orderId}`
+                );
+      
+                message.success("Hủy đơn hàng thành công");
+              } catch (error: any) {
+                message.error(error.message);
+              }
+
+              setPaymentStatus("failed");
+              setErrorMessage("Giao dịch đã bị hủy bởi người dùng");
+              message.warning("Giao dịch đã bị hủy", 5);
+              setLoading(false);
+              
+              if (orderId) {
+                setTimeout(async () => {
+                  try {
+                    const statusResponse = await axios.get(`${API_BASE_URL}/orders/${orderId}`);
+                  } catch (error) {
+                    console.error("Error checking order status:", error);
+                  }
+                }, 1000);
+              }
+            } else {
+              setPaymentStatus("failed");
+              setErrorMessage(messageParam || "Thanh toán thất bại");
+              message.error(messageParam || "Thanh toán thất bại", 5);
+              setLoading(false);
+            }
           }
           return;
         }
